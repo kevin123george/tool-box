@@ -125,39 +125,6 @@
         /* Modals */
         .modal-overlay {
             position: fixed;
-            top:0; left:0;
-            width:100%; height:100%;
-            background: rgba(0,0,0,0.6);
-            display:none;
-            justify-content:center;
-            align-items:center;
-            z-index:50;
-            animation: fadeIn .25s ease-out;
-        }
-        .modal {
-            background: var(--bg);
-            color: var(--text);
-            border: 2px solid var(--border);
-            padding:20px;
-            width:90%;
-            max-width:380px;
-            position:absolute;
-            cursor:move;
-            animation: popIn .25s ease-out;
-            box-sizing:border-box;
-        }
-
-<!--        .view-block {-->
-<!--            border:1px solid var(&#45;&#45;border);-->
-<!--            padding:10px;-->
-<!--            margin-bottom:12px;-->
-<!--            white-space:pre-wrap;-->
-<!--        }-->
-
-
-
- .modal-overlay {
-            position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             display: none;
@@ -165,6 +132,7 @@
             align-items: center;
             background: rgba(0,0,0,.7);
             z-index: 200;
+            animation: fadeIn .25s ease-out;
         }
 
         .modal {
@@ -177,6 +145,7 @@
             max-height: 88vh;
             overflow-y: auto;
             box-sizing: border-box;
+            animation: popIn .25s ease-out;
         }
 
         /* FIXED PREVIEW BLOCK */
@@ -185,15 +154,15 @@
             padding: 10px;
             background: var(--bg);
             color: var(--text);
-            white-space: normal;      /* FIX: no huge empty right area */
-            word-break: break-word;   /* FIX: long words wrap */
-            max-width: 100%;          /* FIX: stays inside modal */
+            white-space: normal;
+            word-break: break-word;
+            max-width: 100%;
             overflow-wrap: break-word;
             margin-bottom: 14px;
         }
 
         .view-block img {
-            max-width: 100%;          /* FIX: prevents overflow */
+            max-width: 100%;
             height: auto;
             display: block;
             margin: 6px 0;
@@ -204,6 +173,7 @@
             font-size: 12px;
             margin-bottom: 4px;
         }
+
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
         @keyframes popIn { from {opacity:0; transform:scale(.7);} to {opacity:1; transform:scale(1);} }
     </style>
@@ -218,7 +188,6 @@
     <div id="tabClipboard" class="tab active" onclick="switchTab('clipboard')">Clipboard</div>
     <div id="tabMemo" class="tab" onclick="switchTab('memo')">Memos</div>
     <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
-
 </div>
 
 <!-- ---------------- VIEW MODALS ---------------- -->
@@ -259,8 +228,6 @@
     </div>
 </div>
 
-
-
 <!-- ============= FINANCE VIEW MODAL ============= -->
 <div id="financeViewModal" class="modal-overlay">
     <div id="financeViewModalBox" class="modal">
@@ -297,7 +264,6 @@
             <option value="Broker">Broker</option>
         </select>
 
-
         <input id="editFinanceBalance" placeholder="Balance (€)" type="number" step="0.01">
 
         <button class="btn" onclick="saveFinanceEdit()">SAVE</button>
@@ -332,6 +298,8 @@
             <option value="ideas">ideas</option>
             <option value="journal">journal</option>
         </select>
+
+        <label><input type="checkbox" id="editMemoPinned"> Pin?</label>
 
         <input type="file" id="editMemoFile" accept="image/*">
 
@@ -368,6 +336,8 @@
             <option value="journal">journal</option>
         </select>
 
+        <label><input type="checkbox" id="memoPinned"> Pin?</label>
+
         <input type="file" id="memoFile" accept="image/*">
 
         <button class="btn" onclick="addMemo()">ADD MEMO</button>
@@ -375,8 +345,6 @@
 
     <div id="memoList"></div>
 </div>
-
-
 
 <!-- =================== FINANCE TAB =================== -->
 
@@ -392,7 +360,6 @@
             <option value="Revolut">Revolut</option>
         </select>
 
-
         <select id="mode">
             <option value="Current">Current</option>
             <option value="Savings">Savings</option>
@@ -404,9 +371,24 @@
         <button onclick="addFinance()" class="btn">ADD / UPDATE</button>
     </div>
 
+    <div id="financeSummary" class="add-box">
+        <h3>Summary</h3>
+
+        <div><b>Total Balance:</b> <span id="sumTotal"></span></div>
+
+        <div style="margin-top:10px;">
+            <b>By Mode:</b>
+            <ul id="sumByModeList"></ul>
+        </div>
+
+        <div style="margin-top:10px;">
+            <b>By Bank:</b>
+            <ul id="sumByBankList"></ul>
+        </div>
+    </div>
+
     <div id="financeList"></div>
 </div>
-
 
 <!-- ---------------- JS ---------------- -->
 
@@ -427,18 +409,17 @@
     applyMode();
 
     /* Tabs */
-function switchTab(which) {
-    document.getElementById("tabClipboard").classList.toggle("active", which === "clipboard");
-    document.getElementById("tabMemo").classList.toggle("active", which === "memo");
-    document.getElementById("tabFinance").classList.toggle("active", which === "finance");
+    function switchTab(which) {
+        document.getElementById("tabClipboard").classList.toggle("active", which === "clipboard");
+        document.getElementById("tabMemo").classList.toggle("active", which === "memo");
+        document.getElementById("tabFinance").classList.toggle("active", which === "finance");
 
-    clipboardTabContent.classList.toggle("hidden", which !== "clipboard");
-    memoTabContent.classList.toggle("hidden", which !== "memo");
-    financeTabContent.classList.toggle("hidden", which !== "finance");
+        clipboardTabContent.classList.toggle("hidden", which !== "clipboard");
+        memoTabContent.classList.toggle("hidden", which !== "memo");
+        financeTabContent.classList.toggle("hidden", which !== "finance");
 
-    if (which === "finance") loadFinance();
-}
-
+        if (which === "finance") loadFinance();
+    }
 
     /* Helpers */
     function stripHtml(h){ let d=document.createElement("div"); d.innerHTML=h; return d.innerText; }
@@ -448,9 +429,16 @@ function switchTab(which) {
     function openModal(id){ document.getElementById(id).style.display="flex"; }
     function closeModal(id){ document.getElementById(id).style.display="none"; }
 
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){
-        closeClipboardModal(); closeMemoModal(); closeClipboardViewModal(); closeMemoViewModal();
-    }});
+    document.addEventListener("keydown",(e)=>{
+        if(e.key==="Escape"){
+            closeClipboardModal();
+            closeMemoModal();
+            closeClipboardViewModal();
+            closeMemoViewModal();
+            closeFinanceModal();
+            closeFinanceViewModal();
+        }
+    });
 
     /* -------- RICH EDITOR: paste & drag-drop images -------- */
     function insertImg(el,dataUrl){
@@ -729,19 +717,43 @@ function switchTab(which) {
 
     /* ====================== FINANCE ====================== */
 
-async function loadFinance() {
-    const res = await fetch(`${API}/api/finance`);
-    const data = await res.json();
-    let html = "";
+async function loadFinanceSummary() {
+    const res = await fetch(`${API}/api/finance/summary`);
+    const s = await res.json();
 
-    data.forEach(acc => {
-        html += `
+    // Total
+    sumTotal.textContent = "€ " + s.totalBalance.toFixed(2);
+
+    // Mode list
+    sumByModeList.innerHTML = "";
+    Object.entries(s.totalByMode).forEach(([mode, value]) => {
+        const li = document.createElement("li");
+        li.textContent = `${mode}: € ${value.toFixed(2)}`;
+        sumByModeList.appendChild(li);
+    });
+
+    // Bank list
+    sumByBankList.innerHTML = "";
+    Object.entries(s.totalByBank).forEach(([bank, value]) => {
+        const li = document.createElement("li");
+        li.textContent = `${bank}: € ${value.toFixed(2)}`;
+        sumByBankList.appendChild(li);
+    });
+}
+
+
+    async function loadFinance() {
+        const res = await fetch(`${API}/api/finance`);
+        const data = await res.json();
+        let html = "";
+
+        data.forEach(acc => {
+            html += `
         <div class="card">
             <div class="card-main">
-<strong>${acc.bank}</strong>
-<div style="opacity:0.7; font-size:12px;">${acc.mode || "Unknown"}</div>
-<div style="opacity:0.8; font-size:12px;">€ ${acc.balance.toFixed(2)}</div>
-
+                <strong>${acc.bank}</strong>
+                <div style="opacity:0.7; font-size:12px;">${acc.mode || "Unknown"}</div>
+                <div style="opacity:0.8; font-size:12px;">€ ${acc.balance.toFixed(2)}</div>
             </div>
             <div class="card-actions">
                 <button class="btn" onclick="viewFinance('${acc.id}')">VIEW</button>
@@ -749,86 +761,84 @@ async function loadFinance() {
                 <button class="btn" onclick="delFinance('${acc.id}')">DEL</button>
             </div>
         </div>`;
-    });
+        });
 
-    document.getElementById("financeList").innerHTML = html;
-}
+        document.getElementById("financeList").innerHTML = html;
+        loadFinanceSummary();
+    }
 
-async function addFinance() {
-    const form = {
-        bank: document.getElementById("financeBank").value,
-        mode: document.getElementById("mode").value,
-        balance: parseFloat(document.getElementById("financeBalance").value || 0)
-    };
+    async function addFinance() {
+        const form = {
+            bank: document.getElementById("financeBank").value,
+            mode: document.getElementById("mode").value,
+            balance: parseFloat(document.getElementById("financeBalance").value || 0)
+        };
 
-    await fetch(`${API}/api/finance`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-    });
+        await fetch(`${API}/api/finance`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form)
+        });
 
-    loadFinance();
-}
+        loadFinance();
+    }
 
-/* VIEW */
+    /* VIEW */
+    async function viewFinance(id) {
+        const res = await fetch(`${API}/api/finance/${id}`);
+        const acc = await res.json();
 
-async function viewFinance(id) {
-    const res = await fetch(`${API}/api/finance/${id}`);
-    const acc = await res.json();
+        viewFinanceBank.textContent = acc.bank;
+        viewMode.textContent = acc.mode || "Unknown";
+        viewFinanceBalance.textContent = "€ " + acc.balance.toFixed(2);
 
-viewFinanceBank.textContent = acc.bank;
-viewMode.textContent = acc.mode || "Unknown";
-viewFinanceBalance.textContent = "€ " + acc.balance.toFixed(2);
+        openModal("financeViewModal");
+    }
+    function closeFinanceViewModal() { closeModal("financeViewModal"); }
 
-    openModal("financeViewModal");
-}
-function closeFinanceViewModal() { closeModal("financeViewModal"); }
+    /* EDIT */
+    let editingFinanceId = null;
 
-/* EDIT */
+    async function showEditFinance(id) {
+        editingFinanceId = id;
 
-let editingFinanceId = null;
+        const res = await fetch(`${API}/api/finance/${id}`);
+        const acc = await res.json();
 
-async function showEditFinance(id) {
-    editingFinanceId = id;
+        editFinanceBank.value = acc.bank;
+        editMode.value = acc.mode;
+        editFinanceBalance.value = acc.balance;
 
-    const res = await fetch(`${API}/api/finance/${id}`);
-    const acc = await res.json();
+        openModal("financeModal");
+    }
 
-    editFinanceBank.value = acc.bank;
-    editMode.value = acc.mode;
-    editFinanceBalance.value = acc.balance;
+    function closeFinanceModal() {
+        editingFinanceId = null;
+        closeModal("financeModal");
+    }
 
-    openModal("financeModal");
-}
+    async function saveFinanceEdit() {
+        const updated = {
+            bank: editFinanceBank.value,
+            mode: editMode.value,
+            balance: parseFloat(editFinanceBalance.value || 0)
+        };
 
-function closeFinanceModal() {
-    editingFinanceId = null;
-    closeModal("financeModal");
-}
+        await fetch(`${API}/api/finance/${editingFinanceId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updated)
+        });
 
-async function saveFinanceEdit() {
-    const updated = {
-        bank: editFinanceBank.value,
-        mode: editMode.value,
-        balance: parseFloat(editFinanceBalance.value || 0)
-    };
+        closeFinanceModal();
+        loadFinance();
+    }
 
-    await fetch(`${API}/api/finance/${editingFinanceId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated)
-    });
-
-    closeFinanceModal();
-    loadFinance();
-}
-
-/* DELETE */
-async function delFinance(id) {
-    await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
-    loadFinance();
-}
-
+    /* DELETE */
+    async function delFinance(id) {
+        await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
+        loadFinance();
+    }
 
     /* Initial load */
     loadClipboard();

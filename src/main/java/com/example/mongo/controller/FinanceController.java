@@ -1,6 +1,7 @@
 package com.example.mongo.controller;
 
 import com.example.mongo.models.BankAccount;
+import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.services.BankAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -38,5 +39,10 @@ public class FinanceController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable String id) {
         service.delete(id);
+    }
+
+    @GetMapping("/summary")
+    public FinanceSummaryDTO getSummary() {
+        return service.getSummary();
     }
 }

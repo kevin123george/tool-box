@@ -1,11 +1,13 @@
 package com.example.mongo.services;
 
 import com.example.mongo.models.BankAccount;
+import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.repos.BankAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,5 +41,40 @@ public class BankAccountService {
 
     public void delete(String id) {
         repo.deleteById(id);
+    }
+
+
+
+    public FinanceSummaryDTO getSummary() {
+        List<BankAccount> accounts = repo.findAll();
+
+        FinanceSummaryDTO dto = new FinanceSummaryDTO();
+
+        // Total money
+        dto.setTotalBalance(
+                accounts.stream()
+                        .mapToDouble(BankAccount::getBalance)
+                        .sum()
+        );
+
+        // Total by bank
+        dto.setTotalByBank(
+                accounts.stream()
+                        .collect(Collectors.groupingBy(
+                                BankAccount::getBank,
+                                Collectors.summingDouble(BankAccount::getBalance)
+                        ))
+        );
+
+        // Total by mode
+        dto.setTotalByMode(
+                accounts.stream()
+                        .collect(Collectors.groupingBy(
+                                BankAccount::getMode,
+                                Collectors.summingDouble(BankAccount::getBalance)
+                        ))
+        );
+
+        return dto;
     }
 }
