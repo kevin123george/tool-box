@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Memo & Clipboard</title>
+
+    <style>
+        :root {
+            --bg: #000;
+            --text: #fff;
+            --border: #fff;
+        }
+
+        /* Light Mode Variables */
+        .light {
+            --bg: #fff;
+            --text: #000;
+            --border: #000;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: monospace;
+            padding: 20px;
+            font-size: 14px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        h2 {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+            margin-top: 30px;
+            text-transform: uppercase;
+        }
+
+        .card {
+            background: var(--bg);
+            padding: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .add-box {
+            background: var(--bg);
+            padding: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .btn:hover {
+            background: var(--text);
+            color: var(--bg);
+        }
+
+        /* Toggle Button */
+        #modeToggle {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            padding: 8px 12px;
+            z-index: 20;
+        }
+
+        /* MOBILE */
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+                font-size: 13px;
+            }
+
+            .card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .card div:last-child {
+                display: flex;
+                gap: 10px;
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 10px;
+            }
+
+            #modeToggle {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<button id="modeToggle" class="btn" onclick="toggleMode()">LIGHT MODE</button>
+
+<h2>Clipboard Manager</h2>
+
+<div class="add-box">
+    <input id="clipInput" placeholder="Clipboard content...">
+    <button onclick="addClipboard()" class="btn">ADD</button>
+</div>
+
+<div id="clipboardList"></div>
+
+<hr style="border:1px solid var(--border); margin:30px 0;">
+
+
+<h2>Memo Manager</h2>
+
+<div class="add-box">
+    <input id="memoTitle" placeholder="Title">
+    <textarea id="memoContent" placeholder="Content"></textarea>
+
+    <select id="memoCategory">
+        <option value="personal">personal</option>
+        <option value="work">work</option>
+        <option value="ideas">ideas</option>
+        <option value="journal">journal</option>
+    </select>
+
+    <label><input type="checkbox" id="memoPinned"> Pin?</label><br><br>
+
+    <button onclick="addMemo()" class="btn">ADD MEMO</button>
+</div>
+
+<div id="memoList"></div>
+
+<script>
+    const API = "100.70.247.128 :8080";
+
+    // ------------------ THEME MODE ------------------
+    function applyMode() {
+        const mode = localStorage.getItem("retroMode") || "light";
+        if (mode === "light") {
+            document.body.classList.add("light");
+            document.getElementById("modeToggle").textContent = "DARK MODE";
+        } else {
+            document.body.classList.remove("light");
+            document.getElementById("modeToggle").textContent = "LIGHT MODE";
+        }
+    }
+
+    function toggleMode() {
+        const newMode = document.body.classList.contains("light") ? "dark" : "light";
+        localStorage.setItem("retroMode", newMode);
+        applyMode();
+    }
+
+    applyMode();
+
+    // ------------------ COPY FUNCTION ------------------
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        alert("Copied.");
+    }
+
+    // ------------------ CLIPBOARD ------------------
+    async function loadClipboard() {
+        const res = await fetch(`${API}/api/clipboard`);
+        const data = await res.json();
+        let html = "";
+
+        data.forEach(item => {
+            html += `
+                <div class="card">
+                    <span>${item.content}</span>
+                    <div>
+                        <button class="btn" onclick="copyText('${item.content.replace(/'/g, "\\'")}')">COPY</button>
+                        <button class="btn" onclick="delClipboard('${item.id}')">DEL</button>
+                    </div>
+                </div>`;
+        });
+
+        document.getElementById("clipboardList").innerHTML = html;
+    }
+
+    async function addClipboard() {
+        const content = document.getElementById("clipInput").value;
+        if (!content) return alert("Enter content first.");
+
+        await fetch(`${API}/api/clipboard`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content })
+        });
+
+        document.getElementById("clipInput").value = "";
+        loadClipboard();
+    }
+
+    function delClipboard(id) {
+        fetch(`${API}/api/clipboard/${id}`, { method: "DELETE" })
+            .then(loadClipboard);
+    }
+
+    // ------------------ MEMOS ------------------
+    async function loadMemos() {
+        const res = await fetch(`${API}/api/memos`);
+        const data = await res.json();
+        let html = "";
+
+        data.forEach(m => {
+            html += `
+            <div class="card">
+                <div>
+                    <b>${m.title}</b> (${m.category})<br>
+                    <small>${m.content}</small>
+                </div>
+                <div>
+                    <button class="btn" onclick="copyText('${(m.title + " - " + m.content).replace(/'/g, "\\'")}')">COPY</button>
+                    <button class="btn" onclick="delMemo('${m.id}')">DEL</button>
+                </div>
+            </div>`;
+        });
+
+        document.getElementById("memoList").innerHTML = html;
+    }
+
+    async function addMemo() {
+        const memo = {
+            title: document.getElementById("memoTitle").value,
+            content: document.getElementById("memoContent").value,
+            category: document.getElementById("memoCategory").value,
+            pinned: document.getElementById("memoPinned").checked
+        };
+
+        if (!memo.title) return alert("Title required.");
+
+        await fetch(`${API}/api/memos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(memo)
+        });
+
+        document.getElementById("memoTitle").value = "";
+        document.getElementById("memoContent").value = "";
+        document.getElementById("memoPinned").checked = false;
+
+        loadMemos();
+    }
+
+    function delMemo(id) {
+        fetch(`${API}/api/memos/${id}`, { method:"DELETE" })
+            .then(loadMemos);
+    }
+
+    loadClipboard();
+    loadMemos();
+</script>
+</body>
+</html>

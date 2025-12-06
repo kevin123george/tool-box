@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox</title>
+
+    <style>
+        :root { --bg:#000; --text:#fff; --border:#fff; }
+        .light { --bg:#fff; --text:#000; --border:#000; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: monospace;
+            padding: 20px;
+            font-size: 14px;
+            transition: background .2s, color .2s;
+        }
+
+        h1 {
+            font-size:16px;
+            text-transform:uppercase;
+            margin-top:0;
+            margin-bottom:10px;
+        }
+
+        h2 {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+            margin-top: 20px;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .card {
+            background: var(--bg);
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:10px;
+        }
+
+        .card-main { flex:1; min-width:0; }
+        .card-actions { display:flex; gap:6px; flex-wrap:wrap; }
+
+        .add-box {
+            padding: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding:10px;
+            background: var(--bg);
+            border:1px solid var(--border);
+            color:var(--text);
+            margin-bottom:10px;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+
+        /* ----------------- Rich Editor ----------------- */
+        .editor {
+            width:100%;
+            min-height:80px;
+            padding:10px;
+            border:1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            box-sizing:border-box;
+            font-family: monospace;
+            font-size:14px;
+            overflow-y:auto;
+            white-space:pre-wrap;
+            word-wrap:break-word;
+        }
+        .editor[contenteditable="true"]:empty:before {
+            content: attr(data-placeholder);
+            color: rgba(255,255,255,0.4);
+        }
+        .light .editor[contenteditable="true"]:empty:before {
+            color: rgba(0,0,0,0.4);
+        }
+        .editor img {
+            max-width:100%;
+            display:block;
+            margin:6px 0;
+        }
+
+        .btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            cursor:pointer;
+            font-size: 12px;
+        }
+        .btn:hover { background: var(--text); color: var(--bg); }
+
+        #modeToggle {
+            position:fixed; top:12px; right:12px;
+        }
+
+        /* Tabs */
+        .tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:10px; }
+        .tab {
+            padding:8px 14px;
+            border:1px solid var(--border);
+            border-bottom:none;
+            margin-right:6px;
+            cursor:pointer;
+            font-size:12px;
+            text-transform:uppercase;
+            background: var(--bg);
+        }
+        .tab.active { background: var(--text); color: var(--bg); }
+        .tab-content { margin-top:10px; }
+        .hidden { display:none; }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            background: rgba(0,0,0,0.6);
+            display:none;
+            justify-content:center;
+            align-items:center;
+            z-index:50;
+            animation: fadeIn .25s ease-out;
+        }
+        .modal {
+            background: var(--bg);
+            color: var(--text);
+            border: 2px solid var(--border);
+            padding:20px;
+            width:90%;
+            max-width:380px;
+            position:absolute;
+            cursor:move;
+            animation: popIn .25s ease-out;
+            box-sizing:border-box;
+        }
+
+<!--        .view-block {-->
+<!--            border:1px solid var(&#45;&#45;border);-->
+<!--            padding:10px;-->
+<!--            margin-bottom:12px;-->
+<!--            white-space:pre-wrap;-->
+<!--        }-->
+
+
+
+ .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,.7);
+            z-index: 200;
+        }
+
+        .modal {
+            background: var(--bg);
+            color: var(--text);
+            border: 2px solid var(--border);
+            padding: 18px;
+            width: 480px;
+            max-width: 92vw;
+            max-height: 88vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        /* FIXED PREVIEW BLOCK */
+        .view-block {
+            border: 1px solid var(--border);
+            padding: 10px;
+            background: var(--bg);
+            color: var(--text);
+            white-space: normal;      /* FIX: no huge empty right area */
+            word-break: break-word;   /* FIX: long words wrap */
+            max-width: 100%;          /* FIX: stays inside modal */
+            overflow-wrap: break-word;
+            margin-bottom: 14px;
+        }
+
+        .view-block img {
+            max-width: 100%;          /* FIX: prevents overflow */
+            height: auto;
+            display: block;
+            margin: 6px 0;
+        }
+
+        .view-label {
+            opacity: 0.7;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+        @keyframes popIn { from {opacity:0; transform:scale(.7);} to {opacity:1; transform:scale(1);} }
+    </style>
+</head>
+<body>
+
+<button id="modeToggle" class="btn" onclick="toggleMode()">LIGHT MODE</button>
+
+<h1>Hey Kevin!!!</h1>
+
+<div class="tabs">
+    <div id="tabClipboard" class="tab active" onclick="switchTab('clipboard')">Clipboard</div>
+    <div id="tabMemo" class="tab" onclick="switchTab('memo')">Memos</div>
+    <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
+
+</div>
+
+<!-- ---------------- VIEW MODALS ---------------- -->
+
+<div id="clipboardViewModal" class="modal-overlay">
+    <div id="clipboardViewModalBox" class="modal">
+        <h3>Clipboard Item</h3>
+        <div class="view-label">Content</div>
+        <div id="viewClipContent" class="view-block"></div>
+
+        <div id="viewClipImageWrapper" style="display:none;">
+            <div class="view-label">Media</div>
+            <img id="viewClipImage" style="max-width:100%; border:1px solid var(--border);">
+        </div>
+
+        <button class="btn" onclick="closeClipboardViewModal()">CLOSE</button>
+    </div>
+</div>
+
+<div id="memoViewModal" class="modal-overlay">
+    <div id="memoViewModalBox" class="modal">
+        <h3>Memo Details</h3>
+        <div class="view-label">Title</div>
+        <div id="viewMemoTitle" class="view-block"></div>
+
+        <div class="view-label">Content</div>
+        <div id="viewMemoContent" class="view-block"></div>
+
+        <div class="view-label">Meta</div>
+        <div id="viewMemoMeta" class="view-block"></div>
+
+        <div id="viewMemoImageWrapper" style="display:none;">
+            <div class="view-label">Media</div>
+            <img id="viewMemoImage" style="max-width:100%; border:1px solid var(--border);">
+        </div>
+
+        <button class="btn" onclick="closeMemoViewModal()">CLOSE</button>
+    </div>
+</div>
+
+
+
+<!-- ============= FINANCE VIEW MODAL ============= -->
+<div id="financeViewModal" class="modal-overlay">
+    <div id="financeViewModalBox" class="modal">
+        <h3>Account Details</h3>
+
+        <div class="view-label">Bank</div>
+        <div id="viewFinanceBank" class="view-block"></div>
+
+        <div class="view-label">Mode</div>
+        <div id="viewMode" class="view-block"></div>
+
+        <div class="view-label">Balance (€)</div>
+        <div id="viewFinanceBalance" class="view-block"></div>
+
+        <button class="btn" onclick="closeFinanceViewModal()">CLOSE</button>
+    </div>
+</div>
+
+<!-- ============= FINANCE EDIT MODAL ============= -->
+<div id="financeModal" class="modal-overlay">
+    <div id="financeModalBox" class="modal">
+        <h3>Edit Account</h3>
+
+        <select id="editFinanceBank">
+            <option value="N26">N26</option>
+            <option value="Sparkasse">Sparkasse</option>
+            <option value="Trade Republic">Trade Republic</option>
+            <option value="Wise">Wise</option>
+            <option value="Revolut">Revolut</option>
+        </select>
+        <select id="editMode">
+            <option value="Current">Current</option>
+            <option value="Savings">Savings</option>
+            <option value="Broker">Broker</option>
+        </select>
+
+
+        <input id="editFinanceBalance" placeholder="Balance (€)" type="number" step="0.01">
+
+        <button class="btn" onclick="saveFinanceEdit()">SAVE</button>
+        <button class="btn" onclick="closeFinanceModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- ---------------- EDIT MODALS ---------------- -->
+
+<div id="clipboardModal" class="modal-overlay">
+    <div id="clipboardModalBox" class="modal">
+        <h3>Edit Clipboard</h3>
+
+        <div id="editClipInput" class="editor" contenteditable="true"></div>
+        <input type="file" id="editClipFile" accept="image/*">
+
+        <button class="btn" onclick="saveClipboardEdit()">SAVE</button>
+        <button class="btn" onclick="closeClipboardModal()">CANCEL</button>
+    </div>
+</div>
+
+<div id="memoModal" class="modal-overlay">
+    <div id="memoModalBox" class="modal">
+        <h3>Edit Memo</h3>
+
+        <input id="editMemoTitle" placeholder="Title">
+        <div id="editMemoContent" class="editor" contenteditable="true"></div>
+
+        <select id="editMemoCategory">
+            <option value="personal">personal</option>
+            <option value="work">work</option>
+            <option value="ideas">ideas</option>
+            <option value="journal">journal</option>
+        </select>
+
+        <input type="file" id="editMemoFile" accept="image/*">
+
+        <button class="btn" onclick="saveMemoEdit()">SAVE</button>
+        <button class="btn" onclick="closeMemoModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- ---------------- TAB: CLIPBOARD ---------------- -->
+
+<div id="clipboardTabContent" class="tab-content">
+    <h2>Clipboard</h2>
+    <div class="add-box">
+        <div id="clipInput" class="editor" contenteditable="true" data-placeholder="Clipboard content..."></div>
+        <input type="file" id="clipFile" accept="image/*">
+        <button class="btn" onclick="addClipboard()">ADD</button>
+    </div>
+
+    <div id="clipboardList"></div>
+</div>
+
+<!-- ---------------- TAB: MEMOS ---------------- -->
+
+<div id="memoTabContent" class="tab-content hidden">
+    <h2>Memos</h2>
+    <div class="add-box">
+        <input id="memoTitle" placeholder="Title">
+        <div id="memoContent" class="editor" contenteditable="true" data-placeholder="Content"></div>
+
+        <select id="memoCategory">
+            <option value="personal">personal</option>
+            <option value="work">work</option>
+            <option value="ideas">ideas</option>
+            <option value="journal">journal</option>
+        </select>
+
+        <input type="file" id="memoFile" accept="image/*">
+
+        <button class="btn" onclick="addMemo()">ADD MEMO</button>
+    </div>
+
+    <div id="memoList"></div>
+</div>
+
+
+
+<!-- =================== FINANCE TAB =================== -->
+
+<div id="financeTabContent" class="tab-content hidden">
+    <h2>Finance Accounts</h2>
+
+    <div class="add-box">
+        <select id="financeBank">
+            <option value="N26">N26</option>
+            <option value="Sparkasse">Sparkasse</option>
+            <option value="Trade Republic">Trade Republic</option>
+            <option value="Wise">Wise</option>
+            <option value="Revolut">Revolut</option>
+        </select>
+
+
+        <select id="mode">
+            <option value="Current">Current</option>
+            <option value="Savings">Savings</option>
+            <option value="Broker">Broker</option>
+        </select>
+
+        <input id="financeBalance" placeholder="Balance (€)" type="number" step="0.01">
+
+        <button onclick="addFinance()" class="btn">ADD / UPDATE</button>
+    </div>
+
+    <div id="financeList"></div>
+</div>
+
+
+<!-- ---------------- JS ---------------- -->
+
+<script>
+    const API = "";   /* Empty = same domain */
+
+    /* Theme */
+    function applyMode() {
+        const mode = localStorage.getItem("retroMode") || "dark";
+        document.body.classList.toggle("light", mode==="light");
+        modeToggle.textContent = mode==="light" ? "DARK MODE" : "LIGHT MODE";
+    }
+    function toggleMode() {
+        const next = document.body.classList.contains("light") ? "dark" : "light";
+        localStorage.setItem("retroMode", next);
+        applyMode();
+    }
+    applyMode();
+
+    /* Tabs */
+function switchTab(which) {
+    document.getElementById("tabClipboard").classList.toggle("active", which === "clipboard");
+    document.getElementById("tabMemo").classList.toggle("active", which === "memo");
+    document.getElementById("tabFinance").classList.toggle("active", which === "finance");
+
+    clipboardTabContent.classList.toggle("hidden", which !== "clipboard");
+    memoTabContent.classList.toggle("hidden", which !== "memo");
+    financeTabContent.classList.toggle("hidden", which !== "finance");
+
+    if (which === "finance") loadFinance();
+}
+
+
+    /* Helpers */
+    function stripHtml(h){ let d=document.createElement("div"); d.innerHTML=h; return d.innerText; }
+    function truncate(s,n){ return !s?"" : s.length>n ? s.slice(0,n-3)+"..." : s; }
+
+    /* Modal Utils */
+    function openModal(id){ document.getElementById(id).style.display="flex"; }
+    function closeModal(id){ document.getElementById(id).style.display="none"; }
+
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){
+        closeClipboardModal(); closeMemoModal(); closeClipboardViewModal(); closeMemoViewModal();
+    }});
+
+    /* -------- RICH EDITOR: paste & drag-drop images -------- */
+    function insertImg(el,dataUrl){
+        const img=document.createElement("img");
+        img.src=dataUrl;
+        const sel=window.getSelection();
+        if(!sel.rangeCount){ el.appendChild(img); return; }
+        const range=sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(img);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    function setupEditor(id){
+        const el=document.getElementById(id);
+        if(!el) return;
+
+        el.addEventListener("paste", e=>{
+            const items=e.clipboardData.items;
+            for(let i=0;i<items.length;i++){
+                if(items[i].type.startsWith("image")){
+                    e.preventDefault();
+                    const file=items[i].getAsFile();
+                    const r=new FileReader();
+                    r.onload=ev=>insertImg(el,ev.target.result);
+                    r.readAsDataURL(file);
+                    return;
+                }
+            }
+        });
+
+        el.addEventListener("dragover",e=>e.preventDefault());
+        el.addEventListener("drop", e=>{
+            e.preventDefault();
+            const files=e.dataTransfer.files;
+            for(let f of files){
+                if(f.type.startsWith("image")){
+                    const r=new FileReader();
+                    r.onload=ev=>insertImg(el,ev.target.result);
+                    r.readAsDataURL(f);
+                }
+            }
+        });
+    }
+
+    setupEditor("clipInput");
+    setupEditor("memoContent");
+    setupEditor("editClipInput");
+    setupEditor("editMemoContent");
+
+    /* ===========================================================
+       CLIPBOARD
+    =============================================================*/
+
+    async function loadClipboard() {
+        const res = await fetch(`${API}/api/clipboard`);
+        const data = await res.json();
+        let html = "";
+
+        data.forEach(item => {
+            const plain = stripHtml(item.content || "");
+            const short = truncate(plain, 40);
+
+            html += `
+            <div class="card">
+                <div class="card-main">
+                    <strong>Clipboard</strong>
+                    <div style="opacity:0.7; font-size:12px;">${short || "<i>(no text)</i>"}</div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn" onclick="viewClipboard('${item.id}')">VIEW</button>
+                    <button class="btn" onclick="copyClipboard('${item.id}')">COPY</button>
+                    <button class="btn" onclick="showEditClipboard('${item.id}')">EDIT</button>
+                    <button class="btn" onclick="delClipboard('${item.id}')">DEL</button>
+                </div>
+            </div>`;
+        });
+
+        clipboardList.innerHTML = html;
+    }
+
+    async function addClipboard(){
+        const html = clipInput.innerHTML.trim();
+        const file = clipFile.files[0];
+        if(!html && !file){ alert("Enter content or choose a file."); return; }
+
+        const form=new FormData();
+        form.append("content",html);
+        if(file) form.append("media",file);
+
+        await fetch(`${API}/api/clipboard/upload`,{ method:"POST", body:form });
+
+        clipInput.innerHTML=""; clipFile.value="";
+        loadClipboard();
+    }
+
+    async function delClipboard(id){
+        await fetch(`${API}/api/clipboard/${id}`,{ method:"DELETE" });
+        loadClipboard();
+    }
+
+    async function viewClipboard(id){
+        const res = await fetch(`${API}/api/clipboard/${id}`);
+        const item = await res.json();
+
+        viewClipContent.innerHTML = item.content || "";
+
+        if(item.media){
+            viewClipImage.src = `data:image/*;base64,${item.media}`;
+            viewClipImageWrapper.style.display = "block";
+        } else {
+            viewClipImageWrapper.style.display = "none";
+        }
+
+        openModal("clipboardViewModal");
+    }
+    function closeClipboardViewModal(){ closeModal("clipboardViewModal"); }
+
+    async function copyClipboard(id){
+        const res = await fetch(`${API}/api/clipboard/${id}`);
+        const item = await res.json();
+        const temp=document.createElement("div");
+        temp.innerHTML=item.content||"";
+        await navigator.clipboard.writeText(temp.innerText);
+        alert("Copied!");
+    }
+
+    let editingClipboardId=null;
+
+    async function showEditClipboard(id){
+        editingClipboardId=id;
+        const res = await fetch(`${API}/api/clipboard/${id}`);
+        const item = await res.json();
+        editClipInput.innerHTML = item.content || "";
+        editClipFile.value="";
+        openModal("clipboardModal");
+    }
+
+    function closeClipboardModal(){ editingClipboardId=null; editClipFile.value=""; closeModal("clipboardModal"); }
+
+    async function saveClipboardEdit(){
+        const form=new FormData();
+        form.append("content", editClipInput.innerHTML.trim());
+        const file=editClipFile.files[0];
+        if(file) form.append("media", file);
+
+        await fetch(`${API}/api/clipboard/upload/${editingClipboardId}`,{
+            method:"PUT",
+            body:form
+        });
+
+        closeClipboardModal();
+        loadClipboard();
+    }
+
+    /* ===========================================================
+       MEMOS
+    =============================================================*/
+
+    async function loadMemos(){
+        const res = await fetch(`${API}/api/memos`);
+        const data = await res.json();
+        let html="";
+
+        data.forEach(m=>{
+            const plain = stripHtml(m.content || "");
+            const short = truncate(plain,40);
+
+            html+=`
+            <div class="card">
+                <div class="card-main">
+                    <strong>${m.title}</strong> (${m.category}) ${m.pinned? "<span style='color:#f90'>[PINNED]</span>":""}
+                    <div style="opacity:0.7; font-size:12px;">${short || "<i>(no content)</i>"}</div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn" onclick="viewMemo('${m.id}')">VIEW</button>
+                    <button class="btn" onclick="copyMemo('${m.id}')">COPY</button>
+                    <button class="btn" onclick="showEditMemo('${m.id}')">EDIT</button>
+                    <button class="btn" onclick="delMemo('${m.id}')">DEL</button>
+                </div>
+            </div>`;
+        });
+
+        memoList.innerHTML=html;
+    }
+
+    async function addMemo(){
+        const form=new FormData();
+        form.append("title", memoTitle.value);
+        form.append("content", memoContent.innerHTML.trim());
+        form.append("category", memoCategory.value);
+        form.append("pinned", memoPinned.checked);
+
+        const file=memoFile.files[0];
+        if(file) form.append("media",file);
+
+        await fetch(`${API}/api/memos/upload`,{ method:"POST", body:form });
+
+        memoTitle.value=""; memoContent.innerHTML=""; memoPinned.checked=false; memoFile.value="";
+        loadMemos();
+    }
+
+    async function delMemo(id){
+        await fetch(`${API}/api/memos/${id}`,{ method:"DELETE" });
+        loadMemos();
+    }
+
+    async function viewMemo(id){
+        const res = await fetch(`${API}/api/memos/${id}`);
+        const m = await res.json();
+
+        viewMemoTitle.textContent = m.title;
+        viewMemoContent.innerHTML = m.content;
+
+        viewMemoMeta.textContent = `Category: ${m.category}\nPinned: ${m.pinned?'Yes':'No'}`;
+
+        if(m.media){
+            viewMemoImage.src=`data:image/*;base64,${m.media}`;
+            viewMemoImageWrapper.style.display="block";
+        } else{
+            viewMemoImageWrapper.style.display="none";
+        }
+
+        openModal("memoViewModal");
+    }
+    function closeMemoViewModal(){ closeModal("memoViewModal"); }
+
+    async function copyMemo(id){
+        const res = await fetch(`${API}/api/memos/${id}`);
+        const m = await res.json();
+        const temp=document.createElement("div");
+        temp.innerHTML=m.title+" - "+(m.content||"");
+        await navigator.clipboard.writeText(temp.innerText);
+        alert("Copied!");
+    }
+
+    let editingMemoId=null;
+
+    async function showEditMemo(id){
+        editingMemoId=id;
+
+        const res=await fetch(`${API}/api/memos/${id}`);
+        const m=await res.json();
+
+        editMemoTitle.value=m.title;
+        editMemoContent.innerHTML=m.content || "";
+        editMemoCategory.value=m.category;
+        editMemoPinned.checked=m.pinned;
+        editMemoFile.value="";
+
+        openModal("memoModal");
+    }
+
+    function closeMemoModal(){ editingMemoId=null; editMemoFile.value=""; closeModal("memoModal"); }
+
+    async function saveMemoEdit(){
+        const form=new FormData();
+        form.append("title", editMemoTitle.value);
+        form.append("content", editMemoContent.innerHTML.trim());
+        form.append("category", editMemoCategory.value);
+        form.append("pinned", editMemoPinned.checked);
+
+        const file=editMemoFile.files[0];
+        if(file) form.append("media",file);
+
+        await fetch(`${API}/api/memos/upload/${editingMemoId}`,{
+            method:"PUT",
+            body:form
+        });
+
+        closeMemoModal();
+        loadMemos();
+    }
+
+    /* ====================== FINANCE ====================== */
+
+async function loadFinance() {
+    const res = await fetch(`${API}/api/finance`);
+    const data = await res.json();
+    let html = "";
+
+    data.forEach(acc => {
+        html += `
+        <div class="card">
+            <div class="card-main">
+<strong>${acc.bank}</strong>
+<div style="opacity:0.7; font-size:12px;">${acc.mode || "Unknown"}</div>
+<div style="opacity:0.8; font-size:12px;">€ ${acc.balance.toFixed(2)}</div>
+
+            </div>
+            <div class="card-actions">
+                <button class="btn" onclick="viewFinance('${acc.id}')">VIEW</button>
+                <button class="btn" onclick="showEditFinance('${acc.id}')">EDIT</button>
+                <button class="btn" onclick="delFinance('${acc.id}')">DEL</button>
+            </div>
+        </div>`;
+    });
+
+    document.getElementById("financeList").innerHTML = html;
+}
+
+async function addFinance() {
+    const form = {
+        bank: document.getElementById("financeBank").value,
+        mode: document.getElementById("mode").value,
+        balance: parseFloat(document.getElementById("financeBalance").value || 0)
+    };
+
+    await fetch(`${API}/api/finance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+    });
+
+    loadFinance();
+}
+
+/* VIEW */
+
+async function viewFinance(id) {
+    const res = await fetch(`${API}/api/finance/${id}`);
+    const acc = await res.json();
+
+viewFinanceBank.textContent = acc.bank;
+viewMode.textContent = acc.mode || "Unknown";
+viewFinanceBalance.textContent = "€ " + acc.balance.toFixed(2);
+
+    openModal("financeViewModal");
+}
+function closeFinanceViewModal() { closeModal("financeViewModal"); }
+
+/* EDIT */
+
+let editingFinanceId = null;
+
+async function showEditFinance(id) {
+    editingFinanceId = id;
+
+    const res = await fetch(`${API}/api/finance/${id}`);
+    const acc = await res.json();
+
+    editFinanceBank.value = acc.bank;
+    editMode.value = acc.mode;
+    editFinanceBalance.value = acc.balance;
+
+    openModal("financeModal");
+}
+
+function closeFinanceModal() {
+    editingFinanceId = null;
+    closeModal("financeModal");
+}
+
+async function saveFinanceEdit() {
+    const updated = {
+        bank: editFinanceBank.value,
+        mode: editMode.value,
+        balance: parseFloat(editFinanceBalance.value || 0)
+    };
+
+    await fetch(`${API}/api/finance/${editingFinanceId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+    });
+
+    closeFinanceModal();
+    loadFinance();
+}
+
+/* DELETE */
+async function delFinance(id) {
+    await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
+    loadFinance();
+}
+
+
+    /* Initial load */
+    loadClipboard();
+    loadMemos();
+</script>
+
+</body>
+</html>
