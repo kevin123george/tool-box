@@ -17,30 +17,50 @@ public class FinancialGoalController {
         this.service = service;
     }
 
+    /** CREATE */
     @PostMapping
-    public FinancialGoal saveGoal(@RequestBody FinancialGoal goal) {
+    public FinancialGoal createGoal(@RequestBody FinancialGoal goal) {
         return service.saveGoal(goal);
     }
 
-    @GetMapping("/{id}")
-    public FinancialGoal getGoal(@PathVariable String id) {
-        return service.getGoal(id);
-    }
-
-    @GetMapping("/{id}/projection")
-    public String getProjection(@PathVariable String id) {
-        FinancialGoal g = service.getGoal(id);
-        return service.getProjection(g);
-    }
-
-
+    /** READ ALL */
     @GetMapping
     public List<FinancialGoal> getAllGoals() {
         return service.getAll();
     }
 
-    @DeleteMapping("/deleteAll")
-    public void deleteAllGoals() {
+    /** READ ONE */
+    @GetMapping("/{id}")
+    public FinancialGoal getGoal(@PathVariable String id) {
+        return service.getGoal(id);
+    }
+
+    /** UPDATE (same as create but ensures ID is kept) */
+    @PutMapping("/{id}")
+    public FinancialGoal updateGoal(
+            @PathVariable String id,
+            @RequestBody FinancialGoal updated
+    ) {
+        updated.setId(id);
+        return service.saveGoal(updated);
+    }
+
+    /** DELETE ONE */
+    @DeleteMapping("/{id}")
+    public void deleteGoal(@PathVariable String id) {
+        service.delete(id);
+    }
+
+    /** DELETE ALL */
+    @DeleteMapping
+    public void deleteAll() {
         service.deleteAll();
+    }
+
+    /** PROJECTION */
+    @GetMapping("/{id}/projection")
+    public String getProjection(@PathVariable String id) {
+        FinancialGoal g = service.getGoal(id);
+        return service.getProjection(g);
     }
 }

@@ -388,18 +388,36 @@
     </div>
     <div id="financeList"></div>
 
+    <br />
+    <!-- GOAL SELECTOR -->
     <div class="add-box" style="margin-top:20px;">
         <h3>Retirement Goals</h3>
 
         <label>Select Goal:</label>
-        <select id="goalSelect" onchange="loadGoal()">
+        <select id="goalSelect" onchange="onGoalSelectChange()">
             <option value="">(Select a goal)</option>
         </select>
     </div>
 
+    <!-- GOAL EDITOR -->
+    <div id="goalEditor" class="add-box" style="margin-top:10px;">
+        <h3>Goal Editor</h3>
 
+        <input id="goalTargetIncomeInput" type="number" step="0.01" placeholder="Target net yearly income (€)">
+        <input id="goalTaxRateInput" type="number" step="0.001" placeholder="Tax rate (e.g. 0.208)">
+        <input id="goalReturnRateInput" type="number" step="0.001" placeholder="Expected return (e.g. 0.065)">
+        <input id="goalContributionInput" type="number" step="0.01" placeholder="Yearly contribution (€)">
+        <input id="goalAgeInput" type="number" step="1" placeholder="Current age">
 
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+            <button class="btn" onclick="newGoalForm()">NEW</button>
+            <button class="btn" onclick="saveGoalForm()">SAVE</button>
+            <button class="btn" onclick="deleteGoal()">DELETE</button>
+        </div>
+        <div id="goalStatus" style="margin-top:6px; font-size:12px; opacity:.7;"></div>
+    </div>
 
+    <!-- GOAL SUMMARY + CHART -->
     <div id="financeGoalBox" class="add-box" style="margin-top:20px;">
         <h3>Retirement Goal</h3>
 
@@ -408,6 +426,19 @@
         <div><b>Current Corpus:</b> <span id="goalCurrentCorpus"></span></div>
         <div><b>Goal Achieved:</b> <span id="goalAchieved"></span></div>
         <div><b>FIRE Age:</b> <span id="goalFireAge"></span></div>
+
+        <div><b>Progress:</b> <span id="goalProgress"></span></div>
+        <div><b>Years to Goal:</b> <span id="goalYearsToGoal"></span></div>
+        <div><b>Goal Age:</b> <span id="goalAge"></span></div>
+        <div><b>Remaining Corpus:</b> <span id="goalRemainingCorpus"></span></div>
+
+        <div style="margin-top:10px;">
+            <div id="goalProgressBar"
+                 style="height:12px; width:100%; background:#222; border:1px solid var(--border);">
+                <div id="goalProgressFill"
+                     style="height:100%; width:0%; background:#0f0;"></div>
+            </div>
+        </div>
 
         <canvas id="goalChart" width="300" height="120" style="margin-top:10px;"></canvas>
     </div>
@@ -418,6 +449,7 @@
 
 <script>
     const API = "";   /* Empty = same domain */
+    let currentGoalId = null;
 
     /* Theme */
     function applyMode() {
@@ -442,10 +474,10 @@
         memoTabContent.classList.toggle("hidden", which !== "memo");
         financeTabContent.classList.toggle("hidden", which !== "finance");
 
-if (which === "finance") {
-    loadFinance();
-    loadGoalList();
-}
+        if (which === "finance") {
+            loadFinance();
+            loadGoalList();
+        }
     }
 
     /* Helpers */
@@ -744,99 +776,193 @@ if (which === "finance") {
 
     /* ====================== FINANCE ====================== */
 
-async function loadFinanceSummary() {
-    const res = await fetch(`${API}/api/finance/summary`);
-    const s = await res.json();
+    async function loadFinanceSummary() {
+        const res = await fetch(`${API}/api/finance/summary`);
+        const s = await res.json();
 
-    // Total
-    sumTotal.textContent = "€ " + s.totalBalance.toFixed(2);
+        sumTotal.textContent = "€ " + s.totalBalance.toFixed(2);
 
-    // Mode list
-    sumByModeList.innerHTML = "";
-    Object.entries(s.totalByMode).forEach(([mode, value]) => {
-        const li = document.createElement("li");
-        li.textContent = `${mode}: € ${value.toFixed(2)}`;
-        sumByModeList.appendChild(li);
-    });
+        sumByModeList.innerHTML = "";
+        Object.entries(s.totalByMode).forEach(([mode, value]) => {
+            const li = document.createElement("li");
+            li.textContent = `${mode}: € ${value.toFixed(2)}`;
+            sumByModeList.appendChild(li);
+        });
 
-    // Bank list
-    sumByBankList.innerHTML = "";
-    Object.entries(s.totalByBank).forEach(([bank, value]) => {
-        const li = document.createElement("li");
-        li.textContent = `${bank}: € ${value.toFixed(2)}`;
-        sumByBankList.appendChild(li);
-    });
-}
+        sumByBankList.innerHTML = "";
+        Object.entries(s.totalByBank).forEach(([bank, value]) => {
+            const li = document.createElement("li");
+            li.textContent = `${bank}: € ${value.toFixed(2)}`;
+            sumByBankList.appendChild(li);
+        });
+    }
 
+    function renderGoalChart(projectionText) {
+        const lines = projectionText.split("\n").filter(l => l.includes("Age"));
+        const ages = [];
+        const values = [];
 
-function renderGoalChart(projectionText) {
-    const lines = projectionText.split("\n").filter(l => l.includes("Age"));
-    const ages = [];
-    const values = [];
+        lines.forEach(line => {
+            const m = line.match(/Age (\d+): €([\d\.]+)/);
+            if (m) {
+                ages.push(Number(m[1]));
+                values.push(parseFloat(m[2]));
+            }
+        });
 
-    lines.forEach(line => {
-        const m = line.match(/Age (\d+): €([\d\.]+)/);
-        if (m) {
-            ages.push(Number(m[1]));
-            values.push(parseFloat(m[2]));
+        const canvas = document.getElementById("goalChart");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (values.length === 0) return;
+
+        const maxValue = Math.max(...values);
+
+        ctx.strokeStyle = "#0f0";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        values.forEach((v, i) => {
+            const x = (i / (values.length - 1)) * canvas.width;
+            const y = canvas.height - (v / maxValue) * canvas.height;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
+    }
+
+    function clearGoalDisplay() {
+        goalTargetIncome.textContent = "";
+        goalRequiredCorpus.textContent = "";
+        goalCurrentCorpus.textContent = "";
+        goalAchieved.textContent = "";
+        goalFireAge.textContent = "";
+
+        const canvas = document.getElementById("goalChart");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    async function loadGoal() {
+        const sel = document.getElementById("goalSelect");
+        if (!sel) return;
+        const goalId = sel.value;
+        if (!goalId) {
+            currentGoalId = null;
+            clearGoalDisplay();
+            return;
         }
-    });
 
-    const canvas = document.getElementById("goalChart");
-    const ctx = canvas.getContext("2d");
+        const res = await fetch(`/api/goal/${goalId}`);
+        const g = await res.json();
+        currentGoalId = g.id;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // summary box
+        goalTargetIncome.textContent = "€ " + g.targetYearlyIncome.toFixed(2);
+        goalRequiredCorpus.textContent = "€ " + g.requiredCorpus.toFixed(2);
+        goalCurrentCorpus.textContent = "€ " + g.currentCorpus.toFixed(2);
+        goalAchieved.textContent = g.goalAchieved ? "YES 🎉" : "NO";
 
-    if (values.length === 0) return;
+        // fill editor form
+        goalTargetIncomeInput.value = g.targetYearlyIncome;
+        goalTaxRateInput.value = g.taxRate;
+        goalReturnRateInput.value = g.expectedReturnRate;
+        goalContributionInput.value = g.yearlyContribution;
+        goalAgeInput.value = g.currentAge;
 
-    const maxValue = Math.max(...values);
-
-    ctx.strokeStyle = "#0f0";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    values.forEach((v, i) => {
-        const x = (i / (values.length - 1)) * canvas.width;
-        const y = canvas.height - (v / maxValue) * canvas.height;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    });
-
-    ctx.stroke();
-}
-
-async function loadGoal() {
-    const sel = document.getElementById("goalSelect");
-    if (!sel) return;          // no element in DOM
-    const goalId = sel.value;
-    if (!goalId) return;       // nothing selected → skip
-
-    const res = await fetch(`/api/goal/${goalId}`);
-    const g = await res.json();
-
-    goalTargetIncome.textContent = "€ " + g.targetYearlyIncome.toFixed(2);
-    goalRequiredCorpus.textContent = "€ " + g.requiredCorpus.toFixed(2);
-    goalCurrentCorpus.textContent = "€ " + g.currentCorpus.toFixed(2);
-    goalAchieved.textContent = g.goalAchieved ? "YES 🎉" : "NO";
-
-    const projText = await fetch(`/api/goal/${goalId}/projection`).then(r => r.text());
-    const match = projText.match(/Age (\d+)/);
-    goalFireAge.textContent = match ? match[1] : "—";
-
-    renderGoalChart(projText);
-}
+        // projection & chart
+        const projText = await fetch(`/api/goal/${goalId}/projection`).then(r => r.text());
+        const match = projText.match(/Age (\d+)/);
+        goalFireAge.textContent = match ? match[1] : (g.goalAchievedAge || "—");
 
 
+goalYearsToGoal.textContent = g.yearsToGoal ?? "—";
+goalAge.textContent = g.goalAchievedAge ?? "—";
 
-async function loadFinance() {
-    const res = await fetch(`${API}/api/finance`);
-    const data = await res.json();
-    let html = "";
+const remaining = g.requiredCorpus - g.currentCorpus;
+goalRemainingCorpus.textContent = "€ " + remaining.toFixed(2);
 
-    data.forEach(acc => {
-        const modified = acc.lastModified ? new Date(acc.lastModified).toLocaleString() : "—";
+let progress = (g.currentCorpus / g.requiredCorpus) * 100;
+if (progress > 100) progress = 100;
 
-        html += `
+goalProgress.textContent = progress.toFixed(1) + "%";
+document.getElementById("goalProgressFill").style.width = progress + "%";
+
+        renderGoalChart(projText);
+    }
+
+    function onGoalSelectChange() {
+        loadGoal();
+        goalStatus.textContent = "";
+    }
+
+    function newGoalForm() {
+        currentGoalId = null;
+        goalSelect.value = "";
+        goalTargetIncomeInput.value = "";
+        goalTaxRateInput.value = "";
+        goalReturnRateInput.value = "";
+        goalContributionInput.value = "";
+        goalAgeInput.value = "";
+        goalStatus.textContent = "Creating new goal…";
+        clearGoalDisplay();
+    }
+
+    async function saveGoalForm() {
+        const payload = {
+            targetYearlyIncome: parseFloat(goalTargetIncomeInput.value || 0),
+            taxRate: parseFloat(goalTaxRateInput.value || 0),
+            expectedReturnRate: parseFloat(goalReturnRateInput.value || 0),
+            yearlyContribution: parseFloat(goalContributionInput.value || 0),
+            currentAge: parseInt(goalAgeInput.value || 0, 10)
+        };
+        if (currentGoalId) {
+            payload.id = currentGoalId;
+        }
+
+        goalStatus.textContent = "Saving…";
+
+        const res = await fetch(`/api/goal`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const saved = await res.json();
+        currentGoalId = saved.id;
+
+        await loadGoalList(saved.id);
+        goalStatus.textContent = "Saved ✔";
+    }
+
+    async function deleteGoal() {
+        if (!currentGoalId) {
+            goalStatus.textContent = "No goal selected to delete.";
+            return;
+        }
+
+        goalStatus.textContent = "Deleting…";
+
+        await fetch(`/api/goal/${currentGoalId}`, { method: "DELETE" });
+
+        currentGoalId = null;
+        goalSelect.value = "";
+        clearGoalDisplay();
+        await loadGoalList();
+        newGoalForm();
+        goalStatus.textContent = "Deleted.";
+    }
+
+    async function loadFinance() {
+        const res = await fetch(`${API}/api/finance`);
+        const data = await res.json();
+        let html = "";
+
+        data.forEach(acc => {
+            const modified = acc.lastModified ? new Date(acc.lastModified).toLocaleString() : "—";
+
+            html += `
         <div class="card">
             <div class="card-main">
                 <strong>${acc.bank} ${modified}</strong>
@@ -849,31 +975,31 @@ async function loadFinance() {
                 <button class="btn" onclick="delFinance('${acc.id}')">DEL</button>
             </div>
         </div>`;
-    });
+        });
 
-    document.getElementById("financeList").innerHTML = html;
+        document.getElementById("financeList").innerHTML = html;
 
-    loadFinanceSummary();
-    loadGoal();       // <-- ensure goal box updates every time
-}
+        loadFinanceSummary();
+    }
 
-async function addFinance() {
-    const form = {
-        bank: financeBank.value,
-        mode: mode.value,
-        balance: parseFloat(financeBalance.value || 0)
-    };
+    async function addFinance() {
+        const form = {
+            bank: financeBank.value,
+            mode: mode.value,
+            balance: parseFloat(financeBalance.value || 0)
+        };
 
-    await fetch(`${API}/api/finance`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-    });
+        await fetch(`${API}/api/finance`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form)
+        });
 
-    loadFinance();
-    loadGoal();  // <-- update FIRE progress instantly
-}
-
+        loadFinance();
+        if (document.getElementById("goalSelect").value) {
+            loadGoal();
+        }
+    }
 
     /* VIEW */
     async function viewFinance(id) {
@@ -886,7 +1012,6 @@ async function addFinance() {
 
         openModal("financeViewModal");
     }
-
 
     function closeFinanceViewModal() { closeModal("financeViewModal"); }
 
@@ -934,27 +1059,28 @@ async function addFinance() {
         loadFinance();
     }
 
-    async function loadGoalList() {
-    const res = await fetch(`/api/goal`);
-    const goals = await res.json();
+    async function loadGoalList(selectedId) {
+        const res = await fetch(`/api/goal`);
+        const goals = await res.json();
 
-    const sel = document.getElementById("goalSelect");
-    sel.innerHTML = `<option value="">(Select a goal)</option>`;
+        const sel = document.getElementById("goalSelect");
+        sel.innerHTML = `<option value="">(Select a goal)</option>`;
 
-    goals.forEach(g => {
-        const opt = document.createElement("option");
-        opt.value = g.id;
-        opt.textContent = `Goal ${g.id}`;
-        sel.appendChild(opt);
-    });
+        goals.forEach(g => {
+            const opt = document.createElement("option");
+            opt.value = g.id;
+            opt.textContent = `Goal ${g.id}`;
+            sel.appendChild(opt);
+        });
 
-    // Auto-load the first goal if there is one
-    if (goals.length > 0) {
-        sel.value = goals[0].id;
-        loadGoal();
+        if (goals.length > 0) {
+            sel.value = selectedId || goals[0].id;
+            loadGoal();
+        } else {
+            currentGoalId = null;
+            clearGoalDisplay();
+        }
     }
-}
-
 
     /* Initial load */
     loadClipboard();

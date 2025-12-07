@@ -106,4 +106,9 @@ public class FinancialGoalService {
         repo.deleteAll();
     }
 
+    public void delete(String id) {
+        repo.deleteById(id);
+    }
+
+
 }
