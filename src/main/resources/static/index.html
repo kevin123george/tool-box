@@ -386,8 +386,32 @@
             <ul id="sumByBankList"></ul>
         </div>
     </div>
-
     <div id="financeList"></div>
+
+    <div class="add-box" style="margin-top:20px;">
+        <h3>Retirement Goals</h3>
+
+        <label>Select Goal:</label>
+        <select id="goalSelect" onchange="loadGoal()">
+            <option value="">(Select a goal)</option>
+        </select>
+    </div>
+
+
+
+
+    <div id="financeGoalBox" class="add-box" style="margin-top:20px;">
+        <h3>Retirement Goal</h3>
+
+        <div><b>Target Yearly Income:</b> <span id="goalTargetIncome"></span></div>
+        <div><b>Required Corpus:</b> <span id="goalRequiredCorpus"></span></div>
+        <div><b>Current Corpus:</b> <span id="goalCurrentCorpus"></span></div>
+        <div><b>Goal Achieved:</b> <span id="goalAchieved"></span></div>
+        <div><b>FIRE Age:</b> <span id="goalFireAge"></span></div>
+
+        <canvas id="goalChart" width="300" height="120" style="margin-top:10px;"></canvas>
+    </div>
+
 </div>
 
 <!-- ---------------- JS ---------------- -->
@@ -418,7 +442,10 @@
         memoTabContent.classList.toggle("hidden", which !== "memo");
         financeTabContent.classList.toggle("hidden", which !== "finance");
 
-        if (which === "finance") loadFinance();
+if (which === "finance") {
+    loadFinance();
+    loadGoalList();
+}
     }
 
     /* Helpers */
@@ -742,16 +769,74 @@ async function loadFinanceSummary() {
 }
 
 
-    async function loadFinance() {
-        const res = await fetch(`${API}/api/finance`);
-        const data = await res.json();
-        let html = "";
+function renderGoalChart(projectionText) {
+    const lines = projectionText.split("\n").filter(l => l.includes("Age"));
+    const ages = [];
+    const values = [];
+
+    lines.forEach(line => {
+        const m = line.match(/Age (\d+): €([\d\.]+)/);
+        if (m) {
+            ages.push(Number(m[1]));
+            values.push(parseFloat(m[2]));
+        }
+    });
+
+    const canvas = document.getElementById("goalChart");
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (values.length === 0) return;
+
+    const maxValue = Math.max(...values);
+
+    ctx.strokeStyle = "#0f0";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    values.forEach((v, i) => {
+        const x = (i / (values.length - 1)) * canvas.width;
+        const y = canvas.height - (v / maxValue) * canvas.height;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+}
+
+async function loadGoal() {
+    const sel = document.getElementById("goalSelect");
+    if (!sel) return;          // no element in DOM
+    const goalId = sel.value;
+    if (!goalId) return;       // nothing selected → skip
+
+    const res = await fetch(`/api/goal/${goalId}`);
+    const g = await res.json();
+
+    goalTargetIncome.textContent = "€ " + g.targetYearlyIncome.toFixed(2);
+    goalRequiredCorpus.textContent = "€ " + g.requiredCorpus.toFixed(2);
+    goalCurrentCorpus.textContent = "€ " + g.currentCorpus.toFixed(2);
+    goalAchieved.textContent = g.goalAchieved ? "YES 🎉" : "NO";
+
+    const projText = await fetch(`/api/goal/${goalId}/projection`).then(r => r.text());
+    const match = projText.match(/Age (\d+)/);
+    goalFireAge.textContent = match ? match[1] : "—";
+
+    renderGoalChart(projText);
+}
 
 
-        data.forEach(acc => {
-            const modified = acc.lastModified ? new Date(acc.lastModified).toLocaleString() : "—";
 
-            html += `
+async function loadFinance() {
+    const res = await fetch(`${API}/api/finance`);
+    const data = await res.json();
+    let html = "";
+
+    data.forEach(acc => {
+        const modified = acc.lastModified ? new Date(acc.lastModified).toLocaleString() : "—";
+
+        html += `
         <div class="card">
             <div class="card-main">
                 <strong>${acc.bank} ${modified}</strong>
@@ -764,27 +849,31 @@ async function loadFinanceSummary() {
                 <button class="btn" onclick="delFinance('${acc.id}')">DEL</button>
             </div>
         </div>`;
-        });
+    });
 
-        document.getElementById("financeList").innerHTML = html;
-        loadFinanceSummary();
-    }
+    document.getElementById("financeList").innerHTML = html;
 
-    async function addFinance() {
-        const form = {
-            bank: document.getElementById("financeBank").value,
-            mode: document.getElementById("mode").value,
-            balance: parseFloat(document.getElementById("financeBalance").value || 0)
-        };
+    loadFinanceSummary();
+    loadGoal();       // <-- ensure goal box updates every time
+}
 
-        await fetch(`${API}/api/finance`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(form)
-        });
+async function addFinance() {
+    const form = {
+        bank: financeBank.value,
+        mode: mode.value,
+        balance: parseFloat(financeBalance.value || 0)
+    };
 
-        loadFinance();
-    }
+    await fetch(`${API}/api/finance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+    });
+
+    loadFinance();
+    loadGoal();  // <-- update FIRE progress instantly
+}
+
 
     /* VIEW */
     async function viewFinance(id) {
@@ -844,6 +933,28 @@ async function loadFinanceSummary() {
         await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
         loadFinance();
     }
+
+    async function loadGoalList() {
+    const res = await fetch(`/api/goal`);
+    const goals = await res.json();
+
+    const sel = document.getElementById("goalSelect");
+    sel.innerHTML = `<option value="">(Select a goal)</option>`;
+
+    goals.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = `Goal ${g.id}`;
+        sel.appendChild(opt);
+    });
+
+    // Auto-load the first goal if there is one
+    if (goals.length > 0) {
+        sel.value = goals[0].id;
+        loadGoal();
+    }
+}
+
 
     /* Initial load */
     loadClipboard();
