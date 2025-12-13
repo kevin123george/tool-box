@@ -3,6 +3,8 @@ package com.example.mongo.controller;
 import com.example.mongo.services.MemoService;
 import com.example.mongo.models.Memo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,8 +22,10 @@ public class MemoController {
 
     // GET all
     @GetMapping
-    public List<Memo> getAllMemos() {
-        return memoService.getAllMemos();
+    public Page<Memo> getAllMemos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return memoService.getAllMemos(PageRequest.of(page, size));
     }
 
     // GET one

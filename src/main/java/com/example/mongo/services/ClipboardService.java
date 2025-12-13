@@ -4,6 +4,8 @@ package com.example.mongo.services;
 import com.example.mongo.models.ClipboardItem;
 import com.example.mongo.repos.ClipboardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,9 +16,10 @@ public class ClipboardService {
 
     private final ClipboardRepository clipboardRepository;
 
-    public List<ClipboardItem> getAll() {
-        return clipboardRepository.findAll();
+    public Page<ClipboardItem> getAll(Pageable pageable) {
+        return clipboardRepository.findAll(pageable);
     }
+
 
     public ClipboardItem getById(String id) {
         return clipboardRepository.findById(id).orElse(null);

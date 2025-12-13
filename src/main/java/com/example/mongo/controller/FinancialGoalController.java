@@ -2,6 +2,8 @@ package com.example.mongo.controller;
 
 import com.example.mongo.models.FinancialGoal;
 import com.example.mongo.services.FinancialGoalService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,8 +27,11 @@ public class FinancialGoalController {
 
     /** READ ALL */
     @GetMapping
-    public List<FinancialGoal> getAllGoals() {
-        return service.getAll();
+    public Page<FinancialGoal> getAllGoals(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return service.getAll(PageRequest.of(page, size));
     }
 
     /** READ ONE */

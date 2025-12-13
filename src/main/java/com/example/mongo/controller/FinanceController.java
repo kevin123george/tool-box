@@ -4,6 +4,8 @@ import com.example.mongo.models.BankAccount;
 import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.services.BankAccountService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,10 +18,19 @@ public class FinanceController {
 
     private final BankAccountService service;
 
+//    @GetMapping
+//    public List<BankAccount> getAll() {
+//        return service.getAll();
+//    }
+
     @GetMapping
-    public List<BankAccount> getAll() {
-        return service.getAll();
+    public Page<BankAccount> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return service.getAll(PageRequest.of(page, size));
     }
+
 
     @GetMapping("/{id}")
     public BankAccount getById(@PathVariable String id) {

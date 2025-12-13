@@ -3,6 +3,9 @@ package com.example.mongo.controller;
 import com.example.mongo.services.ClipboardService;
 import com.example.mongo.models.ClipboardItem;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,8 +23,11 @@ public class ClipboardController {
 
     // GET all
     @GetMapping
-    public List<ClipboardItem> getAll() {
-        return clipboardService.getAll();
+    public Page<ClipboardItem> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return clipboardService.getAll(PageRequest.of(page, size));
     }
 
     // GET one

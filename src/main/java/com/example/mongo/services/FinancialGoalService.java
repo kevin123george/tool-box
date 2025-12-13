@@ -4,6 +4,8 @@ import com.example.mongo.models.BankAccount;
 import com.example.mongo.models.FinancialGoal;
 import com.example.mongo.repos.BankAccountRepository;
 import com.example.mongo.repos.FinancialGoalRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -97,8 +99,8 @@ public class FinancialGoalService {
     }
 
 
-    public List<FinancialGoal> getAll() {
-        return repo.findAll();
+    public Page<FinancialGoal> getAll(PageRequest pageRequest) {
+        return repo.findAll(pageRequest);
     }
 
 

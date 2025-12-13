@@ -3,6 +3,8 @@ package com.example.mongo.services;
 import com.example.mongo.repos.MemoRepository;
 import com.example.mongo.models.Memo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,8 +16,8 @@ public class MemoService {
     @Autowired
     private MemoRepository memoRepository;
 
-    public List<Memo> getAllMemos() {
-        return memoRepository.findAll();
+    public Page<Memo> getAllMemos(PageRequest pageRequest) {
+        return memoRepository.findAll(pageRequest);
     }
 
     public Optional<Memo> getMemoById(String id) {

@@ -4,6 +4,8 @@ import com.example.mongo.models.BankAccount;
 import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.repos.BankAccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,8 +17,13 @@ public class BankAccountService {
 
     private final BankAccountRepository repo;
 
-    public List<BankAccount> getAll() {
-        return repo.findAll();
+//    public List<BankAccount> getAll() {
+//        return repo.findTop10ByOrderByIdDesc();
+//    }
+
+
+    public Page<BankAccount> getAll(Pageable pageable) {
+        return repo.findAll(pageable);
     }
 
     public BankAccount getById(String id) {
