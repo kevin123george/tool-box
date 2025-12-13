@@ -115,7 +115,7 @@
         }
 
         /* Tabs */
-        .tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:10px; }
+        .tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:10px; flex-wrap:wrap; }
         .tab {
             padding:8px 14px;
             border:1px solid var(--border);
@@ -155,6 +155,64 @@
             padding: 4px 6px;
             margin: 0;
             text-align: center;
+        }
+
+        /* Stocks specific styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            padding: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .positive { color: #0f0; }
+        .negative { color: #f33; }
+
+        .stock-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 80px 80px 80px;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .stock-header {
+            font-weight: bold;
+            background: var(--text);
+            color: var(--bg);
+        }
+
+        .profit-bar {
+            height: 8px;
+            background: var(--border);
+            margin-top: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profit-bar-fill {
+            height: 100%;
+            transition: width 0.3s;
         }
 
         /* Modals */
@@ -211,6 +269,16 @@
 
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
         @keyframes popIn { from {opacity:0; transform:scale(.7);} to {opacity:1; transform:scale(1);} }
+
+        @media (max-width: 768px) {
+            .stock-row {
+                grid-template-columns: 1fr 60px 60px;
+                font-size: 11px;
+            }
+            .stock-row .hide-mobile {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -223,6 +291,7 @@
     <div id="tabClipboard" class="tab active" onclick="switchTab('clipboard')">Clipboard</div>
     <div id="tabMemo" class="tab" onclick="switchTab('memo')">Memos</div>
     <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
+    <div id="tabStocks" class="tab" onclick="switchTab('stocks')">Stocks</div>
 </div>
 
 <!-- ---------------- VIEW MODALS ---------------- -->
@@ -303,6 +372,33 @@
 
         <button class="btn" onclick="saveFinanceEdit()">SAVE</button>
         <button class="btn" onclick="closeFinanceModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= STOCK HOLDING MODAL ============= -->
+<div id="stockHoldingModal" class="modal-overlay">
+    <div id="stockHoldingModalBox" class="modal">
+        <h3 id="stockHoldingModalTitle">Add Holding</h3>
+
+        <input id="stockSymbol" placeholder="Symbol (e.g., AAPL)" maxlength="10">
+        <input id="stockQuantity" placeholder="Quantity" type="number" step="1">
+        <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.01">
+
+        <button class="btn" onclick="saveStockHolding()">SAVE</button>
+        <button class="btn" onclick="closeStockHoldingModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= WATCHLIST MODAL ============= -->
+<div id="watchlistModal" class="modal-overlay">
+    <div id="watchlistModalBox" class="modal">
+        <h3 id="watchlistModalTitle">Add to Watchlist</h3>
+
+        <input id="watchSymbol" placeholder="Symbol (e.g., TSLA)" maxlength="10">
+        <input id="watchInitialPrice" placeholder="Initial Price (€)" type="number" step="0.01">
+
+        <button class="btn" onclick="saveWatchlist()">SAVE</button>
+        <button class="btn" onclick="closeWatchlistModal()">CANCEL</button>
     </div>
 </div>
 
@@ -523,11 +619,57 @@
 
 </div>
 
+<!-- =================== STOCKS TAB =================== -->
+
+<div id="stocksTabContent" class="tab-content hidden">
+    <h2>Portfolio Tracker</h2>
+
+    <!-- Stats Summary -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Invested</div>
+            <div class="stat-value" id="statInvested">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Current Value</div>
+            <div class="stat-value" id="statValue">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Profit</div>
+            <div class="stat-value" id="statProfit">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Return %</div>
+            <div class="stat-value" id="statReturn">0.00%</div>
+        </div>
+    </div>
+
+    <!-- Holdings Section -->
+    <div class="add-box">
+        <h3>Holdings</h3>
+        <button class="btn" onclick="showAddHolding()">ADD HOLDING</button>
+        <button class="btn" onclick="refreshStocks()">REFRESH</button>
+    </div>
+
+    <div id="holdingsList"></div>
+
+    <!-- Watchlist Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <h3>Watchlist</h3>
+        <button class="btn" onclick="showAddWatchlist()">ADD TO WATCHLIST</button>
+    </div>
+
+    <div id="watchlistList"></div>
+</div>
+
 <!-- ---------------- JS ---------------- -->
 
 <script>
     const API = "";   /* Empty = same domain */
     let currentGoalId = null;
+    let editingHoldingId = null;
+    let editingWatchlistId = null;
+    let stocksRefreshInterval = null;
 
     // Pagination state
     let clipboardPage = { current: 0, total: 1, size: 10, totalElements: 0 };
@@ -552,14 +694,28 @@
         document.getElementById("tabClipboard").classList.toggle("active", which === "clipboard");
         document.getElementById("tabMemo").classList.toggle("active", which === "memo");
         document.getElementById("tabFinance").classList.toggle("active", which === "finance");
+        document.getElementById("tabStocks").classList.toggle("active", which === "stocks");
 
         clipboardTabContent.classList.toggle("hidden", which !== "clipboard");
         memoTabContent.classList.toggle("hidden", which !== "memo");
         financeTabContent.classList.toggle("hidden", which !== "finance");
+        stocksTabContent.classList.toggle("hidden", which !== "stocks");
 
         if (which === "finance") {
             loadFinance();
             loadGoalList();
+        } else if (which === "stocks") {
+            loadStocks();
+            // Auto-refresh every 30 seconds
+            if (!stocksRefreshInterval) {
+                stocksRefreshInterval = setInterval(loadStocks, 30000);
+            }
+        } else {
+            // Clear interval when leaving stocks tab
+            if (stocksRefreshInterval) {
+                clearInterval(stocksRefreshInterval);
+                stocksRefreshInterval = null;
+            }
         }
     }
 
@@ -579,6 +735,8 @@
             closeMemoViewModal();
             closeFinanceModal();
             closeFinanceViewModal();
+            closeStockHoldingModal();
+            closeWatchlistModal();
         }
     });
 
@@ -1303,6 +1461,237 @@
             currentGoalId = null;
             clearGoalDisplay();
         }
+    }
+
+    /* ===========================================================
+       STOCKS / PORTFOLIO
+    =============================================================*/
+
+    async function loadStocks() {
+        await loadStockStats();
+        await loadHoldings();
+        await loadWatchlist();
+    }
+
+    async function loadStockStats() {
+        try {
+            const res = await fetch(`${API}/api/stocks/stats`);
+            const stats = await res.json();
+
+            statInvested.textContent = "€" + stats.totalInvested.toFixed(2);
+            statValue.textContent = "€" + stats.currentValue.toFixed(2);
+
+            const profit = stats.totalProfit;
+            const profitPercent = (profit / stats.totalInvested * 100) || 0;
+
+            statProfit.textContent = "€" + profit.toFixed(2);
+            statProfit.className = "stat-value " + (profit >= 0 ? "positive" : "negative");
+
+            statReturn.textContent = profitPercent.toFixed(2) + "%";
+            statReturn.className = "stat-value " + (profit >= 0 ? "positive" : "negative");
+        } catch (e) {
+            console.error("Failed to load stats:", e);
+        }
+    }
+
+    async function loadHoldings() {
+        try {
+            const res = await fetch(`${API}/api/stocks`);
+            const holdings = await res.json();
+
+            let html = `
+            <div class="stock-row stock-header">
+                <div>Symbol</div>
+                <div>Qty</div>
+                <div>Buy €</div>
+                <div>Current €</div>
+                <div>P/L €</div>
+                <div>P/L %</div>
+            </div>`;
+
+            holdings.forEach(h => {
+                const pl = (h.currentPrice - h.buyPrice) * h.quantity;
+                const plPercent = ((h.currentPrice - h.buyPrice) / h.buyPrice * 100) || 0;
+                const plClass = pl >= 0 ? "positive" : "negative";
+
+                html += `
+                <div class="stock-row">
+                    <div><strong>${h.symbol}</strong></div>
+                    <div>${h.quantity}</div>
+                    <div>${h.buyPrice.toFixed(2)}</div>
+                    <div>${h.currentPrice.toFixed(2)}</div>
+                    <div class="${plClass}">${pl >= 0 ? '+' : ''}${pl.toFixed(2)}</div>
+                    <div class="${plClass}">${plPercent >= 0 ? '+' : ''}${plPercent.toFixed(2)}%</div>
+                </div>
+                <div style="padding:0 8px 8px 8px;">
+                    <div class="profit-bar">
+                        <div class="profit-bar-fill ${plClass}" style="width:${Math.min(Math.abs(plPercent), 100)}%; background:${pl >= 0 ? '#0f0' : '#f33'};"></div>
+                    </div>
+                    <div style="text-align:right; margin-top:4px;">
+                        <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice})">EDIT</button>
+                        <button class="btn" onclick="delHolding('${h.id}')">DEL</button>
+                    </div>
+                </div>`;
+            });
+
+            holdingsList.innerHTML = html;
+        } catch (e) {
+            console.error("Failed to load holdings:", e);
+        }
+    }
+
+    async function loadWatchlist() {
+        try {
+            const res = await fetch(`${API}/api/stocks-watch`);
+            const watchlist = await res.json();
+
+            let html = `
+            <div class="stock-row stock-header">
+                <div>Symbol</div>
+                <div>Initial €</div>
+                <div>Current €</div>
+                <div>Δ €</div>
+                <div>Δ %</div>
+                <div></div>
+            </div>`;
+
+            watchlist.forEach(w => {
+                const delta = w.currentPrice - w.initialPrice;
+                const deltaPercent = (delta / w.initialPrice * 100) || 0;
+                const deltaClass = delta >= 0 ? "positive" : "negative";
+
+                html += `
+                <div class="stock-row">
+                    <div><strong>${w.symbol}</strong></div>
+                    <div>${w.initialPrice.toFixed(2)}</div>
+                    <div>${w.currentPrice.toFixed(2)}</div>
+                    <div class="${deltaClass}">${delta >= 0 ? '+' : ''}${delta.toFixed(2)}</div>
+                    <div class="${deltaClass}">${deltaPercent >= 0 ? '+' : ''}${deltaPercent.toFixed(2)}%</div>
+                    <div style="text-align:right;">
+                        <button class="btn" onclick="delWatchlist('${w.id}')">DEL</button>
+                    </div>
+                </div>`;
+            });
+
+            watchlistList.innerHTML = html;
+        } catch (e) {
+            console.error("Failed to load watchlist:", e);
+        }
+    }
+
+    function refreshStocks() {
+        loadStocks();
+    }
+
+    // Holdings Modal
+    function showAddHolding() {
+        editingHoldingId = null;
+        stockHoldingModalTitle.textContent = "Add Holding";
+        stockSymbol.value = "";
+        stockQuantity.value = "";
+        stockBuyPrice.value = "";
+        openModal("stockHoldingModal");
+    }
+
+    function showEditHolding(id, symbol, quantity, buyPrice) {
+        editingHoldingId = id;
+        stockHoldingModalTitle.textContent = "Edit Holding";
+        stockSymbol.value = symbol;
+        stockQuantity.value = quantity;
+        stockBuyPrice.value = buyPrice;
+        openModal("stockHoldingModal");
+    }
+
+    function closeStockHoldingModal() {
+        editingHoldingId = null;
+        closeModal("stockHoldingModal");
+    }
+
+    async function saveStockHolding() {
+        const data = {
+            symbol: stockSymbol.value.toUpperCase(),
+            quantity: parseInt(stockQuantity.value),
+            buyPrice: parseFloat(stockBuyPrice.value)
+        };
+
+        if (!data.symbol || !data.quantity || !data.buyPrice) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        try {
+            if (editingHoldingId) {
+                await fetch(`${API}/api/stocks/${editingHoldingId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                await fetch(`${API}/api/stocks`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            closeStockHoldingModal();
+            loadStocks();
+        } catch (e) {
+            alert("Error saving holding: " + e.message);
+        }
+    }
+
+    async function delHolding(id) {
+        if (!confirm("Delete this holding?")) return;
+
+        await fetch(`${API}/api/stocks/${id}`, { method: "DELETE" });
+        loadStocks();
+    }
+
+    // Watchlist Modal
+    function showAddWatchlist() {
+        editingWatchlistId = null;
+        watchlistModalTitle.textContent = "Add to Watchlist";
+        watchSymbol.value = "";
+        watchInitialPrice.value = "";
+        openModal("watchlistModal");
+    }
+
+    function closeWatchlistModal() {
+        editingWatchlistId = null;
+        closeModal("watchlistModal");
+    }
+
+    async function saveWatchlist() {
+        const data = {
+            symbol: watchSymbol.value.toUpperCase(),
+            initialPrice: parseFloat(watchInitialPrice.value)
+        };
+
+        if (!data.symbol || !data.initialPrice) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        try {
+            await fetch(`${API}/api/stocks-watch`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            closeWatchlistModal();
+            loadStocks();
+        } catch (e) {
+            alert("Error saving watchlist item: " + e.message);
+        }
+    }
+
+    async function delWatchlist(id) {
+        if (!confirm("Remove from watchlist?")) return;
+
+        await fetch(`${API}/api/stocks-watch/${id}`, { method: "DELETE" });
+        loadStocks();
     }
 
     /* Initial load */

@@ -13,11 +13,10 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Document(collection = "clipboard_items")
 public class ClipboardItem {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String content; // required text content
+  private String content; // required text content
 
-    @Field("media")
-    private byte[] media;   // optional simple blob attachment
+  @Field("media")
+  private byte[] media; // optional simple blob attachment
 }

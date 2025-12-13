@@ -5,5 +5,4 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ClipboardRepository extends MongoRepository<ClipboardItem, String> {
-}
+public interface ClipboardRepository extends MongoRepository<ClipboardItem, String> {}

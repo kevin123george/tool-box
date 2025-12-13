@@ -1,5 +1,4 @@
 package com.example.mongo;
 
-class Solution {
-
-};
+class Solution {}
+;

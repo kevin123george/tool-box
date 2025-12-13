@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.example.mongo"},{"l":"com.example.mongo.config"},{"l":"com.example.mongo.controller"},{"l":"com.example.mongo.crons"},{"l":"com.example.mongo.models"},{"l":"com.example.mongo.models.dto"},{"l":"com.example.mongo.repos"},{"l":"com.example.mongo.services"}];updateSearchResults();

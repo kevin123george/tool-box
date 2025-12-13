@@ -1,0 +1,8 @@
+com.example.mongo
+com.example.mongo.config
+com.example.mongo.controller
+com.example.mongo.crons
+com.example.mongo.models
+com.example.mongo.models.dto
+com.example.mongo.repos
+com.example.mongo.services

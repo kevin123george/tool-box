@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.mongo.UserStressTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-13T23:53:01.586Z" hostname="Kevins-MacBook-Air.local" time="0.172">
+  <properties/>
+  <testcase name="stressInsertUsers()" classname="com.example.mongo.UserStressTest" time="0.172"/>
+  <system-out><![CDATA[2025-12-14T00:53:01.585+01:00  INFO 34799 --- [mongo] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.example.mongo.UserStressTest]: UserStressTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2025-12-14T00:53:01.585+01:00  INFO 34799 --- [mongo] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.example.mongo.MongoApplication for test class com.example.mongo.UserStressTest
+Total users inserted: 2035
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
