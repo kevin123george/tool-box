@@ -5,10 +5,9 @@ import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.services.BankAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/finance")   // <-- FIXED

@@ -27,11 +27,11 @@ public class FinancialGoalController {
 
     /** READ ALL */
     @GetMapping
-    public Page<FinancialGoal> getAllGoals(
+    public List<FinancialGoal> getAllGoals(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return service.getAll(PageRequest.of(page, size));
+        return service.getAll();
     }
 
     /** READ ONE */

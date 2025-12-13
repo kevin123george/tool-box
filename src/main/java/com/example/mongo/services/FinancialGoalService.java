@@ -99,8 +99,8 @@ public class FinancialGoalService {
     }
 
 
-    public Page<FinancialGoal> getAll(PageRequest pageRequest) {
-        return repo.findAll(pageRequest);
+    public List<FinancialGoal> getAll() {
+        return repo.findAll();
     }
 
 

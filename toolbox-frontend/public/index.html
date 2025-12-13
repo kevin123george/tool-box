@@ -101,6 +101,14 @@
             font-size: 12px;
         }
         .btn:hover { background: var(--text); color: var(--bg); }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .btn:disabled:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
 
         #modeToggle {
             position:fixed; top:12px; right:12px;
@@ -121,6 +129,33 @@
         .tab.active { background: var(--text); color: var(--bg); }
         .tab-content { margin-top:10px; }
         .hidden { display:none; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pagination-info {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .pagination-controls input {
+            width: 60px;
+            padding: 4px 6px;
+            margin: 0;
+            text-align: center;
+        }
 
         /* Modals */
         .modal-overlay {
@@ -318,6 +353,20 @@
         <button class="btn" onclick="addClipboard()">ADD</button>
     </div>
 
+    <!-- Pagination Controls -->
+    <div id="clipboardPagination" class="pagination">
+        <div class="pagination-info" id="clipboardPageInfo"></div>
+        <div class="pagination-controls">
+            <button class="btn" id="clipboardFirstBtn" onclick="clipboardGoToPage(0)">FIRST</button>
+            <button class="btn" id="clipboardPrevBtn" onclick="clipboardPrevPage()">PREV</button>
+            <span style="font-size:12px;">Page</span>
+            <input type="number" id="clipboardPageInput" min="1" value="1" onchange="clipboardGoToInput()">
+            <span style="font-size:12px;" id="clipboardTotalPagesSpan"></span>
+            <button class="btn" id="clipboardNextBtn" onclick="clipboardNextPage()">NEXT</button>
+            <button class="btn" id="clipboardLastBtn" onclick="clipboardGoToLastPage()">LAST</button>
+        </div>
+    </div>
+
     <div id="clipboardList"></div>
 </div>
 
@@ -341,6 +390,20 @@
         <input type="file" id="memoFile" accept="image/*">
 
         <button class="btn" onclick="addMemo()">ADD MEMO</button>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div id="memoPagination" class="pagination">
+        <div class="pagination-info" id="memoPageInfo"></div>
+        <div class="pagination-controls">
+            <button class="btn" id="memoFirstBtn" onclick="memoGoToPage(0)">FIRST</button>
+            <button class="btn" id="memoPrevBtn" onclick="memoPrevPage()">PREV</button>
+            <span style="font-size:12px;">Page</span>
+            <input type="number" id="memoPageInput" min="1" value="1" onchange="memoGoToInput()">
+            <span style="font-size:12px;" id="memoTotalPagesSpan"></span>
+            <button class="btn" id="memoNextBtn" onclick="memoNextPage()">NEXT</button>
+            <button class="btn" id="memoLastBtn" onclick="memoGoToLastPage()">LAST</button>
+        </div>
     </div>
 
     <div id="memoList"></div>
@@ -386,6 +449,21 @@
             <ul id="sumByBankList"></ul>
         </div>
     </div>
+
+    <!-- Pagination Controls -->
+    <div id="financePagination" class="pagination">
+        <div class="pagination-info" id="financePageInfo"></div>
+        <div class="pagination-controls">
+            <button class="btn" id="financeFirstBtn" onclick="financeGoToPage(0)">FIRST</button>
+            <button class="btn" id="financePrevBtn" onclick="financePrevPage()">PREV</button>
+            <span style="font-size:12px;">Page</span>
+            <input type="number" id="financePageInput" min="1" value="1" onchange="financeGoToInput()">
+            <span style="font-size:12px;" id="financeTotalPagesSpan"></span>
+            <button class="btn" id="financeNextBtn" onclick="financeNextPage()">NEXT</button>
+            <button class="btn" id="financeLastBtn" onclick="financeGoToLastPage()">LAST</button>
+        </div>
+    </div>
+
     <div id="financeList"></div>
 
     <br />
@@ -450,6 +528,11 @@
 <script>
     const API = "";   /* Empty = same domain */
     let currentGoalId = null;
+
+    // Pagination state
+    let clipboardPage = { current: 0, total: 1, size: 10, totalElements: 0 };
+    let memoPage = { current: 0, total: 1, size: 10, totalElements: 0 };
+    let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
 
     /* Theme */
     function applyMode() {
@@ -551,12 +634,48 @@
     setupEditor("editMemoContent");
 
     /* ===========================================================
+       PAGINATION HELPERS
+    =============================================================*/
+
+    function updatePaginationControls(prefix, pageData) {
+        const { current, total, size, totalElements } = pageData;
+
+        // Update info text
+        const start = current * size + 1;
+        const end = Math.min((current + 1) * size, totalElements);
+        document.getElementById(`${prefix}PageInfo`).textContent =
+            `Showing ${start}-${end} of ${totalElements}`;
+
+        // Update page input
+        document.getElementById(`${prefix}PageInput`).value = current + 1;
+        document.getElementById(`${prefix}TotalPagesSpan`).textContent = `of ${total}`;
+
+        // Enable/disable buttons
+        document.getElementById(`${prefix}FirstBtn`).disabled = current === 0;
+        document.getElementById(`${prefix}PrevBtn`).disabled = current === 0;
+        document.getElementById(`${prefix}NextBtn`).disabled = current === total - 1;
+        document.getElementById(`${prefix}LastBtn`).disabled = current === total - 1;
+    }
+
+    /* ===========================================================
        CLIPBOARD
     =============================================================*/
 
-    async function loadClipboard() {
-        const res = await fetch(`${API}/api/clipboard`);
-        const data = await res.json();
+    async function loadClipboard(page = 0) {
+        const res = await fetch(`${API}/api/clipboard?page=${page}&size=10`);
+        const response = await res.json();
+        const data = response.content;
+
+        // Update pagination state
+        clipboardPage = {
+            current: response.number,
+            total: response.totalPages,
+            size: response.size,
+            totalElements: response.totalElements
+        };
+
+        updatePaginationControls('clipboard', clipboardPage);
+
         let html = "";
 
         data.forEach(item => {
@@ -581,6 +700,33 @@
         clipboardList.innerHTML = html;
     }
 
+    function clipboardGoToPage(page) {
+        loadClipboard(page);
+    }
+
+    function clipboardPrevPage() {
+        if (clipboardPage.current > 0) {
+            loadClipboard(clipboardPage.current - 1);
+        }
+    }
+
+    function clipboardNextPage() {
+        if (clipboardPage.current < clipboardPage.total - 1) {
+            loadClipboard(clipboardPage.current + 1);
+        }
+    }
+
+    function clipboardGoToLastPage() {
+        loadClipboard(clipboardPage.total - 1);
+    }
+
+    function clipboardGoToInput() {
+        const input = parseInt(document.getElementById('clipboardPageInput').value);
+        if (input >= 1 && input <= clipboardPage.total) {
+            loadClipboard(input - 1);
+        }
+    }
+
     async function addClipboard(){
         const html = clipInput.innerHTML.trim();
         const file = clipFile.files[0];
@@ -593,12 +739,12 @@
         await fetch(`${API}/api/clipboard/upload`,{ method:"POST", body:form });
 
         clipInput.innerHTML=""; clipFile.value="";
-        loadClipboard();
+        loadClipboard(0); // Reset to first page after adding
     }
 
     async function delClipboard(id){
         await fetch(`${API}/api/clipboard/${id}`,{ method:"DELETE" });
-        loadClipboard();
+        loadClipboard(clipboardPage.current);
     }
 
     async function viewClipboard(id){
@@ -652,16 +798,28 @@
         });
 
         closeClipboardModal();
-        loadClipboard();
+        loadClipboard(clipboardPage.current);
     }
 
     /* ===========================================================
        MEMOS
     =============================================================*/
 
-    async function loadMemos(){
-        const res = await fetch(`${API}/api/memos`);
-        const data = await res.json();
+    async function loadMemos(page = 0){
+        const res = await fetch(`${API}/api/memos?page=${page}&size=10`);
+        const response = await res.json();
+        const data = response.content;
+
+        // Update pagination state
+        memoPage = {
+            current: response.number,
+            total: response.totalPages,
+            size: response.size,
+            totalElements: response.totalElements
+        };
+
+        updatePaginationControls('memo', memoPage);
+
         let html="";
 
         data.forEach(m=>{
@@ -686,6 +844,33 @@
         memoList.innerHTML=html;
     }
 
+    function memoGoToPage(page) {
+        loadMemos(page);
+    }
+
+    function memoPrevPage() {
+        if (memoPage.current > 0) {
+            loadMemos(memoPage.current - 1);
+        }
+    }
+
+    function memoNextPage() {
+        if (memoPage.current < memoPage.total - 1) {
+            loadMemos(memoPage.current + 1);
+        }
+    }
+
+    function memoGoToLastPage() {
+        loadMemos(memoPage.total - 1);
+    }
+
+    function memoGoToInput() {
+        const input = parseInt(document.getElementById('memoPageInput').value);
+        if (input >= 1 && input <= memoPage.total) {
+            loadMemos(input - 1);
+        }
+    }
+
     async function addMemo(){
         const form=new FormData();
         form.append("title", memoTitle.value);
@@ -699,12 +884,12 @@
         await fetch(`${API}/api/memos/upload`,{ method:"POST", body:form });
 
         memoTitle.value=""; memoContent.innerHTML=""; memoPinned.checked=false; memoFile.value="";
-        loadMemos();
+        loadMemos(0); // Reset to first page after adding
     }
 
     async function delMemo(id){
         await fetch(`${API}/api/memos/${id}`,{ method:"DELETE" });
-        loadMemos();
+        loadMemos(memoPage.current);
     }
 
     async function viewMemo(id){
@@ -771,7 +956,7 @@
         });
 
         closeMemoModal();
-        loadMemos();
+        loadMemos(memoPage.current);
     }
 
     /* ====================== FINANCE ====================== */
@@ -876,18 +1061,17 @@
         const match = projText.match(/Age (\d+)/);
         goalFireAge.textContent = match ? match[1] : (g.goalAchievedAge || "—");
 
+        goalYearsToGoal.textContent = g.yearsToGoal ?? "—";
+        goalAge.textContent = g.goalAchievedAge ?? "—";
 
-goalYearsToGoal.textContent = g.yearsToGoal ?? "—";
-goalAge.textContent = g.goalAchievedAge ?? "—";
+        const remaining = g.requiredCorpus - g.currentCorpus;
+        goalRemainingCorpus.textContent = "€ " + remaining.toFixed(2);
 
-const remaining = g.requiredCorpus - g.currentCorpus;
-goalRemainingCorpus.textContent = "€ " + remaining.toFixed(2);
+        let progress = (g.currentCorpus / g.requiredCorpus) * 100;
+        if (progress > 100) progress = 100;
 
-let progress = (g.currentCorpus / g.requiredCorpus) * 100;
-if (progress > 100) progress = 100;
-
-goalProgress.textContent = progress.toFixed(1) + "%";
-document.getElementById("goalProgressFill").style.width = progress + "%";
+        goalProgress.textContent = progress.toFixed(1) + "%";
+        document.getElementById("goalProgressFill").style.width = progress + "%";
 
         renderGoalChart(projText);
     }
@@ -954,9 +1138,21 @@ document.getElementById("goalProgressFill").style.width = progress + "%";
         goalStatus.textContent = "Deleted.";
     }
 
-    async function loadFinance() {
-        const res = await fetch(`${API}/api/finance`);
-        const data = await res.json();
+    async function loadFinance(page = 0) {
+        const res = await fetch(`${API}/api/finance?page=${page}&size=10`);
+        const response = await res.json();
+        const data = response.content;
+
+        // Update pagination state
+        financePage = {
+            current: response.number,
+            total: response.totalPages,
+            size: response.size,
+            totalElements: response.totalElements
+        };
+
+        updatePaginationControls('finance', financePage);
+
         let html = "";
 
         data.forEach(acc => {
@@ -982,6 +1178,33 @@ document.getElementById("goalProgressFill").style.width = progress + "%";
         loadFinanceSummary();
     }
 
+    function financeGoToPage(page) {
+        loadFinance(page);
+    }
+
+    function financePrevPage() {
+        if (financePage.current > 0) {
+            loadFinance(financePage.current - 1);
+        }
+    }
+
+    function financeNextPage() {
+        if (financePage.current < financePage.total - 1) {
+            loadFinance(financePage.current + 1);
+        }
+    }
+
+    function financeGoToLastPage() {
+        loadFinance(financePage.total - 1);
+    }
+
+    function financeGoToInput() {
+        const input = parseInt(document.getElementById('financePageInput').value);
+        if (input >= 1 && input <= financePage.total) {
+            loadFinance(input - 1);
+        }
+    }
+
     async function addFinance() {
         const form = {
             bank: financeBank.value,
@@ -995,7 +1218,7 @@ document.getElementById("goalProgressFill").style.width = progress + "%";
             body: JSON.stringify(form)
         });
 
-        loadFinance();
+        loadFinance(0); // Reset to first page after adding
         if (document.getElementById("goalSelect").value) {
             loadGoal();
         }
@@ -1050,13 +1273,13 @@ document.getElementById("goalProgressFill").style.width = progress + "%";
         });
 
         closeFinanceModal();
-        loadFinance();
+        loadFinance(financePage.current);
     }
 
     /* DELETE */
     async function delFinance(id) {
         await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
-        loadFinance();
+        loadFinance(financePage.current);
     }
 
     async function loadGoalList(selectedId) {

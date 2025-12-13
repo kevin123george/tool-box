@@ -1,2 +1,17 @@
 $ bun run src/server.ts
-✅ Frontend running at http://localhost:3000
+1 | import { serve } from "bun";
+2 | 
+3 | const BACKEND = "http://localhost:9099";
+4 | 
+5 | serve({
+    ^
+error: Failed to start server. Is port 3000 in use?
+ syscall: "listen",
+   errno: 0,
+    code: "EADDRINUSE"
+
+      at /Users/astra/Downloads/tool-box/toolbox-frontend/src/server.ts:5:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.3.4 (macOS arm64)
+error: script "dev" exited with code 1
