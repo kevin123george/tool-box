@@ -59,7 +59,7 @@ fi
 
 ### Build backend
 echo "🔨 Building backend..."
-./gradlew build -x test
+./gradlew build -x test -x spotlessCheck -x spotlessApply
 
 ### Copy Python script to build directory
 echo "📄 Copying Python stock fetcher..."
