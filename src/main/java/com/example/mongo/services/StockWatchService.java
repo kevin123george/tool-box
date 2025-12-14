@@ -99,4 +99,13 @@ public class StockWatchService {
   public List<StockWatch> getAllStocks() {
     return stockWatchRepository.findAll();
   }
+
+  public void deleteById(String symbol) {
+    if (!stockWatchRepository.existsById(symbol)) {
+      System.err.println("Symbol not found in watchlist: " + symbol);
+      return;
+    }
+    stockWatchRepository.deleteById(symbol);
+    System.out.println("Deleted " + symbol + " from watchlist.");
+  }
 }

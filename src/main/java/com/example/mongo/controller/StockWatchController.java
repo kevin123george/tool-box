@@ -24,4 +24,9 @@ public class StockWatchController {
   public List<StockWatch> getAllStocks() {
     return stockWatchService.getAllStocks();
   }
+
+  @DeleteMapping("/{symbol}")
+  public void deleteById(@PathVariable String symbol) {
+    stockWatchService.deleteById(symbol);
+  }
 }
