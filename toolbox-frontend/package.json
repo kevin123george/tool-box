@@ -1,0 +1,7 @@
+{
+  "name": "toolbox-frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/server.ts"
+  }
+}

@@ -9,9 +9,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "users")
 public class UsersEntity {
 
-    @Id
-    private String id;
-    private String name;
-    @Indexed(unique = true)
-    private String email;
+  @Id private String id;
+  private String name;
+
+  @Indexed(unique = true)
+  private String email;
 }
