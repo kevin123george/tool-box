@@ -747,7 +747,7 @@ function closeStockHoldingModal() {
 async function saveStockHolding() {
     const data = {
         symbol: stockSymbol.value.toUpperCase(),
-        quantity: parseInt(stockQuantity.value),
+        quantity: parseFloat(stockQuantity.value),
         buyPrice: parseFloat(stockBuyPrice.value)
     };
 

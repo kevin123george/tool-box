@@ -31,8 +31,8 @@ public class StockController {
 
   @PutMapping("/{id}")
   public ResponseEntity<StockHolding> updatePrice(
-      @PathVariable String id, @RequestParam double currentPrice) {
-    return ResponseEntity.ok(service.updatePrice(id, currentPrice));
+      @PathVariable String id, @RequestBody StockRequest stockRequest) {
+    return ResponseEntity.ok(service.updatePrice(id, stockRequest));
   }
 
   @DeleteMapping("/{id}")

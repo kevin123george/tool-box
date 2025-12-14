@@ -46,10 +46,11 @@ public class StockService {
     return stockRepository.save(stock);
   }
 
-  public StockHolding updatePrice(String id, double newPrice) {
+  public StockHolding updatePrice(String id, StockRequest req) {
     StockHolding stock =
         stockRepository.findById(id).orElseThrow(() -> new RuntimeException("Stock not found"));
-    stock.setCurrentPrice(newPrice);
+    stock.setCurrentPrice(req.currentPrice);
+    stock.setQuantity(req.quantity);
     return stockRepository.save(stock);
   }
 
