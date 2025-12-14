@@ -26,6 +26,7 @@ public class StockUpdater {
 
   @Scheduled(fixedDelay = 10000)
   public void updateStock() {
+    System.out.println("Running stock price update cron job...");
     stockService.updateHoldingCurrentPrice();
   }
 

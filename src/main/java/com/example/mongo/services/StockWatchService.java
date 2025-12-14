@@ -4,16 +4,11 @@ import com.example.mongo.models.StockPriceEntry;
 import com.example.mongo.models.StockWatch;
 import com.example.mongo.repos.StockPriceEntryRepository;
 import com.example.mongo.repos.StockWatchRepository;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,31 +16,27 @@ public class StockWatchService {
 
   private final StockPriceEntryRepository priceRepo;
   private final StockWatchRepository stockWatchRepository;
-  private final HttpClient client = HttpClient.newHttpClient();
-  private final ObjectMapper mapper = new ObjectMapper();
+  private final StockPriceService stockPriceService;
 
+  @Autowired
   public StockWatchService(
-      StockPriceEntryRepository priceRepo, StockWatchRepository stockWatchRepository) {
+      StockPriceEntryRepository priceRepo,
+      StockWatchRepository stockWatchRepository,
+      StockPriceService stockPriceService) {
     this.priceRepo = priceRepo;
     this.stockWatchRepository = stockWatchRepository;
+    this.stockPriceService = stockPriceService;
   }
 
   private Optional<Double> fetchCurrentPrice(String symbol) {
-    String url = "http://127.0.0.1:5000/stock?ticker=" + symbol + "&currency=EUR";
-    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
     try {
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      if (response.statusCode() == 200) {
-        JsonNode json = mapper.readTree(response.body());
-        return Optional.of(json.get("price").asDouble());
-      } else {
-        System.err.println(
-            "Failed to fetch data for symbol: " + symbol + " (HTTP " + response.statusCode() + ")");
-      }
-    } catch (IOException | InterruptedException e) {
+      Map<String, Object> priceData = stockPriceService.getStockPrice(symbol, "EUR");
+      double price = (double) priceData.get("price");
+      return Optional.of(price);
+    } catch (Exception e) {
       System.err.println("Error fetching price for symbol: " + symbol + " - " + e.getMessage());
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   public void recordCurrentPrice(String symbol) {

@@ -6,29 +6,30 @@ import com.example.mongo.models.dto.PortfolioStats;
 import com.example.mongo.models.dto.StockRequest;
 import com.example.mongo.repos.StockHoldingHistoryRepository;
 import com.example.mongo.repos.StockRepository;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StockService {
 
   private final StockRepository stockRepository;
-
   private final StockHoldingHistoryRepository stockHoldingHistoryRepository;
+  private final StockPriceService stockPriceService;
 
-  public StockService(StockRepository repo, StockHoldingHistoryRepository historyRepository) {
+  @Autowired
+  public StockService(
+      StockRepository repo,
+      StockHoldingHistoryRepository historyRepository,
+      StockPriceService stockPriceService) {
     this.stockRepository = repo;
     this.stockHoldingHistoryRepository = historyRepository;
+    this.stockPriceService = stockPriceService;
   }
 
   public List<StockHolding> getAllStocks() {
@@ -77,8 +78,6 @@ public class StockService {
   }
 
   public void updateHoldingCurrentPrice() {
-    // TODO update this when we have more tickers
-
     HashMap<String, Double> tickerPriceMap = new HashMap<>();
     Set<String> symbols =
         stockRepository.findAll().stream()
@@ -92,27 +91,18 @@ public class StockService {
             .map(StockHolding::getSymbol)
             .collect(Collectors.toSet());
 
-    HttpClient client = HttpClient.newHttpClient();
-    ObjectMapper mapper = new ObjectMapper();
-
+    // Use embedded Python service instead of HTTP calls
     for (String symbol : symbols) {
       try {
-        String url = "http://127.0.0.1:5000/stock?ticker=" + symbol + "&currency=EUR";
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+        Map<String, Object> priceData = stockPriceService.getStockPrice(symbol, "EUR");
+        double price = (double) priceData.get("price");
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() == 200) {
-          JsonNode json = mapper.readTree(response.body());
-          double price = json.get("price").asDouble(); // This is the price in EUR
-          System.out.println(symbol);
-          System.out.println(price);
-          tickerPriceMap.put(symbol, price);
-        } else {
-          System.err.println("Failed to fetch data for symbol: " + symbol);
-        }
+        System.out.println(symbol);
+        System.out.println(price);
+        tickerPriceMap.put(symbol, price);
       } catch (Exception e) {
-        e.printStackTrace(); // Or log the error
+        System.err.println("Failed to fetch data for symbol: " + symbol);
+        e.printStackTrace();
       }
     }
 
@@ -123,17 +113,15 @@ public class StockService {
 
     allHoldings.forEach(
         stockHolding -> {
-          stockHolding.setCurrentPrice(
-              tickerPriceMap.getOrDefault(
-                  stockHolding.getSymbol(), stockHolding.getCurrentPrice()));
+          double newPrice = tickerPriceMap.get(stockHolding.getSymbol());
+          double oldPrice = stockHolding.getCurrentPrice();
 
-          if (stockHolding.getCurrentPrice()
-              != tickerPriceMap.getOrDefault(
-                  stockHolding.getSymbol(), stockHolding.getCurrentPrice())) {
-            // Save history
+          // Only update if price has changed
+          if (Math.abs(newPrice - oldPrice) > 0.01) {
+            stockHolding.setCurrentPrice(newPrice);
             System.out.printf(
-                "Updating %s to %.2f EUR%n",
-                stockHolding.getSymbol(), stockHolding.getCurrentPrice());
+                "Updating %s from %.2f to %.2f EUR%n",
+                stockHolding.getSymbol(), oldPrice, newPrice);
             updateStockHolding(stockHolding);
           }
         });
@@ -152,7 +140,5 @@ public class StockService {
     history.setCurrentPrice(holding.getCurrentPrice());
     history.setUpdatedAt(LocalDateTime.now());
     stockHoldingHistoryRepository.save(history);
-
-    // Update holding...
   }
 }
