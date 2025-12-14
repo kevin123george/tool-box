@@ -57,9 +57,9 @@ else
     echo "⚠️  requirements.txt not found"
 fi
 
-### Build backend
+### Build backend (skip ALL spotless tasks)
 echo "🔨 Building backend..."
-./gradlew build -x test -x spotlessCheck -x spotlessApply
+./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply
 
 ### Copy Python script to build directory
 echo "📄 Copying Python stock fetcher..."
