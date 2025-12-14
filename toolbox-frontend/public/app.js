@@ -1,4 +1,4 @@
-const API = "";   /* Empty = same domain */
+const API = "";
 let currentGoalId = null;
 let editingHoldingId = null;
 let editingWatchlistId = null;
@@ -7,6 +7,10 @@ let stocksRefreshInterval = null;
 // Pagination state
 let memoPage = { current: 0, total: 1, size: 10, totalElements: 0 };
 let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
+
+// Quill editors
+let quillMain = null;
+let quillEdit = null;
 
 /* Theme */
 function applyMode() {
@@ -20,6 +24,43 @@ function toggleMode() {
     applyMode();
 }
 applyMode();
+
+/* Initialize Quill Editors */
+document.addEventListener('DOMContentLoaded', function() {
+    // Main editor
+    quillMain = new Quill('#memoContent', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'header': 1 }, { 'header': 2 }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'align': [] }],
+                ['link'],
+                ['clean']
+            ]
+        },
+        placeholder: 'Write your memo content here...'
+    });
+
+    // Edit editor
+    quillEdit = new Quill('#editMemoContent', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'header': 1 }, { 'header': 2 }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'align': [] }],
+                ['link'],
+                ['clean']
+            ]
+        },
+        placeholder: 'Edit memo content...'
+    });
+});
 
 /* Tabs */
 function switchTab(which) {
@@ -36,12 +77,10 @@ function switchTab(which) {
         loadGoalList();
     } else if (which === "stocks") {
         loadStocks();
-        // Auto-refresh every 30 seconds
         if (!stocksRefreshInterval) {
             stocksRefreshInterval = setInterval(loadStocks, 30000);
         }
     } else {
-        // Clear interval when leaving stocks tab
         if (stocksRefreshInterval) {
             clearInterval(stocksRefreshInterval);
             stocksRefreshInterval = null;
@@ -59,7 +98,6 @@ function closeModal(id){ document.getElementById(id).style.display="none"; }
 
 document.addEventListener("keydown",(e)=>{
     if(e.key==="Escape"){
-
         closeMemoModal();
         closeMemoViewModal();
         closeFinanceModal();
@@ -69,55 +107,6 @@ document.addEventListener("keydown",(e)=>{
     }
 });
 
-/* -------- RICH EDITOR: paste & drag-drop images -------- */
-function insertImg(el,dataUrl){
-    const img=document.createElement("img");
-    img.src=dataUrl;
-    const sel=window.getSelection();
-    if(!sel.rangeCount){ el.appendChild(img); return; }
-    const range=sel.getRangeAt(0);
-    range.deleteContents();
-    range.insertNode(img);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-}
-
-function setupEditor(id){
-    const el=document.getElementById(id);
-    if(!el) return;
-
-    el.addEventListener("paste", e=>{
-        const items=e.clipboardData.items;
-        for(let i=0;i<items.length;i++){
-            if(items[i].type.startsWith("image")){
-                e.preventDefault();
-                const file=items[i].getAsFile();
-                const r=new FileReader();
-                r.onload=ev=>insertImg(el,ev.target.result);
-                r.readAsDataURL(file);
-                return;
-            }
-        }
-    });
-
-    el.addEventListener("dragover",e=>e.preventDefault());
-    el.addEventListener("drop", e=>{
-        e.preventDefault();
-        const files=e.dataTransfer.files;
-        for(let f of files){
-            if(f.type.startsWith("image")){
-                const r=new FileReader();
-                r.onload=ev=>insertImg(el,ev.target.result);
-                r.readAsDataURL(f);
-            }
-        }
-    });
-}
-
-setupEditor("memoContent");
-setupEditor("editMemoContent");
-
 /* ===========================================================
    PAGINATION HELPERS
 =============================================================*/
@@ -125,23 +114,19 @@ setupEditor("editMemoContent");
 function updatePaginationControls(prefix, pageData) {
     const { current, total, size, totalElements } = pageData;
 
-    // Update info text
     const start = current * size + 1;
     const end = Math.min((current + 1) * size, totalElements);
     document.getElementById(`${prefix}PageInfo`).textContent =
         `Showing ${start}-${end} of ${totalElements}`;
 
-    // Update page input
     document.getElementById(`${prefix}PageInput`).value = current + 1;
     document.getElementById(`${prefix}TotalPagesSpan`).textContent = `of ${total}`;
 
-    // Enable/disable buttons
     document.getElementById(`${prefix}FirstBtn`).disabled = current === 0;
     document.getElementById(`${prefix}PrevBtn`).disabled = current === 0;
     document.getElementById(`${prefix}NextBtn`).disabled = current === total - 1;
     document.getElementById(`${prefix}LastBtn`).disabled = current === total - 1;
 }
-
 
 /* ===========================================================
    MEMOS
@@ -153,7 +138,6 @@ async function loadMemos(page = 0){
     const response = await res.json();
     const data = response.content;
 
-    // Update pagination state
     memoPage = {
         current: response.number,
         total: response.totalPages,
@@ -187,45 +171,23 @@ async function loadMemos(page = 0){
     });
 
     html += '</div>';
-
     memoList.innerHTML=html;
 }
 
-function memoChangePageSize() {
-    loadMemos(0); // Reset to first page when changing page size
-}
-
-function memoGoToPage(page) {
-    loadMemos(page);
-}
-
-function memoPrevPage() {
-    if (memoPage.current > 0) {
-        loadMemos(memoPage.current - 1);
-    }
-}
-
-function memoNextPage() {
-    if (memoPage.current < memoPage.total - 1) {
-        loadMemos(memoPage.current + 1);
-    }
-}
-
-function memoGoToLastPage() {
-    loadMemos(memoPage.total - 1);
-}
-
+function memoChangePageSize() { loadMemos(0); }
+function memoGoToPage(page) { loadMemos(page); }
+function memoPrevPage() { if (memoPage.current > 0) loadMemos(memoPage.current - 1); }
+function memoNextPage() { if (memoPage.current < memoPage.total - 1) loadMemos(memoPage.current + 1); }
+function memoGoToLastPage() { loadMemos(memoPage.total - 1); }
 function memoGoToInput() {
     const input = parseInt(document.getElementById('memoPageInput').value);
-    if (input >= 1 && input <= memoPage.total) {
-        loadMemos(input - 1);
-    }
+    if (input >= 1 && input <= memoPage.total) loadMemos(input - 1);
 }
 
 async function addMemo(){
     const form=new FormData();
     form.append("title", memoTitle.value);
-    form.append("content", memoContent.innerHTML.trim());
+    form.append("content", quillMain.root.innerHTML); // Get HTML from Quill
     form.append("category", memoCategory.value);
     form.append("pinned", memoPinned.checked);
 
@@ -234,8 +196,11 @@ async function addMemo(){
 
     await fetch(`${API}/api/memos/upload`,{ method:"POST", body:form });
 
-    memoTitle.value=""; memoContent.innerHTML=""; memoPinned.checked=false; memoFile.value="";
-    loadMemos(0); // Reset to first page after adding
+    memoTitle.value="";
+    quillMain.setContents([]); // Clear Quill editor
+    memoPinned.checked=false;
+    memoFile.value="";
+    loadMemos(0);
 }
 
 async function delMemo(id){
@@ -248,7 +213,7 @@ async function viewMemo(id){
     const m = await res.json();
 
     viewMemoTitle.textContent = m.title;
-    viewMemoContent.innerHTML = m.content;
+    viewMemoContent.innerHTML = m.content; // Display formatted content
 
     viewMemoMeta.textContent = `Category: ${m.category}\nPinned: ${m.pinned?'Yes':'No'}`;
 
@@ -281,7 +246,7 @@ async function showEditMemo(id){
     const m=await res.json();
 
     editMemoTitle.value=m.title;
-    editMemoContent.innerHTML=m.content || "";
+    quillEdit.root.innerHTML = m.content || ""; // Load HTML into Quill
     editMemoCategory.value=m.category;
     editMemoPinned.checked=m.pinned;
     editMemoFile.value="";
@@ -294,7 +259,7 @@ function closeMemoModal(){ editingMemoId=null; editMemoFile.value=""; closeModal
 async function saveMemoEdit(){
     const form=new FormData();
     form.append("title", editMemoTitle.value);
-    form.append("content", editMemoContent.innerHTML.trim());
+    form.append("content", quillEdit.root.innerHTML); // Get HTML from Quill
     form.append("category", editMemoCategory.value);
     form.append("pinned", editMemoPinned.checked);
 
@@ -394,20 +359,17 @@ async function loadGoal() {
     const g = await res.json();
     currentGoalId = g.id;
 
-    // summary box
     goalTargetIncome.textContent = "€ " + g.targetYearlyIncome.toFixed(2);
     goalRequiredCorpus.textContent = "€ " + g.requiredCorpus.toFixed(2);
     goalCurrentCorpus.textContent = "€ " + g.currentCorpus.toFixed(2);
     goalAchieved.textContent = g.goalAchieved ? "YES 🎉" : "NO";
 
-    // fill editor form
     goalTargetIncomeInput.value = g.targetYearlyIncome;
     goalTaxRateInput.value = g.taxRate;
     goalReturnRateInput.value = g.expectedReturnRate;
     goalContributionInput.value = g.yearlyContribution;
     goalAgeInput.value = g.currentAge;
 
-    // projection & chart
     const projText = await fetch(`/api/goal/${goalId}/projection`).then(r => r.text());
     const match = projText.match(/Age (\d+)/);
     goalFireAge.textContent = match ? match[1] : (g.goalAchievedAge || "—");
@@ -495,7 +457,6 @@ async function loadFinance(page = 0) {
     const response = await res.json();
     const data = response.content;
 
-    // Update pagination state
     financePage = {
         current: response.number,
         total: response.totalPages,
@@ -533,35 +494,14 @@ async function loadFinance(page = 0) {
     loadFinanceSummary();
 }
 
-function financeChangePageSize() {
-    loadFinance(0); // Reset to first page when changing page size
-}
-
-function financeGoToPage(page) {
-    loadFinance(page);
-}
-
-function financePrevPage() {
-    if (financePage.current > 0) {
-        loadFinance(financePage.current - 1);
-    }
-}
-
-function financeNextPage() {
-    if (financePage.current < financePage.total - 1) {
-        loadFinance(financePage.current + 1);
-    }
-}
-
-function financeGoToLastPage() {
-    loadFinance(financePage.total - 1);
-}
-
+function financeChangePageSize() { loadFinance(0); }
+function financeGoToPage(page) { loadFinance(page); }
+function financePrevPage() { if (financePage.current > 0) loadFinance(financePage.current - 1); }
+function financeNextPage() { if (financePage.current < financePage.total - 1) loadFinance(financePage.current + 1); }
+function financeGoToLastPage() { loadFinance(financePage.total - 1); }
 function financeGoToInput() {
     const input = parseInt(document.getElementById('financePageInput').value);
-    if (input >= 1 && input <= financePage.total) {
-        loadFinance(input - 1);
-    }
+    if (input >= 1 && input <= financePage.total) loadFinance(input - 1);
 }
 
 async function addFinance() {
@@ -577,13 +517,12 @@ async function addFinance() {
         body: JSON.stringify(form)
     });
 
-    loadFinance(0); // Reset to first page after adding
+    loadFinance(0);
     if (document.getElementById("goalSelect").value) {
         loadGoal();
     }
 }
 
-/* VIEW */
 async function viewFinance(id) {
     const res = await fetch(`${API}/api/finance/${id}`);
     const acc = await res.json();
@@ -597,7 +536,6 @@ async function viewFinance(id) {
 
 function closeFinanceViewModal() { closeModal("financeViewModal"); }
 
-/* EDIT */
 let editingFinanceId = null;
 
 async function showEditFinance(id) {
@@ -635,7 +573,6 @@ async function saveFinanceEdit() {
     loadFinance(financePage.current);
 }
 
-/* DELETE */
 async function delFinance(id) {
     await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
     loadFinance(financePage.current);
@@ -784,7 +721,6 @@ function refreshStocks() {
     loadStocks();
 }
 
-// Holdings Modal
 function showAddHolding() {
     editingHoldingId = null;
     stockHoldingModalTitle.textContent = "Add Holding";
@@ -849,7 +785,6 @@ async function delHolding(id) {
     loadStocks();
 }
 
-// Watchlist Modal
 function showAddWatchlist() {
     editingWatchlistId = null;
     watchlistModalTitle.textContent = "Add to Watchlist";
@@ -895,5 +830,4 @@ async function delWatchlist(id) {
     loadStocks();
 }
 
-/* Initial load */
 loadMemos();

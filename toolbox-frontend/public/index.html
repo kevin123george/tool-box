@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToolBox</title>
 
+    <!-- Quill Editor CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+
     <link rel="stylesheet" href="styles.css">
 
 </head>
@@ -30,7 +33,7 @@
         <div id="viewMemoTitle" class="view-block"></div>
 
         <div class="view-label">Content</div>
-        <div id="viewMemoContent" class="view-block"></div>
+        <div id="viewMemoContent" class="memo-content-view"></div>
 
         <div class="view-label">Meta</div>
         <div id="viewMemoMeta" class="view-block"></div>
@@ -122,7 +125,9 @@
         <h3>Edit Memo</h3>
 
         <input id="editMemoTitle" placeholder="Title">
-        <div id="editMemoContent" class="editor" contenteditable="true"></div>
+
+        <!-- Quill Editor for Edit -->
+        <div id="editMemoContent" style="height: 200px;"></div>
 
         <select id="editMemoCategory">
             <option value="personal">personal</option>
@@ -147,12 +152,14 @@
 <div id="memoTabContent" class="tab-content">
     <h2>Memos</h2>
 
-    <div class="finance-grid memo-layout" style="display:grid; grid-template-columns:350px 1fr; gap:16px; align-items:start;">
+    <div class="finance-grid memo-layout" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
         <!-- LEFT: ADD MEMO FORM -->
         <div class="add-box" style="position:sticky; top:20px;">
             <h3 style="margin-top:0;">Add Memo</h3>
             <input id="memoTitle" placeholder="Title">
-            <div id="memoContent" class="editor" contenteditable="true" data-placeholder="Content"></div>
+
+            <!-- Quill Editor -->
+            <div id="memoContent" style="height: 150px;"></div>
 
             <select id="memoCategory">
                 <option value="personal">personal</option>
@@ -365,6 +372,8 @@
 </div>
 
 <!-- ---------------- JS ---------------- -->
+<!-- Quill Editor JS -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
 <script src="app.js"></script>
 

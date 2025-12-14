@@ -56,32 +56,131 @@ input, textarea, select {
     font-family: monospace;
 }
 
-/* ----------------- Rich Editor ----------------- */
-.editor {
-    width:100%;
-    min-height:80px;
-    padding:10px;
-    border:1px solid var(--border);
-    background: var(--bg);
+/* ============================================
+   Quill Editor Styling
+   ============================================ */
+
+/* Quill toolbar */
+.ql-toolbar {
+    background: var(--bg) !important;
+    border: 1px solid var(--border) !important;
+    border-bottom: none !important;
+    font-family: monospace !important;
+    margin-top: 10px;
+}
+
+.ql-toolbar button {
+    color: var(--text) !important;
+}
+
+.ql-toolbar button:hover {
+    color: var(--bg) !important;
+    background: var(--text) !important;
+}
+
+.ql-toolbar .ql-stroke {
+    stroke: var(--text) !important;
+}
+
+.ql-toolbar .ql-fill {
+    fill: var(--text) !important;
+}
+
+.ql-toolbar .ql-picker-label {
+    color: var(--text) !important;
+}
+
+/* Quill editor container */
+.ql-container {
+    background: var(--bg) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    font-family: monospace !important;
+    font-size: 14px !important;
+}
+
+.ql-editor {
+    min-height: 100px;
+    padding: 10px !important;
+    color: var(--text) !important;
+}
+
+.ql-editor.ql-blank::before {
+    color: rgba(255,255,255,0.4) !important;
+    font-style: italic;
+}
+
+.light .ql-editor.ql-blank::before {
+    color: rgba(0,0,0,0.4) !important;
+}
+
+/* Memo content view - clean display without borders */
+.memo-content-view {
+    padding: 10px 0;
     color: var(--text);
-    box-sizing:border-box;
     font-family: monospace;
-    font-size:14px;
-    overflow-y:auto;
-    white-space:pre-wrap;
-    word-wrap:break-word;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 14px;
 }
-.editor[contenteditable="true"]:empty:before {
-    content: attr(data-placeholder);
-    color: rgba(255,255,255,0.4);
+
+.memo-content-view p {
+    margin: 8px 0;
 }
-.light .editor[contenteditable="true"]:empty:before {
-    color: rgba(0,0,0,0.4);
+
+.memo-content-view h1 {
+    font-size: 20px;
+    margin: 12px 0 8px 0;
+    border: none;
 }
-.editor img {
-    max-width:100%;
-    display:block;
-    margin:6px 0;
+
+.memo-content-view h2 {
+    font-size: 17px;
+    margin: 10px 0 6px 0;
+    border: none;
+    padding: 0;
+}
+
+.memo-content-view h3 {
+    font-size: 15px;
+    margin: 8px 0 4px 0;
+}
+
+.memo-content-view ul, .memo-content-view ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.memo-content-view li {
+    margin: 4px 0;
+}
+
+.memo-content-view strong {
+    font-weight: bold;
+}
+
+.memo-content-view em {
+    font-style: italic;
+}
+
+.memo-content-view u {
+    text-decoration: underline;
+}
+
+.memo-content-view s {
+    text-decoration: line-through;
+}
+
+.memo-content-view a {
+    color: var(--text);
+    text-decoration: underline;
+}
+
+.memo-content-view img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px 0;
 }
 
 .btn {
@@ -227,7 +326,7 @@ input, textarea, select {
     color: var(--text);
     border: 2px solid var(--border);
     padding: 18px;
-    width: 480px;
+    width: 600px;
     max-width: 92vw;
     max-height: 88vh;
     overflow-y: auto;
