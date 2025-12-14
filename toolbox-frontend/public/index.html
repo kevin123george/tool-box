@@ -96,8 +96,8 @@
         <h3 id="stockHoldingModalTitle">Add Holding</h3>
 
         <input id="stockSymbol" placeholder="Symbol (e.g., AAPL)" maxlength="10">
-        <input id="stockQuantity" placeholder="Quantity" type="number" step="1">
-        <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.01">
+        <input id="stockQuantity" placeholder="Quantity" type="number" step="0.0000001">
+        <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.0000001">
 
         <button class="btn" onclick="saveStockHolding()">SAVE</button>
         <button class="btn" onclick="closeStockHoldingModal()">CANCEL</button>
@@ -110,7 +110,7 @@
         <h3 id="watchlistModalTitle">Add to Watchlist</h3>
 
         <input id="watchSymbol" placeholder="Symbol (e.g., TSLA)" maxlength="10">
-        <input id="watchInitialPrice" placeholder="Initial Price (€)" type="number" step="0.01">
+        <input id="watchInitialPrice" placeholder="Initial Price (€)" type="number" step="0.0000001">
 
         <button class="btn" onclick="saveWatchlist()">SAVE</button>
         <button class="btn" onclick="closeWatchlistModal()">CANCEL</button>
