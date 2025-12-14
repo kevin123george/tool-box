@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,8 +15,18 @@ public class MemoService {
 
   @Autowired private MemoRepository memoRepository;
 
-  public Page<Memo> getAllMemos(PageRequest pageRequest) {
-    return memoRepository.findAll(pageRequest);
+  public Page<Memo> getAllMemos(Pageable pageable) {
+
+    Pageable sortedPageable =
+        PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(
+                Sort.Order.desc("pinned"),
+                Sort.Order.desc("updatedAt"),
+                Sort.Order.desc("createdAt")));
+
+    return memoRepository.findAll(sortedPageable);
   }
 
   public Optional<Memo> getMemoById(String id) {
@@ -37,6 +49,10 @@ public class MemoService {
               return memoRepository.save(memo);
             })
         .orElse(null);
+  }
+
+  public void deleteAllMemos() {
+    memoRepository.deleteAll();
   }
 
   public void deleteMemo(String id) {

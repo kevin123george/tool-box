@@ -93,4 +93,9 @@ public class MemoController {
 
     return memoService.updateMemo(id, existing);
   }
+
+  @DeleteMapping("/deleteAll")
+  public void deleteAllMemos() {
+    memoService.deleteAllMemos();
+  }
 }

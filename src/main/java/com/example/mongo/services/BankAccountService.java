@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,12 +18,15 @@ public class BankAccountService {
 
   private final BankAccountRepository repo;
 
-  //    public List<BankAccount> getAll() {
-  //        return repo.findTop10ByOrderByIdDesc();
-  //    }
-
   public Page<BankAccount> getAll(Pageable pageable) {
-    return repo.findAll(pageable);
+
+    Pageable sortedPageable =
+        PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("createdAt")));
+
+    return repo.findAll(sortedPageable);
   }
 
   public BankAccount getById(String id) {

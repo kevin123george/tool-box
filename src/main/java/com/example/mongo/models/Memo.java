@@ -1,7 +1,10 @@
 package com.example.mongo.models;
 
+import java.time.Instant;
 import lombok.Data;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -18,6 +21,10 @@ public class Memo {
 
   @Field("media")
   private byte[] media; // <-- Simple blob attachment (optional)
+
+  @CreatedDate private Instant createdAt;
+
+  @LastModifiedDate private Instant updatedAt;
 
   public enum Category {
     personal,
