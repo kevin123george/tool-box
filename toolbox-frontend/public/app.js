@@ -281,7 +281,7 @@ async function loadFinanceSummary() {
     const res = await fetch(`${API}/api/finance/summary`);
     const s = await res.json();
 
-    sumTotal.textContent = "€ " + s.totalBalance.toFixed(2);
+    sumTotal.textContent = "€" + s.totalBalance.toFixed(2);
 
     sumByModeList.innerHTML = "";
     Object.entries(s.totalByMode).forEach(([mode, value]) => {
@@ -359,9 +359,9 @@ async function loadGoal() {
     const g = await res.json();
     currentGoalId = g.id;
 
-    goalTargetIncome.textContent = "€ " + g.targetYearlyIncome.toFixed(2);
-    goalRequiredCorpus.textContent = "€ " + g.requiredCorpus.toFixed(2);
-    goalCurrentCorpus.textContent = "€ " + g.currentCorpus.toFixed(2);
+    goalTargetIncome.textContent = "€" + g.targetYearlyIncome.toFixed(2);
+    goalRequiredCorpus.textContent = "€" + g.requiredCorpus.toFixed(2);
+    goalCurrentCorpus.textContent = "€" + g.currentCorpus.toFixed(2);
     goalAchieved.textContent = g.goalAchieved ? "YES 🎉" : "NO";
 
     goalTargetIncomeInput.value = g.targetYearlyIncome;
@@ -378,7 +378,7 @@ async function loadGoal() {
     goalAge.textContent = g.goalAchievedAge ?? "—";
 
     const remaining = g.requiredCorpus - g.currentCorpus;
-    goalRemainingCorpus.textContent = "€ " + remaining.toFixed(2);
+    goalRemainingCorpus.textContent = "€" + remaining.toFixed(2);
 
     let progress = (g.currentCorpus / g.requiredCorpus) * 100;
     if (progress > 100) progress = 100;
@@ -529,7 +529,7 @@ async function viewFinance(id) {
 
     viewFinanceBank.textContent = acc.bank;
     viewMode.textContent = acc.mode || "Unknown";
-    viewFinanceBalance.textContent = "€ " + acc.balance.toFixed(2);
+    viewFinanceBalance.textContent = "€" + acc.balance.toFixed(2);
 
     openModal("financeViewModal");
 }
