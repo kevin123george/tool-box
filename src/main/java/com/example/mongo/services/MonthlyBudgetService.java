@@ -23,8 +23,7 @@ public class MonthlyBudgetService {
           ExpenseCategory.RENT,
           ExpenseCategory.INTERNET,
           ExpenseCategory.SUBSCRIPTIONS,
-          ExpenseCategory.TRANSPORT
-          );
+          ExpenseCategory.TRANSPORT);
 
   public MonthlyBudget getOrCreateBudget(YearMonth month) {
     return monthlyBudgetRepository
