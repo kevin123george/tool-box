@@ -21,6 +21,7 @@
     <div id="tabMemo" class="tab active" onclick="switchTab('memo')">Memos</div>
     <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
     <div id="tabStocks" class="tab" onclick="switchTab('stocks')">Stocks</div>
+    <div id="tabBudget" class="tab" onclick="switchTab('budget')">Budget</div> <!-- NEW -->
 </div>
 
 <!-- ---------------- VIEW MODALS ---------------- -->
@@ -369,6 +370,160 @@
     </div>
 
     <div id="watchlistList"></div>
+</div>
+
+<!-- =================== BUDGET TAB =================== -->
+<div id="budgetTabContent" class="tab-content hidden">
+    <h2>Monthly Budget Tracker</h2>
+
+    <!-- Month Selector -->
+    <div class="add-box">
+        <h3 style="margin-top:0;">Select Month</h3>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <input type="month" id="budgetMonthPicker" onchange="loadBudgetForSelectedMonth()">
+            <button class="btn" onclick="goToCurrentMonth()">CURRENT MONTH</button>
+        </div>
+    </div>
+
+    <!-- Budget Grid: Planning + Summary -->
+    <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+        <!-- LEFT: Set Budget Plan -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Monthly Plan</h3>
+
+            <h4 style="font-size:12px; margin:10px 0 4px 0;">Expected Income</h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:8px;">
+                <input id="planSalary" type="number" step="0.01" placeholder="Salary €">
+                <input id="planBonus" type="number" step="0.01" placeholder="Bonus €">
+                <input id="planFreelance" type="number" step="0.01" placeholder="Freelance €">
+                <input id="planOtherIncome" type="number" step="0.01" placeholder="Other €">
+            </div>
+
+            <h4 style="font-size:12px; margin:10px 0 4px 0;">Planned Expenses</h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:8px;">
+                <input id="planRent" type="number" step="0.01" placeholder="Rent €">
+                <input id="planUtilities" type="number" step="0.01" placeholder="Utilities €">
+                <input id="planInternet" type="number" step="0.01" placeholder="Internet €">
+                <input id="planTransport" type="number" step="0.01" placeholder="Transport €">
+                <input id="planFuel" type="number" step="0.01" placeholder="Fuel €">
+                <input id="planGroceries" type="number" step="0.01" placeholder="Groceries €">
+                <input id="planDining" type="number" step="0.01" placeholder="Dining Out €">
+                <input id="planEntertainment" type="number" step="0.01" placeholder="Entertainment €">
+                <input id="planSubscriptions" type="number" step="0.01" placeholder="Subscriptions €">
+                <input id="planGym" type="number" step="0.01" placeholder="Gym €">
+                <input id="planOtherExpense" type="number" step="0.01" placeholder="Other €">
+            </div>
+
+            <button class="btn" onclick="saveBudgetPlan()">SAVE PLAN</button>
+        </div>
+
+        <!-- RIGHT: Summary -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Summary</h3>
+
+            <div style="font-size:12px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Planned Income:</span>
+                    <span id="summaryPlannedIncome" style="font-weight:bold;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Actual Income:</span>
+                    <span id="summaryActualIncome" style="font-weight:bold;">€0.00</span>
+                </div>
+            </div>
+
+            <div style="font-size:12px; margin-bottom:8px; padding-top:8px; border-top:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Planned Expenses:</span>
+                    <span id="summaryPlannedExpenses" style="font-weight:bold;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Actual Expenses:</span>
+                    <span id="summaryActualExpenses" style="font-weight:bold;">€0.00</span>
+                </div>
+            </div>
+
+            <div style="font-size:12px; padding-top:8px; border-top:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Savings:</span>
+                    <span id="summarySavings" style="font-weight:bold; color:#0f0;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Savings Rate:</span>
+                    <span id="summarySavingsRate" style="font-weight:bold; color:#0f0;">0%</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Budget Adherence:</span>
+                    <span id="summaryAdherence" style="font-weight:bold;">100%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Income/Expense Records -->
+    <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+        <!-- Add Income -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Add Income</h3>
+            <select id="incomeCategory">
+                <option value="SALARY">Salary</option>
+                <option value="BONUS">Bonus</option>
+                <option value="FREELANCE">Freelance</option>
+                <option value="INVESTMENT">Investment</option>
+                <option value="DIVIDEND">Dividend</option>
+                <option value="INTEREST">Interest</option>
+                <option value="GIFT">Gift</option>
+                <option value="OTHER">Other</option>
+            </select>
+            <input id="incomeAmount" type="number" step="0.01" placeholder="Amount €">
+            <input id="incomeDescription" type="text" placeholder="Description">
+            <button class="btn" onclick="addIncome()">ADD INCOME</button>
+        </div>
+
+        <!-- Add Expense -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Add Expense</h3>
+            <select id="expenseCategory">
+                <option value="RENT">Rent</option>
+                <option value="UTILITIES">Utilities</option>
+                <option value="INTERNET">Internet</option>
+                <option value="TRANSPORT">Transport</option>
+                <option value="FUEL">Fuel</option>
+                <option value="GROCERIES">Groceries</option>
+                <option value="DINING_OUT">Dining Out</option>
+                <option value="ENTERTAINMENT">Entertainment</option>
+                <option value="SUBSCRIPTIONS">Subscriptions</option>
+                <option value="GYM">Gym</option>
+                <option value="TRAVEL">Travel</option>
+                <option value="CLOTHING">Clothing</option>
+                <option value="PERSONAL_CARE">Personal Care</option>
+                <option value="EDUCATION">Education</option>
+                <option value="GIFTS">Gifts</option>
+                <option value="OTHER">Other</option>
+            </select>
+            <input id="expenseAmount" type="number" step="0.01" placeholder="Amount €">
+            <input id="expenseDescription" type="text" placeholder="Description">
+            <button class="btn" onclick="addExpense()">ADD EXPENSE</button>
+        </div>
+    </div>
+
+    <!-- Records Display -->
+    <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+        <!-- Income Records -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Income Records</h3>
+            <div id="incomeRecordsList"></div>
+        </div>
+
+        <!-- Expense Records -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Expense Records</h3>
+            <div id="expenseRecordsList"></div>
+        </div>
+    </div>
 </div>
 
 <!-- ---------------- JS ---------------- -->

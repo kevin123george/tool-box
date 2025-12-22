@@ -67,10 +67,12 @@ function switchTab(which) {
     document.getElementById("tabMemo").classList.toggle("active", which === "memo");
     document.getElementById("tabFinance").classList.toggle("active", which === "finance");
     document.getElementById("tabStocks").classList.toggle("active", which === "stocks");
+    document.getElementById("tabBudget").classList.toggle("active", which === "budget"); // NEW
 
     memoTabContent.classList.toggle("hidden", which !== "memo");
     financeTabContent.classList.toggle("hidden", which !== "finance");
     stocksTabContent.classList.toggle("hidden", which !== "stocks");
+    budgetTabContent.classList.toggle("hidden", which !== "budget"); // NEW
 
     if (which === "finance") {
         loadFinance();
@@ -80,6 +82,8 @@ function switchTab(which) {
         if (!stocksRefreshInterval) {
             stocksRefreshInterval = setInterval(loadStocks, 30000);
         }
+    } else if (which === "budget") { // NEW
+        goToCurrentMonth();
     } else {
         if (stocksRefreshInterval) {
             clearInterval(stocksRefreshInterval);
@@ -828,6 +832,267 @@ async function delWatchlist(id) {
 
     await fetch(`${API}/api/stocks-watch/${id}`, { method: "DELETE" });
     loadStocks();
+}
+
+
+/* ===========================================================
+   BUDGET TRACKER
+=============================================================*/
+
+let currentBudgetMonth = null;
+let currentBudgetData = null;
+
+function getCurrentYearMonth() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+}
+
+function goToCurrentMonth() {
+    const current = getCurrentYearMonth();
+    document.getElementById('budgetMonthPicker').value = current;
+    loadBudgetForSelectedMonth();
+}
+
+async function loadBudgetForSelectedMonth() {
+    const picker = document.getElementById('budgetMonthPicker');
+    if (!picker.value) {
+        goToCurrentMonth();
+        return;
+    }
+
+    const [year, month] = picker.value.split('-');
+    currentBudgetMonth = { year: parseInt(year), month: parseInt(month) };
+
+    try {
+        const res = await fetch(`${API}/api/budget/${year}/${month}`);
+
+        if (res.ok) {
+            currentBudgetData = await res.json();
+            displayBudgetData();
+        } else if (res.status === 404) {
+            // Budget doesn't exist yet - create empty one
+            currentBudgetData = {
+                month: `${year}-${month}`,
+                plannedIncome: {},
+                plannedExpenses: {},
+                incomeRecords: [],
+                expenseRecords: []
+            };
+            displayBudgetData();
+        }
+    } catch (e) {
+        console.error("Error loading budget:", e);
+    }
+}
+
+function displayBudgetData() {
+    if (!currentBudgetData) return;
+
+    const p = currentBudgetData;
+
+    // Fill planned income fields
+    document.getElementById('planSalary').value = p.plannedIncome?.SALARY || '';
+    document.getElementById('planBonus').value = p.plannedIncome?.BONUS || '';
+    document.getElementById('planFreelance').value = p.plannedIncome?.FREELANCE || '';
+    document.getElementById('planOtherIncome').value = p.plannedIncome?.OTHER || '';
+
+    // Fill planned expense fields
+    document.getElementById('planRent').value = p.plannedExpenses?.RENT || '';
+    document.getElementById('planUtilities').value = p.plannedExpenses?.UTILITIES || '';
+    document.getElementById('planInternet').value = p.plannedExpenses?.INTERNET || '';
+    document.getElementById('planTransport').value = p.plannedExpenses?.TRANSPORT || '';
+    document.getElementById('planFuel').value = p.plannedExpenses?.FUEL || '';
+    document.getElementById('planGroceries').value = p.plannedExpenses?.GROCERIES || '';
+    document.getElementById('planDining').value = p.plannedExpenses?.DINING_OUT || '';
+    document.getElementById('planEntertainment').value = p.plannedExpenses?.ENTERTAINMENT || '';
+    document.getElementById('planSubscriptions').value = p.plannedExpenses?.SUBSCRIPTIONS || '';
+    document.getElementById('planGym').value = p.plannedExpenses?.GYM || '';
+    document.getElementById('planOtherExpense').value = p.plannedExpenses?.OTHER || '';
+
+    // Update summary
+    document.getElementById('summaryPlannedIncome').textContent = '€' + (p.totalPlannedIncome || 0).toFixed(2);
+    document.getElementById('summaryActualIncome').textContent = '€' + (p.totalIncome || 0).toFixed(2);
+    document.getElementById('summaryPlannedExpenses').textContent = '€' + (p.totalPlannedExpenses || 0).toFixed(2);
+    document.getElementById('summaryActualExpenses').textContent = '€' + (p.totalExpenses || 0).toFixed(2);
+    document.getElementById('summarySavings').textContent = '€' + (p.remaining || 0).toFixed(2);
+    document.getElementById('summarySavingsRate').textContent = (p.savingsRate || 0).toFixed(1) + '%';
+    document.getElementById('summaryAdherence').textContent = (p.budgetAdherence || 100).toFixed(1) + '%';
+
+    // Display income records
+    displayIncomeRecords(p.incomeRecords || []);
+
+    // Display expense records
+    displayExpenseRecords(p.expenseRecords || []);
+}
+
+function displayIncomeRecords(records) {
+    let html = '';
+
+    records.forEach((rec, idx) => {
+        const date = new Date(rec.recordDate).toLocaleDateString();
+        html += `
+        <div class="card" style="margin-bottom:6px;">
+            <div class="card-main">
+                <div style="font-weight:bold; font-size:12px;">${rec.category}</div>
+                <div style="font-size:11px; opacity:0.7;">€${rec.amount.toFixed(2)}</div>
+                <div style="font-size:10px; opacity:0.5;">${rec.description}</div>
+                <div style="font-size:9px; opacity:0.4;">${date}</div>
+            </div>
+            <button class="btn" onclick="deleteIncomeRecord(${idx})">DEL</button>
+        </div>`;
+    });
+
+    document.getElementById('incomeRecordsList').innerHTML = html || '<div style="opacity:0.5; font-size:11px;">No income records yet</div>';
+}
+
+function displayExpenseRecords(records) {
+    let html = '';
+
+    records.forEach((rec, idx) => {
+        const date = new Date(rec.recordDate).toLocaleDateString();
+        html += `
+        <div class="card" style="margin-bottom:6px;">
+            <div class="card-main">
+                <div style="font-weight:bold; font-size:12px;">${rec.category}</div>
+                <div style="font-size:11px; opacity:0.7;">€${rec.amount.toFixed(2)}</div>
+                <div style="font-size:10px; opacity:0.5;">${rec.description}</div>
+                <div style="font-size:9px; opacity:0.4;">${date}</div>
+            </div>
+            <button class="btn" onclick="deleteExpenseRecord(${idx})">DEL</button>
+        </div>`;
+    });
+
+    document.getElementById('expenseRecordsList').innerHTML = html || '<div style="opacity:0.5; font-size:11px;">No expense records yet</div>';
+}
+
+async function saveBudgetPlan() {
+    if (!currentBudgetMonth) return;
+
+    const plannedIncome = {};
+    const plannedExpenses = {};
+
+    // Gather planned income
+    const salary = parseFloat(document.getElementById('planSalary').value);
+    const bonus = parseFloat(document.getElementById('planBonus').value);
+    const freelance = parseFloat(document.getElementById('planFreelance').value);
+    const otherIncome = parseFloat(document.getElementById('planOtherIncome').value);
+
+    if (salary) plannedIncome.SALARY = salary;
+    if (bonus) plannedIncome.BONUS = bonus;
+    if (freelance) plannedIncome.FREELANCE = freelance;
+    if (otherIncome) plannedIncome.OTHER = otherIncome;
+
+    // Gather planned expenses
+    const rent = parseFloat(document.getElementById('planRent').value);
+    const utilities = parseFloat(document.getElementById('planUtilities').value);
+    const internet = parseFloat(document.getElementById('planInternet').value);
+    const transport = parseFloat(document.getElementById('planTransport').value);
+    const fuel = parseFloat(document.getElementById('planFuel').value);
+    const groceries = parseFloat(document.getElementById('planGroceries').value);
+    const dining = parseFloat(document.getElementById('planDining').value);
+    const entertainment = parseFloat(document.getElementById('planEntertainment').value);
+    const subscriptions = parseFloat(document.getElementById('planSubscriptions').value);
+    const gym = parseFloat(document.getElementById('planGym').value);
+    const otherExpense = parseFloat(document.getElementById('planOtherExpense').value);
+
+    if (rent) plannedExpenses.RENT = rent;
+    if (utilities) plannedExpenses.UTILITIES = utilities;
+    if (internet) plannedExpenses.INTERNET = internet;
+    if (transport) plannedExpenses.TRANSPORT = transport;
+    if (fuel) plannedExpenses.FUEL = fuel;
+    if (groceries) plannedExpenses.GROCERIES = groceries;
+    if (dining) plannedExpenses.DINING_OUT = dining;
+    if (entertainment) plannedExpenses.ENTERTAINMENT = entertainment;
+    if (subscriptions) plannedExpenses.SUBSCRIPTIONS = subscriptions;
+    if (gym) plannedExpenses.GYM = gym;
+    if (otherExpense) plannedExpenses.OTHER = otherExpense;
+
+    const payload = {
+        plannedIncome,
+        plannedExpenses,
+        autoCreateRecords: true  // Auto-create records from planned amounts
+    };
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/planned`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    loadBudgetForSelectedMonth();
+}
+async function addIncome() {
+    if (!currentBudgetMonth) return;
+
+    const category = document.getElementById('incomeCategory').value;
+    const amount = parseFloat(document.getElementById('incomeAmount').value);
+    const description = document.getElementById('incomeDescription').value;
+
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
+
+    const record = { category, amount, description };
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+    });
+
+    document.getElementById('incomeAmount').value = '';
+    document.getElementById('incomeDescription').value = '';
+
+    loadBudgetForSelectedMonth();
+}
+
+async function addExpense() {
+    if (!currentBudgetMonth) return;
+
+    const category = document.getElementById('expenseCategory').value;
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    const description = document.getElementById('expenseDescription').value;
+
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
+
+    const record = { category, amount, description };
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+    });
+
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('expenseDescription').value = '';
+
+    loadBudgetForSelectedMonth();
+}
+
+async function deleteIncomeRecord(index) {
+    if (!currentBudgetMonth || !confirm('Delete this income record?')) return;
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income/${index}`, {
+        method: 'DELETE'
+    });
+
+    loadBudgetForSelectedMonth();
+}
+
+async function deleteExpenseRecord(index) {
+    if (!currentBudgetMonth || !confirm('Delete this expense record?')) return;
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses/${index}`, {
+        method: 'DELETE'
+    });
+
+    loadBudgetForSelectedMonth();
 }
 
 loadMemos();
