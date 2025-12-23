@@ -10,9 +10,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +34,13 @@ public class SystemStatsService {
   public SystemStatsDTO getSystemStats() {
     SystemStatsDTO.SystemStatsDTOBuilder builder = SystemStatsDTO.builder();
 
+    // JVM Memory
+    MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
+    builder
+        .jvmHeapUsed(heapUsage.getUsed() / (1024 * 1024))
+        .jvmHeapMax(heapUsage.getMax() / (1024 * 1024))
+        .jvmHeapUsagePercent((double) heapUsage.getUsed() / heapUsage.getMax() * 100);
+
     // CPU Stats
     builder
         .availableProcessors(osBean.getAvailableProcessors())
@@ -43,10 +48,11 @@ public class SystemStatsService {
         .processCpuLoad(osBean.getProcessCpuLoad() * 100)
         .loadAverage(getLoadAverage());
 
-    // System Memory
-    long totalMemory = osBean.getTotalMemorySize() / (1024 * 1024); // MB
-    long freeMemory = osBean.getFreeMemorySize() / (1024 * 1024); // MB
-    long usedMemory = totalMemory - freeMemory;
+    // System Memory - FIXED to match htop
+    long[] memStats = getActualMemoryStats();
+    long totalMemory = memStats[0]; // MB
+    long usedMemory = memStats[1]; // MB
+    long freeMemory = memStats[2]; // MB (actually available)
 
     builder
         .systemTotalMemoryMB(totalMemory)
@@ -77,13 +83,6 @@ public class SystemStatsService {
         .diskUsedSpaceGB(usedSpace)
         .diskUsagePercent((double) usedSpace / totalSpace * 100);
 
-    // JVM Memory (just for reference of this app)
-    MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
-    builder
-        .jvmHeapUsed(heapUsage.getUsed() / (1024 * 1024))
-        .jvmHeapMax(heapUsage.getMax() / (1024 * 1024))
-        .jvmHeapUsagePercent((double) heapUsage.getUsed() / heapUsage.getMax() * 100);
-
     // Network Info
     try {
       builder.hostname(InetAddress.getLocalHost().getHostName()).ipAddresses(getIpAddresses());
@@ -109,6 +108,56 @@ public class SystemStatsService {
         .peakThreadCount(threadBean.getPeakThreadCount());
 
     return builder.build();
+  }
+
+  private long[] getActualMemoryStats() {
+    try {
+      // Read from /proc/meminfo for accurate Linux memory stats
+      File meminfoFile = new File("/proc/meminfo");
+      if (meminfoFile.exists()) {
+        Map<String, Long> meminfo = new HashMap<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(meminfoFile))) {
+          String line;
+          while ((line = reader.readLine()) != null) {
+            String[] parts = line.split(":\\s+");
+            if (parts.length == 2) {
+              String key = parts[0];
+              long value = Long.parseLong(parts[1].split("\\s+")[0]); // Value in KB
+              meminfo.put(key, value);
+            }
+          }
+        }
+
+        // Calculate memory the way htop does it
+        long total = meminfo.getOrDefault("MemTotal", 0L);
+        long free = meminfo.getOrDefault("MemFree", 0L);
+        long buffers = meminfo.getOrDefault("Buffers", 0L);
+        long cached = meminfo.getOrDefault("Cached", 0L);
+        long sReclaimable = meminfo.getOrDefault("SReclaimable", 0L);
+
+        // Available = Free + Buffers + Cached + SReclaimable
+        long available = free + buffers + cached + sReclaimable;
+
+        // Used = Total - Available
+        long used = total - available;
+
+        // Convert from KB to MB
+        return new long[] {
+          total / 1024, // total MB
+          used / 1024, // used MB
+          available / 1024 // free/available MB
+        };
+      }
+    } catch (Exception e) {
+      log.error("Failed to read /proc/meminfo: {}", e.getMessage());
+    }
+
+    // Fallback to JVM method (less accurate)
+    long total = osBean.getTotalMemorySize() / (1024 * 1024);
+    long free = osBean.getFreeMemorySize() / (1024 * 1024);
+    long used = total - free;
+    return new long[] {total, used, free};
   }
 
   private double[] getLoadAverage() {
