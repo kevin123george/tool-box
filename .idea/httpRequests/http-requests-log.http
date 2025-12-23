@@ -1,0 +1,18 @@
+GET http://localhost:9099/api/dump/download
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.3
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> mongo-dump.json
+
+###
+
+GET http://localhost:9099/api/dump/download
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.3
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> 2025-12-23T004414.404.json
+
+###
+

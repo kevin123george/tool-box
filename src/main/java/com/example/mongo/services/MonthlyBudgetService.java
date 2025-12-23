@@ -25,6 +25,9 @@ public class MonthlyBudgetService {
           ExpenseCategory.SUBSCRIPTIONS,
           ExpenseCategory.TRANSPORT);
 
+  private static final Set<IncomeCategory> AUTO_CREATE_INCOME_CATEGORIES =
+      Set.of(IncomeCategory.SALARY);
+
   public MonthlyBudget getOrCreateBudget(YearMonth month) {
     return monthlyBudgetRepository
         .findByMonth(month)
@@ -56,13 +59,33 @@ public class MonthlyBudgetService {
     if (plannedIncome != null) {
       budget.setPlannedIncome(plannedIncome);
 
-      // Auto-create income records if requested
+      // Auto-create income records ONLY if they don't already exist
       if (autoCreateRecords) {
         plannedIncome.forEach(
             (category, amount) -> {
-              if (amount > 0) {
-                IncomeRecord record = new IncomeRecord(category, amount, "Planned " + category);
-                budget.addIncomeRecord(record);
+              if (amount > 0 && AUTO_CREATE_INCOME_CATEGORIES.contains(category)) {
+                // Check if record already exists for this category
+                boolean exists =
+                    budget.getIncomeRecords().stream()
+                        .anyMatch(
+                            r ->
+                                r.getCategory() == category
+                                    && r.getDescription().equals("Auto-created from plan"));
+
+                if (!exists) {
+                  IncomeRecord record =
+                      new IncomeRecord(category, amount, "Auto-created from plan");
+                  budget.addIncomeRecord(record);
+                } else {
+                  // Update existing auto-created record
+                  budget.getIncomeRecords().stream()
+                      .filter(
+                          r ->
+                              r.getCategory() == category
+                                  && r.getDescription().equals("Auto-created from plan"))
+                      .findFirst()
+                      .ifPresent(r -> r.setAmount(amount));
+                }
               }
             });
       }
@@ -71,13 +94,33 @@ public class MonthlyBudgetService {
     if (plannedExpenses != null) {
       budget.setPlannedExpenses(plannedExpenses);
 
-      // Auto-create expense records if requested
+      // Auto-create expense records ONLY if they don't already exist
       if (autoCreateRecords) {
         plannedExpenses.forEach(
             (category, amount) -> {
               if (amount > 0 && AUTO_CREATE_EXPENSE_CATEGORIES.contains(category)) {
-                ExpenseRecord record = new ExpenseRecord(category, amount, "Planned " + category);
-                budget.addExpenseRecord(record);
+                // Check if record already exists for this category
+                boolean exists =
+                    budget.getExpenseRecords().stream()
+                        .anyMatch(
+                            r ->
+                                r.getCategory() == category
+                                    && r.getDescription().equals("Auto-created from plan"));
+
+                if (!exists) {
+                  ExpenseRecord record =
+                      new ExpenseRecord(category, amount, "Auto-created from plan");
+                  budget.addExpenseRecord(record);
+                } else {
+                  // Update existing auto-created record
+                  budget.getExpenseRecords().stream()
+                      .filter(
+                          r ->
+                              r.getCategory() == category
+                                  && r.getDescription().equals("Auto-created from plan"))
+                      .findFirst()
+                      .ifPresent(r -> r.setAmount(amount));
+                }
               }
             });
       }
