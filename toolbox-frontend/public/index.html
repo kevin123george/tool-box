@@ -22,6 +22,7 @@
     <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
     <div id="tabStocks" class="tab" onclick="switchTab('stocks')">Stocks</div>
     <div id="tabBudget" class="tab" onclick="switchTab('budget')">Budget</div> <!-- NEW -->
+    <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')">System Stats</div>
 </div>
 
 <!-- ---------------- VIEW MODALS ---------------- -->
@@ -526,6 +527,12 @@
     </div>
 </div>
 
+<!-- Add this tab content section with your other tab contents -->
+<div id="systemStatsTabContent" class="tab-content hidden">
+    <div id="systemStatsContent">
+        <div style="text-align:center; padding:40px; opacity:0.5;">Loading system stats...</div>
+    </div>
+</div>
 <!-- ---------------- JS ---------------- -->
 <!-- Quill Editor JS -->
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>

@@ -1,0 +1,40 @@
+{
+  "availableProcessors": 10,
+  "systemCpuLoad": 0.0,
+  "processCpuLoad": 0.0,
+  "loadAverage": [
+    8.7802734375,
+    8.7802734375,
+    8.7802734375
+  ],
+  "systemTotalMemoryMB": 16384,
+  "systemFreeMemoryMB": 102,
+  "systemUsedMemoryMB": 16282,
+  "systemMemoryUsagePercent": 99.37744140625,
+  "swapTotalMB": 7168,
+  "swapFreeMB": 1115,
+  "swapUsedMB": 6053,
+  "swapUsagePercent": 84.44475446428571,
+  "diskTotalSpaceGB": 460,
+  "diskFreeSpaceGB": 30,
+  "diskUsedSpaceGB": 430,
+  "diskUsagePercent": 93.47826086956522,
+  "jvmHeapUsed": 49,
+  "jvmHeapMax": 4096,
+  "jvmHeapUsagePercent": 1.2102574110031128,
+  "hostname": "Kevins-MacBook-Air.local",
+  "ipAddresses": [
+    "100.70.247.128",
+    "100.65.29.37"
+  ],
+  "networkRxBytes": 0,
+  "networkTxBytes": 0,
+  "osName": "Mac OS X",
+  "osVersion": "26.2",
+  "osArch": "aarch64",
+  "systemUptimeSeconds": 0,
+  "applicationUptimeMillis": 3906,
+  "applicationStartTime": "2025-12-23T22:17:21.488Z",
+  "threadCount": 27,
+  "peakThreadCount": 27
+}

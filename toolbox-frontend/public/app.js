@@ -63,16 +63,24 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* Tabs */
+/* Tabs */
 function switchTab(which) {
+    // Clean up system stats interval when leaving the tab
+    if (document.getElementById("tabSystemStats")?.classList.contains("active")) {
+        cleanupSystemStats();
+    }
+
     document.getElementById("tabMemo").classList.toggle("active", which === "memo");
     document.getElementById("tabFinance").classList.toggle("active", which === "finance");
     document.getElementById("tabStocks").classList.toggle("active", which === "stocks");
-    document.getElementById("tabBudget").classList.toggle("active", which === "budget"); // NEW
+    document.getElementById("tabBudget").classList.toggle("active", which === "budget");
+    document.getElementById("tabSystemStats").classList.toggle("active", which === "systemstats");
 
     memoTabContent.classList.toggle("hidden", which !== "memo");
     financeTabContent.classList.toggle("hidden", which !== "finance");
     stocksTabContent.classList.toggle("hidden", which !== "stocks");
-    budgetTabContent.classList.toggle("hidden", which !== "budget"); // NEW
+    budgetTabContent.classList.toggle("hidden", which !== "budget");
+    systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
 
     if (which === "finance") {
         loadFinance();
@@ -82,8 +90,10 @@ function switchTab(which) {
         if (!stocksRefreshInterval) {
             stocksRefreshInterval = setInterval(loadStocks, 30000);
         }
-    } else if (which === "budget") { // NEW
+    } else if (which === "budget") {
         goToCurrentMonth();
+    } else if (which === "systemstats") {
+        initSystemStatsTab();
     } else {
         if (stocksRefreshInterval) {
             clearInterval(stocksRefreshInterval);
@@ -91,7 +101,6 @@ function switchTab(which) {
         }
     }
 }
-
 /* Helpers */
 function stripHtml(h){ let d=document.createElement("div"); d.innerHTML=h; return d.innerText; }
 function truncate(s,n){ return !s?"" : s.length>n ? s.slice(0,n-3)+"..." : s; }
@@ -1093,6 +1102,255 @@ async function deleteExpenseRecord(index) {
     });
 
     loadBudgetForSelectedMonth();
+}
+
+// ============================================
+// SYSTEM STATS TAB
+// ============================================
+
+let statsAutoRefresh = true;
+let statsRefreshInterval = null;
+
+function initSystemStatsTab() {
+    loadSystemStats();
+
+    // Start auto-refresh
+    if (statsAutoRefresh) {
+        statsRefreshInterval = setInterval(loadSystemStats, 3000);
+    }
+}
+
+async function loadSystemStats() {
+    try {
+        const response = await fetch('/api/system/stats');
+        const stats = await response.json();
+        renderSystemStats(stats);
+    } catch (error) {
+        console.error('Failed to load system stats:', error);
+        document.getElementById('systemStatsContent').innerHTML =
+            '<div style="padding:20px;text-align:center;color:#f33;">Failed to load system stats</div>';
+    }
+}
+
+function renderSystemStats(stats) {
+    const content = document.getElementById('systemStatsContent');
+
+    const cpuColor = stats.systemCpuLoad > 80 ? '#f33' : '#0f0';
+    const memColor = stats.systemMemoryUsagePercent > 90 ? '#f33' : '#0f0';
+    const diskColor = stats.diskUsagePercent > 90 ? '#f33' : '#0f0';
+
+    content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h2 style="margin:0;">🖥️ System Monitor</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <label style="font-size:12px; cursor:pointer;">
+                    <input type="checkbox" id="statsAutoRefresh" ${statsAutoRefresh ? 'checked' : ''} 
+                           onchange="toggleStatsAutoRefresh(this.checked)">
+                    Auto-refresh (3s)
+                </label>
+                <button class="btn" onclick="loadSystemStats()">🔄 Refresh</button>
+            </div>
+        </div>
+        
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
+            
+            <!-- CPU Card -->
+            <div class="card" style="display:block;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">⚡ CPU</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Processors:</span>
+                    <strong>${stats.availableProcessors} cores</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">System Load:</span>
+                    <strong style="color:${cpuColor}">${stats.systemCpuLoad.toFixed(1)}%</strong>
+                </div>
+                <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
+                    <div style="height:100%; width:${stats.systemCpuLoad}%; background:${cpuColor}; transition:width 0.3s;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="opacity:0.7; font-size:12px;">Load Average:</span>
+                    <strong style="font-size:11px;">${stats.loadAverage[0].toFixed(2)} / ${stats.loadAverage[1].toFixed(2)} / ${stats.loadAverage[2].toFixed(2)}</strong>
+                </div>
+                <div style="opacity:0.5; font-size:10px; text-align:right;">1min / 5min / 15min</div>
+            </div>
+            
+            <!-- Memory Card -->
+            <div class="card" style="display:block;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">💾 Memory</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Total:</span>
+                    <strong>${(stats.systemTotalMemoryMB / 1024).toFixed(1)} GB</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Used:</span>
+                    <strong style="color:${memColor}">${(stats.systemUsedMemoryMB / 1024).toFixed(1)} GB</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Free:</span>
+                    <strong>${(stats.systemFreeMemoryMB / 1024).toFixed(1)} GB</strong>
+                </div>
+                <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
+                    <div style="height:100%; width:${stats.systemMemoryUsagePercent}%; background:${memColor}; transition:width 0.3s;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="opacity:0.7; font-size:12px;">Usage:</span>
+                    <strong style="color:${memColor}">${stats.systemMemoryUsagePercent.toFixed(1)}%</strong>
+                </div>
+            </div>
+            
+            <!-- Disk Card -->
+            <div class="card" style="display:block;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">💽 Disk</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Total:</span>
+                    <strong>${stats.diskTotalSpaceGB} GB</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Used:</span>
+                    <strong style="color:${diskColor}">${stats.diskUsedSpaceGB} GB</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Free:</span>
+                    <strong>${stats.diskFreeSpaceGB} GB</strong>
+                </div>
+                <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
+                    <div style="height:100%; width:${stats.diskUsagePercent}%; background:${diskColor}; transition:width 0.3s;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="opacity:0.7; font-size:12px;">Usage:</span>
+                    <strong style="color:${diskColor}">${stats.diskUsagePercent.toFixed(1)}%</strong>
+                </div>
+            </div>
+            
+            ${stats.swapTotalMB > 0 ? `
+            <!-- Swap Card -->
+            <div class="card" style="display:block;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">💿 Swap</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Total:</span>
+                    <strong>${(stats.swapTotalMB / 1024).toFixed(1)} GB</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Used:</span>
+                    <strong>${(stats.swapUsedMB / 1024).toFixed(1)} GB</strong>
+                </div>
+                <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
+                    <div style="height:100%; width:${stats.swapUsagePercent}%; background:#0f0; transition:width 0.3s;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="opacity:0.7; font-size:12px;">Usage:</span>
+                    <strong>${stats.swapUsagePercent.toFixed(1)}%</strong>
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Network Card -->
+            <div class="card" style="display:block;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">🌐 Network</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Hostname:</span>
+                    <strong style="font-size:11px;">${stats.hostname}</strong>
+                </div>
+                ${stats.ipAddresses.map(ip => `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span style="opacity:0.7; font-size:12px;">IP:</span>
+                        <strong style="font-size:11px;">${ip}</strong>
+                    </div>
+                `).join('')}
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">RX:</span>
+                    <strong style="font-size:11px;">${formatBytes(stats.networkRxBytes)}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="opacity:0.7; font-size:12px;">TX:</span>
+                    <strong style="font-size:11px;">${formatBytes(stats.networkTxBytes)}</strong>
+                </div>
+            </div>
+            
+            <!-- System Info Card -->
+            <div class="card" style="display:block;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">ℹ️ System Info</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">OS:</span>
+                    <strong style="font-size:11px;">${stats.osName}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Version:</span>
+                    <strong style="font-size:11px;">${stats.osVersion}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Arch:</span>
+                    <strong style="font-size:11px;">${stats.osArch}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="opacity:0.7; font-size:12px;">Uptime:</span>
+                    <strong style="font-size:11px;">${formatUptime(stats.systemUptimeSeconds)}</strong>
+                </div>
+            </div>
+            
+            <!-- JVM Card -->
+            <div class="card" style="display:block; opacity:0.8;">
+                <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">☕ JVM (This App)</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Heap Used:</span>
+                    <strong>${stats.jvmHeapUsed} MB</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Heap Max:</span>
+                    <strong>${stats.jvmHeapMax} MB</strong>
+                </div>
+                <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
+                    <div style="height:100%; width:${stats.jvmHeapUsagePercent}%; background:#0f0; transition:width 0.3s;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="opacity:0.7; font-size:12px;">Usage:</span>
+                    <strong>${stats.jvmHeapUsagePercent.toFixed(1)}%</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="opacity:0.7; font-size:12px;">Threads:</span>
+                    <strong>${stats.threadCount} / ${stats.peakThreadCount}</strong>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function toggleStatsAutoRefresh(enabled) {
+    statsAutoRefresh = enabled;
+
+    if (statsRefreshInterval) {
+        clearInterval(statsRefreshInterval);
+        statsRefreshInterval = null;
+    }
+
+    if (enabled) {
+        statsRefreshInterval = setInterval(loadSystemStats, 3000);
+    }
+}
+
+function formatBytes(bytes) {
+    const gb = bytes / (1024 * 1024 * 1024);
+    if (gb >= 1) {
+        return `${gb.toFixed(2)} GB`;
+    }
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(0)} MB`;
+}
+
+function formatUptime(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${days}d ${hours}h ${minutes}m`;
+}
+
+// Clean up interval when switching tabs
+function cleanupSystemStats() {
+    if (statsRefreshInterval) {
+        clearInterval(statsRefreshInterval);
+        statsRefreshInterval = null;
+    }
 }
 
 loadMemos();

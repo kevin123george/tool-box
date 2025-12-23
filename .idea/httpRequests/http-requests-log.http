@@ -1,3 +1,30 @@
+GET http://localhost:9099/api/system/stats
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.3
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> 2025-12-23T231725.200.json
+
+###
+
+GET http://localhost:9099/api/system/stats
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.3
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> 2025-12-23T231651.404.json
+
+###
+
+GET http://localhost:9099/api/dump/download
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.3
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+<> mongo-dump-1.json
+
+###
+
 GET http://localhost:9099/api/dump/download
 User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2025.3
 Accept-Encoding: br, deflate, gzip, x-gzip
