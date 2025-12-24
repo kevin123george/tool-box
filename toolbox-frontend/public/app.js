@@ -1353,4 +1353,186 @@ function cleanupSystemStats() {
     }
 }
 
+// ============================================
+// PUSH NOTIFICATIONS
+// ============================================
+
+let publicVapidKey = null;
+let pushSubscription = null;
+
+async function initPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push notifications not supported');
+        updateNotificationUI(false);
+        return;
+    }
+
+    try {
+        // Register service worker
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('Service Worker registered:', registration);
+
+        // Get public VAPID key from server
+        const response = await fetch('/api/push/public-key');
+        const data = await response.json();
+        publicVapidKey = data.publicKey;
+        console.log('Got VAPID public key');
+
+        // Check if already subscribed
+        pushSubscription = await registration.pushManager.getSubscription();
+        console.log('Existing subscription:', pushSubscription ? 'Yes' : 'No');
+
+        updateNotificationUI(pushSubscription !== null);
+    } catch (error) {
+        console.error('Error initializing push notifications:', error);
+        updateNotificationUI(false);
+    }
+}
+
+async function subscribeToPush() {
+    try {
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission:', permission);
+
+        if (permission !== 'granted') {
+            alert('❌ Please enable notifications in your browser settings');
+            return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        console.log('Service worker ready');
+
+        // Convert VAPID key
+        const convertedKey = urlBase64ToUint8Array(publicVapidKey);
+
+        // Subscribe to push
+        pushSubscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey
+        });
+
+        console.log('Push subscription created:', pushSubscription);
+
+        // Send subscription to server
+        const response = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                endpoint: pushSubscription.endpoint,
+                keys: {
+                    p256dh: arrayBufferToBase64(pushSubscription.getKey('p256dh')),
+                    auth: arrayBufferToBase64(pushSubscription.getKey('auth'))
+                },
+                deviceName: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop',
+                userAgent: navigator.userAgent
+            })
+        });
+
+        if (response.ok) {
+            alert('✅ Push notifications enabled!');
+            updateNotificationUI(true);
+        } else {
+            throw new Error('Failed to subscribe on server');
+        }
+    } catch (error) {
+        console.error('Error subscribing to push:', error);
+        alert('❌ Failed to enable notifications: ' + error.message);
+    }
+}
+
+async function unsubscribeFromPush() {
+    try {
+        if (pushSubscription) {
+            await pushSubscription.unsubscribe();
+
+            await fetch('/api/push/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: pushSubscription.endpoint
+                })
+            });
+
+            pushSubscription = null;
+            alert('❌ Push notifications disabled');
+            updateNotificationUI(false);
+        }
+    } catch (error) {
+        console.error('Error unsubscribing:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+async function testNotification() {
+    try {
+        const response = await fetch('/api/push/test', { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`✅ ${result.message}\n\nCheck your device for the notification!`);
+        } else {
+            alert(`❌ ${result.message}`);
+        }
+    } catch (error) {
+        console.error('Error sending test notification:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function updateNotificationUI(isSubscribed) {
+    const statusDiv = document.getElementById('notificationStatus');
+    const subscribeBtn = document.getElementById('subscribeBtn');
+    const unsubscribeBtn = document.getElementById('unsubscribeBtn');
+    const testBtn = document.getElementById('testNotificationBtn');
+
+    if (!statusDiv) return;
+
+    if (isSubscribed) {
+        statusDiv.textContent = '✅ Notifications enabled';
+        statusDiv.style.color = '#0f0';
+        if (subscribeBtn) subscribeBtn.style.display = 'none';
+        if (unsubscribeBtn) unsubscribeBtn.style.display = 'inline-block';
+        if (testBtn) testBtn.style.display = 'inline-block';
+    } else {
+        statusDiv.textContent = '⚪ Notifications disabled';
+        statusDiv.style.color = '#999';
+        if (subscribeBtn) subscribeBtn.style.display = 'inline-block';
+        if (unsubscribeBtn) unsubscribeBtn.style.display = 'none';
+        if (testBtn) testBtn.style.display = 'none';
+    }
+}
+
+// Helper functions
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initPushNotifications();
+});
+
 loadMemos();

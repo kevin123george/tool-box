@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,6 +23,13 @@ public class SystemStatsService {
   private final MemoryMXBean memoryBean;
   private final RuntimeMXBean runtimeBean;
   private final ThreadMXBean threadBean;
+
+  @Autowired private WebPushService webPushService;
+
+  private long lastCpuAlert = 0;
+  private long lastMemoryAlert = 0;
+  private long lastDiskAlert = 0;
+  private static final long ALERT_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 
   public SystemStatsService() {
     this.osBean =
@@ -107,7 +115,12 @@ public class SystemStatsService {
         .threadCount(threadBean.getThreadCount())
         .peakThreadCount(threadBean.getPeakThreadCount());
 
-    return builder.build();
+    SystemStatsDTO stats = builder.build();
+
+    // Check for alerts
+    checkAndSendAlerts(stats);
+
+    return stats;
   }
 
   private long[] getActualMemoryStats() {
@@ -256,5 +269,51 @@ public class SystemStatsService {
       log.error("Failed to get IP addresses: {}", e.getMessage());
     }
     return ips;
+  }
+
+  private void checkAndSendAlerts(SystemStatsDTO stats) {
+    long now = System.currentTimeMillis();
+
+    // CPU Alert
+    if (stats.getSystemCpuLoad() > 90 && (now - lastCpuAlert) > ALERT_COOLDOWN) {
+      Map<String, String> data = new HashMap<>();
+      data.put("cpu", String.format("%.1f", stats.getSystemCpuLoad()));
+
+      webPushService.sendSystemAlert(
+          "⚠️ High CPU Usage",
+          String.format("CPU usage is at %.1f%%", stats.getSystemCpuLoad()),
+          "cpu_alert",
+          data);
+      lastCpuAlert = now;
+      log.warn("CPU alert sent: {}%", stats.getSystemCpuLoad());
+    }
+
+    // Memory Alert
+    if (stats.getSystemMemoryUsagePercent() > 90 && (now - lastMemoryAlert) > ALERT_COOLDOWN) {
+      Map<String, String> data = new HashMap<>();
+      data.put("memory", String.format("%.1f", stats.getSystemMemoryUsagePercent()));
+
+      webPushService.sendSystemAlert(
+          "⚠️ High Memory Usage",
+          String.format("Memory usage is at %.1f%%", stats.getSystemMemoryUsagePercent()),
+          "memory_alert",
+          data);
+      lastMemoryAlert = now;
+      log.warn("Memory alert sent: {}%", stats.getSystemMemoryUsagePercent());
+    }
+
+    // Disk Alert
+    if (stats.getDiskUsagePercent() > 90 && (now - lastDiskAlert) > ALERT_COOLDOWN) {
+      Map<String, String> data = new HashMap<>();
+      data.put("disk", String.format("%.1f", stats.getDiskUsagePercent()));
+
+      webPushService.sendSystemAlert(
+          "⚠️ High Disk Usage",
+          String.format("Disk usage is at %.1f%%", stats.getDiskUsagePercent()),
+          "disk_alert",
+          data);
+      lastDiskAlert = now;
+      log.warn("Disk alert sent: {}%", stats.getDiskUsagePercent());
+    }
   }
 }

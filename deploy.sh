@@ -57,6 +57,28 @@ else
     echo "⚠️  requirements.txt not found"
 fi
 
+### Check VAPID keys for push notifications
+echo "🔑 Checking VAPID keys..."
+PROPS_FILE="src/main/resources/application.properties"
+if [ -f "$PROPS_FILE" ]; then
+    PUBLIC_KEY=$(grep "^vapid.public.key=" "$PROPS_FILE" 2>/dev/null | cut -d'=' -f2 || echo "")
+    if [ -z "$PUBLIC_KEY" ] || [ "$PUBLIC_KEY" = "YOUR_PUBLIC_KEY_FROM_GENERATOR" ]; then
+        echo "⚠️  VAPID keys not configured!"
+        echo "   Run VapidKeyGenerator.java to generate keys"
+        echo "   Push notifications will not work!"
+    else
+        echo "✓ VAPID keys configured"
+    fi
+fi
+
+### Verify service worker exists
+if [ -f "toolbox-frontend/public/sw.js" ]; then
+    echo "✓ Service worker (sw.js) found"
+else
+    echo "⚠️  Service worker (sw.js) not found in toolbox-frontend/public/"
+    echo "   Push notifications will not work!"
+fi
+
 ### Build backend (skip ALL spotless tasks)
 echo "🔨 Building backend..."
 ./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply
@@ -100,6 +122,10 @@ echo ""
 echo "📊 Services running:"
 echo "   - Backend:    http://localhost:9099 (logs: $BACKEND_LOG)"
 echo "   - Frontend:   http://localhost:3000 (logs: $FRONTEND_LOG)"
+echo ""
+echo "🔔 Push Notifications:"
+echo "   - Navigate to System Stats tab at http://localhost:3000"
+echo "   - Click 'Enable Notifications' to subscribe"
 echo ""
 echo "📝 View logs:"
 echo "   tail -f $BACKEND_LOG"
