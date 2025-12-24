@@ -1116,7 +1116,7 @@ function initSystemStatsTab() {
 
     // Start auto-refresh
     if (statsAutoRefresh) {
-        statsRefreshInterval = setInterval(loadSystemStats, 3000);
+        statsRefreshInterval = setInterval(loadSystemStats, 900);
     }
 }
 
