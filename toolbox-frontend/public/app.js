@@ -1135,9 +1135,19 @@ async function loadSystemStats() {
 function renderSystemStats(stats) {
     const content = document.getElementById('systemStatsContent');
 
-    const cpuColor = stats.systemCpuLoad > 80 ? '#f33' : '#0f0';
-    const memColor = stats.systemMemoryUsagePercent > 90 ? '#f33' : '#0f0';
-    const diskColor = stats.diskUsagePercent > 90 ? '#f33' : '#0f0';
+    // Safe number formatter - handles NaN and negative values
+    const safe = (val, decimals = 1) => {
+        if (val === null || val === undefined || isNaN(val) || val < 0) return '0.' + '0'.repeat(decimals);
+        return val.toFixed(decimals);
+    };
+
+    const cpuLoad = (stats.systemCpuLoad >= 0 && !isNaN(stats.systemCpuLoad)) ? stats.systemCpuLoad : 0;
+    const memUsage = (stats.systemMemoryUsagePercent >= 0 && !isNaN(stats.systemMemoryUsagePercent)) ? stats.systemMemoryUsagePercent : 0;
+    const diskUsage = (stats.diskUsagePercent >= 0 && !isNaN(stats.diskUsagePercent)) ? stats.diskUsagePercent : 0;
+
+    const cpuColor = cpuLoad > 80 ? '#f33' : '#0f0';
+    const memColor = memUsage > 90 ? '#f33' : '#0f0';
+    const diskColor = diskUsage > 90 ? '#f33' : '#0f0';
 
     content.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -1163,14 +1173,14 @@ function renderSystemStats(stats) {
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">System Load:</span>
-                    <strong style="color:${cpuColor}">${stats.systemCpuLoad.toFixed(1)}%</strong>
+                    <strong style="color:${cpuColor}">${safe(cpuLoad, 1)}%</strong>
                 </div>
                 <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
-                    <div style="height:100%; width:${stats.systemCpuLoad}%; background:${cpuColor}; transition:width 0.3s;"></div>
+                    <div style="height:100%; width:${cpuLoad}%; background:${cpuColor}; transition:width 0.3s;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span style="opacity:0.7; font-size:12px;">Load Average:</span>
-                    <strong style="font-size:11px;">${stats.loadAverage[0].toFixed(2)} / ${stats.loadAverage[1].toFixed(2)} / ${stats.loadAverage[2].toFixed(2)}</strong>
+                    <strong style="font-size:11px;">${safe(stats.loadAverage[0], 2)} / ${safe(stats.loadAverage[1], 2)} / ${safe(stats.loadAverage[2], 2)}</strong>
                 </div>
                 <div style="opacity:0.5; font-size:10px; text-align:right;">1min / 5min / 15min</div>
             </div>
@@ -1180,22 +1190,22 @@ function renderSystemStats(stats) {
                 <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">💾 Memory</div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">Total:</span>
-                    <strong>${(stats.systemTotalMemoryMB / 1024).toFixed(1)} GB</strong>
+                    <strong>${safe(stats.systemTotalMemoryMB / 1024, 1)} GB</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">Used:</span>
-                    <strong style="color:${memColor}">${(stats.systemUsedMemoryMB / 1024).toFixed(1)} GB</strong>
+                    <strong style="color:${memColor}">${safe(stats.systemUsedMemoryMB / 1024, 1)} GB</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">Free:</span>
-                    <strong>${(stats.systemFreeMemoryMB / 1024).toFixed(1)} GB</strong>
+                    <strong>${safe(stats.systemFreeMemoryMB / 1024, 1)} GB</strong>
                 </div>
                 <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
-                    <div style="height:100%; width:${stats.systemMemoryUsagePercent}%; background:${memColor}; transition:width 0.3s;"></div>
+                    <div style="height:100%; width:${memUsage}%; background:${memColor}; transition:width 0.3s;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                     <span style="opacity:0.7; font-size:12px;">Usage:</span>
-                    <strong style="color:${memColor}">${stats.systemMemoryUsagePercent.toFixed(1)}%</strong>
+                    <strong style="color:${memColor}">${safe(memUsage, 1)}%</strong>
                 </div>
             </div>
             
@@ -1215,11 +1225,11 @@ function renderSystemStats(stats) {
                     <strong>${stats.diskFreeSpaceGB} GB</strong>
                 </div>
                 <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
-                    <div style="height:100%; width:${stats.diskUsagePercent}%; background:${diskColor}; transition:width 0.3s;"></div>
+                    <div style="height:100%; width:${diskUsage}%; background:${diskColor}; transition:width 0.3s;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                     <span style="opacity:0.7; font-size:12px;">Usage:</span>
-                    <strong style="color:${diskColor}">${stats.diskUsagePercent.toFixed(1)}%</strong>
+                    <strong style="color:${diskColor}">${safe(diskUsage, 1)}%</strong>
                 </div>
             </div>
             
@@ -1229,18 +1239,18 @@ function renderSystemStats(stats) {
                 <div style="font-weight:bold; margin-bottom:10px; text-transform:uppercase; font-size:12px;">💿 Swap</div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">Total:</span>
-                    <strong>${(stats.swapTotalMB / 1024).toFixed(1)} GB</strong>
+                    <strong>${safe(stats.swapTotalMB / 1024, 1)} GB</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">Used:</span>
-                    <strong>${(stats.swapUsedMB / 1024).toFixed(1)} GB</strong>
+                    <strong>${safe(stats.swapUsedMB / 1024, 1)} GB</strong>
                 </div>
                 <div style="height:8px; background:rgba(255,255,255,0.1); margin:8px 0; position:relative; overflow:hidden;">
                     <div style="height:100%; width:${stats.swapUsagePercent}%; background:#0f0; transition:width 0.3s;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                     <span style="opacity:0.7; font-size:12px;">Usage:</span>
-                    <strong>${stats.swapUsagePercent.toFixed(1)}%</strong>
+                    <strong>${safe(stats.swapUsagePercent, 1)}%</strong>
                 </div>
             </div>
             ` : ''}
@@ -1305,7 +1315,7 @@ function renderSystemStats(stats) {
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span style="opacity:0.7; font-size:12px;">Usage:</span>
-                    <strong>${stats.jvmHeapUsagePercent.toFixed(1)}%</strong>
+                    <strong>${safe(stats.jvmHeapUsagePercent, 1)}%</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                     <span style="opacity:0.7; font-size:12px;">Threads:</span>
