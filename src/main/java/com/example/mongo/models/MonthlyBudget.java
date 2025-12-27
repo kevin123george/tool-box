@@ -2,10 +2,7 @@ package com.example.mongo.models;
 
 import java.time.Instant;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
@@ -150,6 +147,22 @@ public class MonthlyBudget {
         });
 
     return variance;
+  }
+
+  public List<IncomeRecord> getIncomeRecords() {
+    return incomeRecords.stream()
+        .sorted(
+            Comparator.comparing(
+                IncomeRecord::getRecordDate, Comparator.nullsLast(Comparator.reverseOrder())))
+        .toList();
+  }
+
+  public List<ExpenseRecord> getExpenseRecords() {
+    return expenseRecords.stream()
+        .sorted(
+            Comparator.comparing(
+                ExpenseRecord::getRecordDate, Comparator.nullsLast(Comparator.reverseOrder())))
+        .toList();
   }
 
   // === Budget Adherence ===

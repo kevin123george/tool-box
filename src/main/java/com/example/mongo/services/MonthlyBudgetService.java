@@ -29,6 +29,9 @@ public class MonthlyBudgetService {
       Set.of(IncomeCategory.SALARY);
 
   public MonthlyBudget getOrCreateBudget(YearMonth month) {
+
+    var budgetOpt = monthlyBudgetRepository.findByMonth(month);
+
     return monthlyBudgetRepository
         .findByMonth(month)
         .orElseGet(() -> monthlyBudgetRepository.save(new MonthlyBudget(month)));
