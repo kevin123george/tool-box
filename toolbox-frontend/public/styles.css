@@ -1,0 +1,380 @@
+:root { --bg:#000; --text:#fff; --border:#fff; }
+.light { --bg:#fff; --text:#000; --border:#000; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: monospace;
+    padding: 20px;
+    font-size: 14px;
+    transition: background .2s, color .2s;
+}
+
+h1 {
+    font-size:16px;
+    text-transform:uppercase;
+    margin-top:0;
+    margin-bottom:10px;
+}
+
+h2 {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-top: 20px;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+.card {
+    background: var(--bg);
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+}
+
+.card-main { flex:1; min-width:0; }
+.card-actions { display:flex; gap:6px; flex-wrap:wrap; }
+
+.add-box {
+    padding: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding:10px;
+    background: var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    margin-bottom:10px;
+    box-sizing: border-box;
+    font-family: monospace;
+}
+
+/* ============================================
+   Quill Editor Styling
+   ============================================ */
+
+/* Quill toolbar */
+.ql-toolbar {
+    background: var(--bg) !important;
+    border: 1px solid var(--border) !important;
+    border-bottom: none !important;
+    font-family: monospace !important;
+    margin-top: 10px;
+}
+
+.ql-toolbar button {
+    color: var(--text) !important;
+}
+
+.ql-toolbar button:hover {
+    color: var(--bg) !important;
+    background: var(--text) !important;
+}
+
+.ql-toolbar .ql-stroke {
+    stroke: var(--text) !important;
+}
+
+.ql-toolbar .ql-fill {
+    fill: var(--text) !important;
+}
+
+.ql-toolbar .ql-picker-label {
+    color: var(--text) !important;
+}
+
+/* Quill editor container */
+.ql-container {
+    background: var(--bg) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    font-family: monospace !important;
+    font-size: 14px !important;
+}
+
+.ql-editor {
+    min-height: 100px;
+    padding: 10px !important;
+    color: var(--text) !important;
+}
+
+.ql-editor.ql-blank::before {
+    color: rgba(255,255,255,0.4) !important;
+    font-style: italic;
+}
+
+.light .ql-editor.ql-blank::before {
+    color: rgba(0,0,0,0.4) !important;
+}
+
+/* Memo content view - clean display without borders */
+.memo-content-view {
+    padding: 10px 0;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+.memo-content-view p {
+    margin: 8px 0;
+}
+
+.memo-content-view h1 {
+    font-size: 20px;
+    margin: 12px 0 8px 0;
+    border: none;
+}
+
+.memo-content-view h2 {
+    font-size: 17px;
+    margin: 10px 0 6px 0;
+    border: none;
+    padding: 0;
+}
+
+.memo-content-view h3 {
+    font-size: 15px;
+    margin: 8px 0 4px 0;
+}
+
+.memo-content-view ul, .memo-content-view ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.memo-content-view li {
+    margin: 4px 0;
+}
+
+.memo-content-view strong {
+    font-weight: bold;
+}
+
+.memo-content-view em {
+    font-style: italic;
+}
+
+.memo-content-view u {
+    text-decoration: underline;
+}
+
+.memo-content-view s {
+    text-decoration: line-through;
+}
+
+.memo-content-view a {
+    color: var(--text);
+    text-decoration: underline;
+}
+
+.memo-content-view img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px 0;
+}
+
+.btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    cursor:pointer;
+    font-size: 12px;
+}
+.btn:hover { background: var(--text); color: var(--bg); }
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.btn:disabled:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+#modeToggle {
+    position:fixed; top:12px; right:12px;
+}
+
+/* Tabs */
+.tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:10px; flex-wrap:wrap; }
+.tab {
+    padding:8px 14px;
+    border:1px solid var(--border);
+    border-bottom:none;
+    margin-right:6px;
+    cursor:pointer;
+    font-size:12px;
+    text-transform:uppercase;
+    background: var(--bg);
+}
+.tab.active { background: var(--text); color: var(--bg); }
+.tab-content { margin-top:10px; }
+.hidden { display:none; }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.pagination-info {
+    font-size: 12px;
+    opacity: 0.8;
+}
+.pagination-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.pagination-controls input,
+.pagination-controls select {
+    width: 60px;
+    padding: 4px 6px;
+    margin: 0;
+    text-align: center;
+}
+
+/* Stocks specific styles */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.stat-card {
+    padding: 12px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 11px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.positive { color: #0f0; }
+.negative { color: #f33; }
+
+.stock-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px 80px 80px 80px;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.stock-header {
+    font-weight: bold;
+    background: var(--text);
+    color: var(--bg);
+}
+
+.profit-bar {
+    height: 8px;
+    background: var(--border);
+    margin-top: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.profit-bar-fill {
+    height: 100%;
+    transition: width 0.3s;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,.7);
+    z-index: 200;
+    animation: fadeIn .25s ease-out;
+}
+
+.modal {
+    background: var(--bg);
+    color: var(--text);
+    border: 2px solid var(--border);
+    padding: 18px;
+    width: 600px;
+    max-width: 92vw;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    animation: popIn .25s ease-out;
+}
+
+/* FIXED PREVIEW BLOCK */
+.view-block {
+    border: 1px solid var(--border);
+    padding: 10px;
+    background: var(--bg);
+    color: var(--text);
+    white-space: normal;
+    word-break: break-word;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    margin-bottom: 14px;
+}
+
+.view-block img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 6px 0;
+}
+
+.view-label {
+    opacity: 0.7;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+@keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+@keyframes popIn { from {opacity:0; transform:scale(.7);} to {opacity:1; transform:scale(1);} }
+
+@media (max-width: 768px) {
+    .stock-row {
+        grid-template-columns: 1fr 60px 60px;
+        font-size: 11px;
+    }
+    .stock-row .hide-mobile {
+        display: none;
+    }
+    .finance-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .memo-layout {
+        grid-template-columns: 1fr !important;
+    }
+}
