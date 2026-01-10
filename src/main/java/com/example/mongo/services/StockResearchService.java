@@ -9,11 +9,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Service
 public class StockResearchService {
 
@@ -177,6 +179,12 @@ public class StockResearchService {
           String.format(
               "https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=%s&limit=10&apikey=%s",
               symbol, alphaVantageKey);
+
+      log.info(
+          String.format(
+              String.format(
+                  "https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=%s&limit=10&apikey=",
+                  symbol)));
 
       Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
