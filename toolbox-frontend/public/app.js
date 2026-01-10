@@ -1683,120 +1683,234 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
         // Single stock - show buy price and current price
         const data = dataBySymbol[selectedFilter] || [];
 
+        // Convert to time-series data points
+        const currentPriceData = data.map(d => ({
+            x: new Date(d.date),
+            y: d.currentPrice
+        }));
+
+        const buyPriceData = data.map(d => ({
+            x: new Date(d.date),
+            y: d.buyPrice
+        }));
+
         datasets.push({
             label: `${selectedFilter} - Current Price`,
-            data: data.map(d => d.currentPrice),
+            data: currentPriceData,
             borderColor: '#0f0',
             backgroundColor: 'rgba(0,255,0,0.1)',
-            borderWidth: 2,
-            tension: 0.1,
-            fill: false
+            borderWidth: 3,
+            tension: 0.4,
+            fill: false,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#0f0',
+            pointBorderColor: isDark ? '#000' : '#fff',
+            pointBorderWidth: 2
         });
 
         datasets.push({
             label: `${selectedFilter} - Buy Price`,
-            data: data.map(d => d.buyPrice),
+            data: buyPriceData,
             borderColor: '#666',
             backgroundColor: 'rgba(100,100,100,0.1)',
             borderWidth: 2,
-            tension: 0.1,
+            tension: 0.4,
             fill: false,
-            borderDash: [5, 5]
+            borderDash: [8, 4],
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#666',
+            pointBorderColor: isDark ? '#000' : '#fff',
+            pointBorderWidth: 2
         });
-
-        const labels = data.map(d => new Date(d.date).toLocaleString());
 
         historyChart = new Chart(ctx, {
             type: 'line',
-            data: { labels, datasets },
-            options: getChartOptions(textColor, gridColor, isDark)
+            data: { datasets },
+            options: getAdvancedChartOptions(textColor, gridColor, isDark, true)
         });
 
     } else {
         // Multiple stocks - show current price for each
-        let allLabels = [];
-
         symbols.forEach(symbol => {
             const data = dataBySymbol[symbol];
 
+            const priceData = data.map(d => ({
+                x: new Date(d.date),
+                y: d.currentPrice
+            }));
+
             datasets.push({
-                label: `${symbol}`,
-                data: data.map(d => d.currentPrice),
+                label: symbol,
+                data: priceData,
                 borderColor: colors[colorIndex % colors.length],
                 backgroundColor: 'transparent',
-                borderWidth: 2,
-                tension: 0.1,
-                fill: false
-            });
-
-            // Collect all unique labels
-            data.forEach(d => {
-                const label = new Date(d.date).toLocaleString();
-                if (!allLabels.includes(label)) {
-                    allLabels.push(label);
-                }
+                borderWidth: 3,
+                tension: 0.4,
+                fill: false,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: colors[colorIndex % colors.length],
+                pointBorderColor: isDark ? '#000' : '#fff',
+                pointBorderWidth: 2
             });
 
             colorIndex++;
         });
 
-        // Sort labels chronologically
-        allLabels.sort((a, b) => new Date(a) - new Date(b));
-
         historyChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: allLabels, datasets },
-            options: getChartOptions(textColor, gridColor, isDark)
+            data: { datasets },
+            options: getAdvancedChartOptions(textColor, gridColor, isDark, false)
         });
     }
 }
 
-function getChartOptions(textColor, gridColor, isDark) {
+function getAdvancedChartOptions(textColor, gridColor, isDark, isSingleStock) {
     return {
         responsive: true,
         maintainAspectRatio: true,
+        interaction: {
+            mode: 'index',
+            intersect: false
+        },
         plugins: {
             legend: {
+                position: 'top',
                 labels: {
                     color: textColor,
-                    font: { family: 'monospace', size: 12 }
+                    font: {
+                        family: 'monospace',
+                        size: 12,
+                        weight: 'bold'
+                    },
+                    padding: 15,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
                 }
             },
             tooltip: {
-                backgroundColor: isDark ? '#000' : '#fff',
+                enabled: true,
+                backgroundColor: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
                 titleColor: textColor,
                 bodyColor: textColor,
                 borderColor: textColor,
-                borderWidth: 1,
-                titleFont: { family: 'monospace', size: 12 },
-                bodyFont: { family: 'monospace', size: 11 },
+                borderWidth: 2,
+                titleFont: {
+                    family: 'monospace',
+                    size: 13,
+                    weight: 'bold'
+                },
+                bodyFont: {
+                    family: 'monospace',
+                    size: 12
+                },
+                padding: 12,
+                displayColors: true,
                 callbacks: {
+                    title: function(context) {
+                        const date = new Date(context[0].parsed.x);
+                        return date.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    },
                     label: function(context) {
-                        return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                        const label = context.dataset.label || '';
+                        const value = context.parsed.y;
+                        return label + ': $' + value.toFixed(2);
+                    },
+                    afterBody: function(context) {
+                        if (isSingleStock && context.length === 2) {
+                            const current = context[0].parsed.y;
+                            const buy = context[1].parsed.y;
+                            const diff = current - buy;
+                            const pct = ((diff / buy) * 100).toFixed(2);
+                            return [
+                                '',
+                                'Change: $' + diff.toFixed(2) + ' (' + pct + '%)'
+                            ];
+                        }
+                        return '';
                     }
                 }
             }
         },
         scales: {
             x: {
+                type: 'time',
+                time: {
+                    unit: 'day',
+                    displayFormats: {
+                        day: 'MMM d',
+                        hour: 'MMM d, HH:mm'
+                    },
+                    tooltipFormat: 'MMM d, yyyy HH:mm'
+                },
                 ticks: {
                     color: textColor,
-                    font: { family: 'monospace', size: 9 },
+                    font: {
+                        family: 'monospace',
+                        size: 10
+                    },
                     maxRotation: 45,
-                    minRotation: 45
+                    minRotation: 45,
+                    autoSkip: true,
+                    autoSkipPadding: 20,
+                    maxTicksLimit: 12
                 },
-                grid: { color: gridColor }
+                grid: {
+                    color: gridColor,
+                    drawBorder: true,
+                    borderColor: textColor
+                },
+                title: {
+                    display: true,
+                    text: 'TIME',
+                    color: textColor,
+                    font: {
+                        family: 'monospace',
+                        size: 11,
+                        weight: 'bold'
+                    }
+                }
             },
             y: {
                 ticks: {
                     color: textColor,
-                    font: { family: 'monospace', size: 10 },
+                    font: {
+                        family: 'monospace',
+                        size: 11
+                    },
                     callback: function(value) {
                         return '$' + value.toFixed(2);
-                    }
+                    },
+                    padding: 8
                 },
-                grid: { color: gridColor }
+                grid: {
+                    color: gridColor,
+                    drawBorder: true,
+                    borderColor: textColor
+                },
+                title: {
+                    display: true,
+                    text: 'PRICE',
+                    color: textColor,
+                    font: {
+                        family: 'monospace',
+                        size: 11,
+                        weight: 'bold'
+                    }
+                }
             }
+        },
+        animation: {
+            duration: 750,
+            easing: 'easeInOutQuart'
         }
     };
 }
@@ -1845,6 +1959,55 @@ function clearDateFilter() {
     document.getElementById('histDateFrom').value = '';
     document.getElementById('histDateTo').value = '';
     loadStockHistory();
+}
+
+function setChartTimeRange(range) {
+    const now = new Date();
+    let fromDate = new Date();
+
+    switch(range) {
+        case '1d':
+            fromDate.setDate(now.getDate() - 1);
+            break;
+        case '1w':
+            fromDate.setDate(now.getDate() - 7);
+            break;
+        case '1m':
+            fromDate.setMonth(now.getMonth() - 1);
+            break;
+        case '3m':
+            fromDate.setMonth(now.getMonth() - 3);
+            break;
+        case '6m':
+            fromDate.setMonth(now.getMonth() - 6);
+            break;
+        case '1y':
+            fromDate.setFullYear(now.getFullYear() - 1);
+            break;
+        case 'all':
+            document.getElementById('histDateFrom').value = '';
+            document.getElementById('histDateTo').value = '';
+            loadStockHistory();
+            return;
+    }
+
+    // Format dates for input fields
+    const fromStr = fromDate.toISOString().split('T')[0];
+    const toStr = now.toISOString().split('T')[0];
+
+    document.getElementById('histDateFrom').value = fromStr;
+    document.getElementById('histDateTo').value = toStr;
+    loadStockHistory();
+}
+
+function exportChartImage() {
+    if (!historyChart) return;
+
+    const url = historyChart.toBase64Image();
+    const link = document.createElement('a');
+    link.download = `stock-chart-${new Date().toISOString().split('T')[0]}.png`;
+    link.href = url;
+    link.click();
 }
 
 loadMemos();
