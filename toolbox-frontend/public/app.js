@@ -3,6 +3,7 @@ let currentGoalId = null;
 let editingHoldingId = null;
 let editingWatchlistId = null;
 let stocksRefreshInterval = null;
+let historyRefreshInterval = null;
 
 // Pagination state
 let memoPage = { current: 0, total: 1, size: 10, totalElements: 0 };
@@ -70,6 +71,12 @@ function switchTab(which) {
         cleanupSystemStats();
     }
 
+    // Clean up history refresh interval when leaving
+    if (historyRefreshInterval) {
+        clearInterval(historyRefreshInterval);
+        historyRefreshInterval = null;
+    }
+
     document.getElementById("tabMemo").classList.toggle("active", which === "memo");
     document.getElementById("tabFinance").classList.toggle("active", which === "finance");
     document.getElementById("tabStocks").classList.toggle("active", which === "stocks");
@@ -94,6 +101,9 @@ function switchTab(which) {
         }
     } else if (which === "stockhistory") {
         loadStockHistory();
+        if (!historyRefreshInterval) {
+            historyRefreshInterval = setInterval(loadStockHistory, 2000);
+        }
     } else if (which === "budget") {
         goToCurrentMonth();
     } else if (which === "systemstats") {
@@ -1612,11 +1622,22 @@ async function loadStockHistory() {
 
 function calculatePriceStats(histories) {
     if (histories.length === 0) {
-        return { avgBuyPrice: 0, currentPrice: 0, priceChange: 0, changePercent: 0 };
+        return {
+            totalInvested: 0,
+            totalValue: 0,
+            avgBuyPrice: 0,
+            currentPrice: 0,
+            priceChange: 0,
+            changePercent: 0
+        };
     }
 
-    // Get most recent entry
+    // Get most recent entry for current price
     const latest = histories[histories.length - 1];
+
+    // Calculate total invested and current value
+    const totalInvested = histories.reduce((sum, h) => sum + (h.quantity * h.buyPrice), 0);
+    const totalValue = histories.reduce((sum, h) => sum + (h.quantity * h.currentPrice), 0);
 
     // Calculate average buy price across all entries
     const avgBuyPrice = histories.reduce((sum, h) => sum + h.buyPrice, 0) / histories.length;
@@ -1624,19 +1645,28 @@ function calculatePriceStats(histories) {
     const priceChange = currentPrice - avgBuyPrice;
     const changePercent = avgBuyPrice > 0 ? ((priceChange / avgBuyPrice) * 100).toFixed(2) : 0;
 
-    return { avgBuyPrice, currentPrice, priceChange, changePercent };
+    return { totalInvested, totalValue, avgBuyPrice, currentPrice, priceChange, changePercent };
 }
 
 function updatePriceStats(stats) {
+    const investedEl = document.getElementById('histStatInvested');
+    const valueEl = document.getElementById('histStatValue');
     const buyPriceEl = document.getElementById('histStatBuyPrice');
     const currentPriceEl = document.getElementById('histStatCurrentPrice');
     const priceChangeEl = document.getElementById('histStatPriceChange');
     const changePercentEl = document.getElementById('histStatChangePercent');
 
+    investedEl.textContent = `$${stats.totalInvested.toFixed(2)}`;
+    valueEl.textContent = `$${stats.totalValue.toFixed(2)}`;
     buyPriceEl.textContent = `$${stats.avgBuyPrice.toFixed(2)}`;
     currentPriceEl.textContent = `$${stats.currentPrice.toFixed(2)}`;
     priceChangeEl.textContent = `$${stats.priceChange.toFixed(2)}`;
     changePercentEl.textContent = `${stats.changePercent}%`;
+
+    // Color total value based on gain/loss
+    const valueGain = stats.totalValue - stats.totalInvested;
+    valueEl.classList.toggle('positive', valueGain >= 0);
+    valueEl.classList.toggle('negative', valueGain < 0);
 
     priceChangeEl.classList.toggle('positive', stats.priceChange >= 0);
     priceChangeEl.classList.toggle('negative', stats.priceChange < 0);
