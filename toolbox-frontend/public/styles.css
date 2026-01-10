@@ -418,3 +418,64 @@ input, textarea, select {
     }
     .hide-mobile { display:none; }
 }
+
+.stock-symbol-bar {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+
+/* Neutral state */
+.neutral { opacity: .7; }
+
+/* Stock header */
+.stock-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border:1px solid var(--border);
+    padding:10px 12px;
+    margin-bottom:12px;
+}
+
+.stock-symbol {
+    font-size:18px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+.stock-return {
+    font-size:16px;
+    font-weight:bold;
+}
+
+/* Progress bars */
+.profit-bar {
+    height:8px;
+    background:var(--border);
+}
+.profit-bar-fill {
+    height:100%;
+}
+.profit-bar-fill.positive { background:#0f0; }
+.profit-bar-fill.negative { background:#f33; }
+
+/* Show more news */
+.show-more-news {
+    border:1px solid var(--border);
+    padding:8px;
+    text-align:center;
+    font-size:12px;
+    cursor:pointer;
+    margin-top:6px;
+}
+.show-more-news:hover {
+    background:var(--text);
+    color:var(--bg);
+}
+
+

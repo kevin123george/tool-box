@@ -2106,103 +2106,95 @@ function createStockAnalysisCard(symbol, analysis, holding) {
     const card = document.createElement('div');
     card.className = 'stock-analysis-card';
 
-    // Calculate position metrics
     const currentValue = holding.currentPrice * holding.quantity;
     const costBasis = holding.buyPrice * holding.quantity;
     const gain = currentValue - costBasis;
     const gainPct = (gain / costBasis) * 100;
 
-    // Sentiment color
-    const sentimentColor = analysis.sentimentScore > 0.2 ? '#00ff00' :
-        analysis.sentimentScore < -0.2 ? '#ff0000' : '#ffff00';
+    const sentimentClass =
+        analysis.sentimentScore > 0.2 ? 'positive' :
+            analysis.sentimentScore < -0.2 ? 'negative' : 'neutral';
 
-    // RSI status
-    const rsi = analysis.technicalIndicators?.rsi;
-    const rsiStatus = rsi ? (rsi > 70 ? 'OVERBOUGHT' : rsi < 30 ? 'OVERSOLD' : 'NEUTRAL') : 'N/A';
-    const rsiColor = rsi ? (rsi > 70 ? '#ff0000' : rsi < 30 ? '#00ff00' : '#ffff00') : '#666';
+    const rsi = analysis.technicalIndicators?.rsi ?? null;
+    const rsiStatus = rsi === null
+        ? 'N/A'
+        : rsi > 70 ? 'OVERBOUGHT'
+            : rsi < 30 ? 'OVERSOLD'
+                : 'NEUTRAL';
 
-    // Sort news by relevance (highest first)
-    const sortedNews = [...analysis.news].sort((a, b) => {
-        const relA = a.relevanceScore || 0;
-        const relB = b.relevanceScore || 0;
-        return relB - relA; // Descending order
-    });
+    const rsiClass =
+        rsi === null ? 'neutral' :
+            rsi > 70 ? 'negative' :
+                rsi < 30 ? 'positive' : 'neutral';
 
-    // Generate news HTML
-    const newsHTML = sortedNews.map((article, index) => {
-        const sentiment = article.tickerSentimentScore || article.alphaSentimentScore || 0;
-        const relevance = article.relevanceScore || 0;
+    const sortedNews = [...analysis.news].sort(
+        (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
+    );
 
-        // Hide articles after the first 3
-        const hiddenClass = index >= 3 ? 'hidden-news-item' : '';
-
-        return `
-            <div class="news-item ${hiddenClass}" data-index="${index}">
-                <a href="${article.url}" target="_blank" class="news-title">
-                    ${article.title}
-                </a>
-                <div class="news-meta">
-                    ${article.source || 'Unknown'} | 
-                    Sentiment: ${sentiment.toFixed(3)} | 
-                    Relevance: ${relevance.toFixed(2)}
-                </div>
+    const newsHTML = sortedNews.map((n, i) => `
+        <div class="news-item ${i >= 3 ? 'hidden-news-item' : ''}">
+            <a href="${n.url}" target="_blank" class="news-title">${n.title}</a>
+            <div class="news-meta">
+                ${n.source || 'Unknown'} |
+                Sentiment ${(n.tickerSentimentScore ?? 0).toFixed(3)} |
+                Relevance ${(n.relevanceScore ?? 0).toFixed(2)}
             </div>
-        `;
-    }).join('');
-
-    // Show "X more articles" button if there are hidden articles
-    const hiddenCount = sortedNews.length - 3;
-    const showMoreButton = hiddenCount > 0 ? `
-        <div class="show-more-news" data-symbol="${symbol}">
-            + ${hiddenCount} more article${hiddenCount > 1 ? 's' : ''}
         </div>
-    ` : '';
+    `).join('');
+
+    const hiddenCount = Math.max(0, sortedNews.length - 3);
 
     card.innerHTML = `
         <div class="stock-header">
-            <h2 class="stock-symbol">${symbol}</h2>
-            <div class="stock-return" style="color: ${gainPct >= 0 ? '#00ff00' : '#ff0000'}">
+            <div class="stock-symbol">${symbol}</div>
+            <div class="stock-return ${gainPct >= 0 ? 'positive' : 'negative'}">
                 ${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%
             </div>
         </div>
-        
+
         <div class="stock-metrics">
             <div class="metric-box">
-                <div class="metric-label">SENTIMENT</div>
-                <div class="metric-value" style="color: ${sentimentColor}">
+                <div class="metric-label">Sentiment</div>
+                <div class="metric-value ${sentimentClass}">
                     ${analysis.sentimentScore.toFixed(3)}
                 </div>
             </div>
-            
+
             <div class="metric-box">
                 <div class="metric-label">RSI (14)</div>
-                <div class="metric-value" style="color: ${rsiColor}">
-                    ${rsi ? rsi.toFixed(1) : 'N/A'}
+                <div class="metric-value ${rsiClass}">
+                    ${rsi === null ? 'N/A' : rsi.toFixed(1)}
                 </div>
                 <div class="metric-sublabel">${rsiStatus}</div>
             </div>
-            
+
             <div class="metric-box">
-                <div class="metric-label">CURRENT PRICE</div>
+                <div class="metric-label">Current Price</div>
                 <div class="metric-value">$${holding.currentPrice.toFixed(2)}</div>
             </div>
-            
+
             <div class="metric-box">
-                <div class="metric-label">SHARES</div>
+                <div class="metric-label">Shares</div>
                 <div class="metric-value">${holding.quantity.toFixed(2)}</div>
             </div>
         </div>
-        
+
         <div class="recommendation-box">
-            <div class="recommendation-label">RECOMMENDATION</div>
-            <div class="recommendation-text">${analysis.recommendation.replace(/\n/g, '<br>')}</div>
+            <div class="recommendation-label">Recommendation</div>
+            <div class="recommendation-text">${analysis.recommendation}</div>
         </div>
-        
+
         <div class="news-section">
-            <div class="news-header">RECENT NEWS (${sortedNews.length})</div>
+            <div class="news-header">Recent News (${sortedNews.length})</div>
             <div class="news-list" data-symbol="${symbol}">
                 ${newsHTML}
-                ${showMoreButton}
+                ${
+        hiddenCount > 0
+            ? `<div class="show-more-news" data-symbol="${symbol}">
+                               + ${hiddenCount} more article${hiddenCount > 1 ? 's' : ''}
+                           </div>`
+            : ''
+    }
             </div>
         </div>
     `;
