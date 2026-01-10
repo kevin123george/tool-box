@@ -2099,155 +2099,271 @@ function exportChartImage() {
 // STOCK RESEARCH
 // ============================================
 
-async function generateResearch() {
-    const btn = document.getElementById('generateBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ ANALYZING...';
-
-    try {
-        const res = await fetch(`${API}/api/research/generate`, { method: 'POST' });
-        const report = await res.json();
-        displayResearchReport(report);
-        showMessage('Research report generated successfully!');
-    } catch (error) {
-        console.error('Error generating research:', error);
-        showMessage('Error generating research report', true);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '🔍 GENERATE RESEARCH REPORT';
-    }
-}
-
-async function loadLatestResearch() {
-    try {
-        const res = await fetch(`${API}/api/research/latest`);
-        const report = await res.json();
-
-        if (report && report.id) {
-            displayResearchReport(report);
-        } else {
-            showMessage('No research reports found. Generate one first!', true);
-        }
-    } catch (error) {
-        console.error('Error loading research:', error);
-        showMessage('Error loading research report', true);
-    }
-}
-
-function displayResearchReport(report) {
-    // Show portfolio summary
-    document.getElementById('portfolioSummary').classList.remove('hidden');
-    document.getElementById('portfolioValue').textContent = `$${report.totalValue?.toFixed(2) || '0.00'}`;
-
-    const gain = report.totalGain || 0;
-    const gainEl = document.getElementById('portfolioGain');
-    gainEl.textContent = `$${gain.toFixed(2)}`;
-    gainEl.style.color = gain >= 0 ? '#0f0' : '#f00';
-
-    const returnPct = report.gainPercentage || 0;
-    const returnEl = document.getElementById('portfolioReturn');
-    returnEl.textContent = `${returnPct.toFixed(2)}%`;
-    returnEl.style.color = returnPct >= 0 ? '#0f0' : '#f00';
-
-    const sentiment = report.overallSentiment || 'NEUTRAL';
-    const sentimentEl = document.getElementById('overallSentiment');
-    sentimentEl.textContent = sentiment;
-    sentimentEl.style.color = sentiment === 'BULLISH' ? '#0f0' : sentiment === 'BEARISH' ? '#f00' : '#fff';
-
-    // Display stock analyses
-    const container = document.getElementById('researchResults');
-    container.innerHTML = '';
-
-    Object.entries(report.analyses || {}).forEach(([symbol, analysis]) => {
-        const holding = report.holdings.find(h => h.symbol === symbol);
-        const card = createStockAnalysisCard(symbol, analysis, holding);
-        container.appendChild(card);
-    });
-}
-
+/**
+ * Display a single stock analysis card with sorted and expandable news
+ */
 function createStockAnalysisCard(symbol, analysis, holding) {
     const card = document.createElement('div');
-    card.className = 'add-box';
-    card.style.marginBottom = '20px';
+    card.className = 'stock-analysis-card';
 
-    // Calculate gain/loss
-    const currentValue = holding ? holding.currentPrice * holding.quantity : 0;
-    const costBasis = holding ? holding.buyPrice * holding.quantity : 0;
+    // Calculate position metrics
+    const currentValue = holding.currentPrice * holding.quantity;
+    const costBasis = holding.buyPrice * holding.quantity;
     const gain = currentValue - costBasis;
-    const gainPct = costBasis > 0 ? (gain / costBasis) * 100 : 0;
+    const gainPct = (gain / costBasis) * 100;
 
     // Sentiment color
-    const sentiment = analysis.sentimentScore || 0;
-    const sentimentColor = sentiment > 0.2 ? '#0f0' : sentiment < -0.2 ? '#f00' : '#fff';
+    const sentimentColor = analysis.sentimentScore > 0.2 ? '#00ff00' :
+        analysis.sentimentScore < -0.2 ? '#ff0000' : '#ffff00';
 
-    // RSI indicator
+    // RSI status
     const rsi = analysis.technicalIndicators?.rsi;
-    const rsiStatus = rsi ?
-        (rsi > 70 ? '🔴 OVERBOUGHT' : rsi < 30 ? '🟢 OVERSOLD' : '🟡 NEUTRAL') : 'N/A';
+    const rsiStatus = rsi ? (rsi > 70 ? 'OVERBOUGHT' : rsi < 30 ? 'OVERSOLD' : 'NEUTRAL') : 'N/A';
+    const rsiColor = rsi ? (rsi > 70 ? '#ff0000' : rsi < 30 ? '#00ff00' : '#ffff00') : '#666';
+
+    // Sort news by relevance (highest first)
+    const sortedNews = [...analysis.news].sort((a, b) => {
+        const relA = a.relevanceScore || 0;
+        const relB = b.relevanceScore || 0;
+        return relB - relA; // Descending order
+    });
+
+    // Generate news HTML
+    const newsHTML = sortedNews.map((article, index) => {
+        const sentiment = article.tickerSentimentScore || article.alphaSentimentScore || 0;
+        const relevance = article.relevanceScore || 0;
+
+        // Hide articles after the first 3
+        const hiddenClass = index >= 3 ? 'hidden-news-item' : '';
+
+        return `
+            <div class="news-item ${hiddenClass}" data-index="${index}">
+                <a href="${article.url}" target="_blank" class="news-title">
+                    ${article.title}
+                </a>
+                <div class="news-meta">
+                    ${article.source || 'Unknown'} | 
+                    Sentiment: ${sentiment.toFixed(3)} | 
+                    Relevance: ${relevance.toFixed(2)}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Show "X more articles" button if there are hidden articles
+    const hiddenCount = sortedNews.length - 3;
+    const showMoreButton = hiddenCount > 0 ? `
+        <div class="show-more-news" data-symbol="${symbol}">
+            + ${hiddenCount} more article${hiddenCount > 1 ? 's' : ''}
+        </div>
+    ` : '';
 
     card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-            <h3 style="margin:0; font-size:18px;">${symbol}</h3>
-            <div style="text-align:right;">
-                <div style="font-size:12px; color:#888;">Position</div>
-                <div style="font-size:16px; color:${gain >= 0 ? '#0f0' : '#f00'};">
-                    ${gainPct.toFixed(2)}% (${gain >= 0 ? '+' : ''}$${gain.toFixed(2)})
+        <div class="stock-header">
+            <h2 class="stock-symbol">${symbol}</h2>
+            <div class="stock-return" style="color: ${gainPct >= 0 ? '#00ff00' : '#ff0000'}">
+                ${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%
+            </div>
+        </div>
+        
+        <div class="stock-metrics">
+            <div class="metric-box">
+                <div class="metric-label">SENTIMENT</div>
+                <div class="metric-value" style="color: ${sentimentColor}">
+                    ${analysis.sentimentScore.toFixed(3)}
                 </div>
             </div>
-        </div>
-        
-        <!-- Metrics Grid -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:16px;">
-            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
-                <div style="font-size:11px; color:#888;">SENTIMENT</div>
-                <div style="font-size:16px; color:${sentimentColor};">${sentiment.toFixed(3)}</div>
-            </div>
-            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
-                <div style="font-size:11px; color:#888;">RSI (14)</div>
-                <div style="font-size:14px;">${rsi ? rsi.toFixed(1) : 'N/A'}</div>
-                <div style="font-size:10px; margin-top:2px;">${rsiStatus}</div>
-            </div>
-            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
-                <div style="font-size:11px; color:#888;">CURRENT PRICE</div>
-                <div style="font-size:16px;">$${holding?.currentPrice.toFixed(2) || 'N/A'}</div>
-            </div>
-            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
-                <div style="font-size:11px; color:#888;">SHARES</div>
-                <div style="font-size:16px;">${holding?.quantity.toFixed(2) || 'N/A'}</div>
-            </div>
-        </div>
-        
-        <!-- Recommendation -->
-        <div style="padding:12px; background:rgba(255,255,255,0.05); border-radius:4px; margin-bottom:16px;">
-            <div style="font-size:11px; color:#888; margin-bottom:8px;">RECOMMENDATION</div>
-            <div style="font-size:13px; white-space:pre-wrap; font-family:monospace;">${analysis.recommendation || 'No recommendation available'}</div>
-        </div>
-        
-        <!-- Recent News -->
-        <div>
-            <div style="font-size:12px; color:#888; margin-bottom:8px;">RECENT NEWS (${analysis.news?.length || 0})</div>
-            ${(analysis.news || []).slice(0, 3).map(article => `
-                <div style="padding:8px; margin-bottom:8px; border-left:3px solid ${
-        article.tickerSentimentScore > 0.2 ? '#0f0' :
-            article.tickerSentimentScore < -0.2 ? '#f00' : '#888'
-    };">
-                    <div style="font-size:13px; margin-bottom:4px;">
-                        <a href="${article.url}" target="_blank" style="color:#0af; text-decoration:none;">
-                            ${article.title}
-                        </a>
-                    </div>
-                    <div style="font-size:11px; color:#888;">
-                        ${article.source || 'Unknown'} | 
-                        Sentiment: ${article.tickerSentimentScore?.toFixed(3) || 'N/A'} | 
-                        Relevance: ${article.relevanceScore?.toFixed(2) || 'N/A'}
-                    </div>
+            
+            <div class="metric-box">
+                <div class="metric-label">RSI (14)</div>
+                <div class="metric-value" style="color: ${rsiColor}">
+                    ${rsi ? rsi.toFixed(1) : 'N/A'}
                 </div>
-            `).join('')}
-            ${analysis.news?.length > 3 ? `<div style="font-size:11px; color:#888;">+ ${analysis.news.length - 3} more articles</div>` : ''}
+                <div class="metric-sublabel">${rsiStatus}</div>
+            </div>
+            
+            <div class="metric-box">
+                <div class="metric-label">CURRENT PRICE</div>
+                <div class="metric-value">$${holding.currentPrice.toFixed(2)}</div>
+            </div>
+            
+            <div class="metric-box">
+                <div class="metric-label">SHARES</div>
+                <div class="metric-value">${holding.quantity.toFixed(2)}</div>
+            </div>
+        </div>
+        
+        <div class="recommendation-box">
+            <div class="recommendation-label">RECOMMENDATION</div>
+            <div class="recommendation-text">${analysis.recommendation.replace(/\n/g, '<br>')}</div>
+        </div>
+        
+        <div class="news-section">
+            <div class="news-header">RECENT NEWS (${sortedNews.length})</div>
+            <div class="news-list" data-symbol="${symbol}">
+                ${newsHTML}
+                ${showMoreButton}
+            </div>
         </div>
     `;
 
     return card;
+}
+
+/**
+ * Display the research report
+ */
+function displayResearchReport(report) {
+    const container = document.getElementById('researchResults');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Portfolio summary cards
+    const summarySection = document.createElement('div');
+    summarySection.className = 'portfolio-summary';
+    summarySection.innerHTML = `
+        <div class="summary-card">
+            <div class="summary-label">TOTAL VALUE</div>
+            <div class="summary-value">$${report.totalValue.toFixed(2)}</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">TOTAL GAIN/LOSS</div>
+            <div class="summary-value" style="color: ${report.totalGain >= 0 ? '#00ff00' : '#ff0000'}">
+                ${report.totalGain >= 0 ? '+' : ''}$${report.totalGain.toFixed(2)}
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">RETURN %</div>
+            <div class="summary-value" style="color: ${report.gainPercentage >= 0 ? '#00ff00' : '#ff0000'}">
+                ${report.gainPercentage >= 0 ? '+' : ''}${report.gainPercentage.toFixed(2)}%
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">OVERALL SENTIMENT</div>
+            <div class="summary-value" style="color: ${
+        report.overallSentiment === 'BULLISH' ? '#00ff00' :
+            report.overallSentiment === 'BEARISH' ? '#ff0000' : '#ffff00'
+    }">
+                ${report.overallSentiment}
+            </div>
+        </div>
+    `;
+    container.appendChild(summarySection);
+
+    // Stock analysis cards
+    const holdingsMap = {};
+    report.holdings.forEach(h => holdingsMap[h.symbol] = h);
+
+    for (const [symbol, analysis] of Object.entries(report.analyses)) {
+        const holding = holdingsMap[symbol];
+        if (holding) {
+            const card = createStockAnalysisCard(symbol, analysis, holding);
+            container.appendChild(card);
+        }
+    }
+
+    // Add event listeners for "Show more" buttons
+    attachShowMoreListeners();
+}
+
+/**
+ * Attach event listeners to all "Show more" buttons
+ */
+function attachShowMoreListeners() {
+    const showMoreButtons = document.querySelectorAll('.show-more-news');
+
+    showMoreButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const symbol = this.getAttribute('data-symbol');
+            const newsList = document.querySelector(`.news-list[data-symbol="${symbol}"]`);
+            const hiddenItems = newsList.querySelectorAll('.hidden-news-item');
+
+            // Toggle visibility
+            const isExpanded = this.classList.contains('expanded');
+
+            if (isExpanded) {
+                // Collapse: hide items
+                hiddenItems.forEach(item => {
+                    item.style.display = 'none';
+                });
+                this.textContent = `+ ${hiddenItems.length} more article${hiddenItems.length > 1 ? 's' : ''}`;
+                this.classList.remove('expanded');
+            } else {
+                // Expand: show items
+                hiddenItems.forEach(item => {
+                    item.style.display = 'block';
+                });
+                this.textContent = '− Show less';
+                this.classList.add('expanded');
+            }
+        });
+    });
+}
+
+/**
+ * Generate research report
+ */
+async function generateResearch() {
+    const button = document.querySelector('#generateResearchBtn');
+    if (!button) return;
+
+    button.disabled = true;
+    button.textContent = 'Generating...';
+
+    const container = document.getElementById('researchResults');
+    if (container) {
+        container.innerHTML = '<div class="loading">Generating research report... This may take 10-15 seconds.</div>';
+    }
+
+    try {
+        const response = await fetch('/api/research/generate', {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const report = await response.json();
+        displayResearchReport(report);
+
+    } catch (error) {
+        console.error('Error generating research:', error);
+        if (container) {
+            container.innerHTML = `
+                <div class="error">
+                    Failed to generate research report: ${error.message}
+                </div>
+            `;
+        }
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Generate Research';
+    }
+}
+
+/**
+ * Load latest research report on page load
+ */
+async function loadLatestResearch() {
+    try {
+        const response = await fetch('/api/research/latest');
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.log('No research reports found yet');
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const report = await response.json();
+        displayResearchReport(report);
+
+    } catch (error) {
+        console.error('Error loading latest research:', error);
+    }
 }
 
 loadMemos();
