@@ -2,7 +2,9 @@ package com.example.mongo.controller;
 
 import com.example.mongo.models.StockHoldingHistory;
 import com.example.mongo.repos.StockHoldingHistoryRepository;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +64,7 @@ public class StockHistoryController {
 
     // Apply date filters
     if (from != null) {
-      LocalDateTime fromDate = LocalDateTime.parse(from);
+      LocalDateTime fromDate = LocalDateTime.ofInstant(Instant.parse(from), ZoneId.systemDefault());
       histories =
           histories.stream()
               .filter(h -> h.getUpdatedAt().isAfter(fromDate))
@@ -70,7 +72,7 @@ public class StockHistoryController {
     }
 
     if (to != null) {
-      LocalDateTime toDate = LocalDateTime.parse(to);
+      LocalDateTime toDate = LocalDateTime.ofInstant(Instant.parse(to), ZoneId.systemDefault());
       histories =
           histories.stream()
               .filter(h -> h.getUpdatedAt().isBefore(toDate))
@@ -139,7 +141,7 @@ public class StockHistoryController {
 
     // Apply date filters
     if (from != null) {
-      LocalDateTime fromDate = LocalDateTime.parse(from);
+      LocalDateTime fromDate = LocalDateTime.ofInstant(Instant.parse(from), ZoneId.systemDefault());
       histories =
           histories.stream()
               .filter(h -> h.getUpdatedAt().isAfter(fromDate))
@@ -147,7 +149,7 @@ public class StockHistoryController {
     }
 
     if (to != null) {
-      LocalDateTime toDate = LocalDateTime.parse(to);
+      LocalDateTime toDate = LocalDateTime.ofInstant(Instant.parse(to), ZoneId.systemDefault());
       histories =
           histories.stream()
               .filter(h -> h.getUpdatedAt().isBefore(toDate))
