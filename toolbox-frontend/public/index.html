@@ -381,37 +381,50 @@
 <div id="stockHistoryTabContent" class="tab-content hidden">
     <h2>Stock Performance History</h2>
 
+    <!-- Filter Controls -->
+    <div class="add-box">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div>
+                <label style="font-size:12px; opacity:0.7; text-transform:uppercase;">Stock:</label>
+                <select id="histStockFilter" onchange="loadStockHistory()" style="margin-top:4px;">
+                    <option value="all">All Stocks</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:12px; opacity:0.7; text-transform:uppercase;">From:</label>
+                <input type="date" id="histDateFrom" onchange="loadStockHistory()" style="margin-top:4px;">
+            </div>
+            <div>
+                <label style="font-size:12px; opacity:0.7; text-transform:uppercase;">To:</label>
+                <input type="date" id="histDateTo" onchange="loadStockHistory()" style="margin-top:4px;">
+            </div>
+        </div>
+        <button class="btn" style="margin-top:8px;" onclick="clearDateFilter()">CLEAR DATES</button>
+    </div>
+
     <!-- Stats Summary -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-label">Current Value</div>
-            <div class="stat-value" id="histStatValue">$0.00</div>
+            <div class="stat-label">Avg Buy Price</div>
+            <div class="stat-value" id="histStatBuyPrice">$0.00</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Total Cost</div>
-            <div class="stat-value" id="histStatCost">$0.00</div>
+            <div class="stat-label">Current Price</div>
+            <div class="stat-value" id="histStatCurrentPrice">$0.00</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Gain/Loss</div>
-            <div class="stat-value" id="histStatGain">$0.00</div>
+            <div class="stat-label">Price Change</div>
+            <div class="stat-value" id="histStatPriceChange">$0.00</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Return %</div>
-            <div class="stat-value" id="histStatReturn">0.00%</div>
+            <div class="stat-label">Change %</div>
+            <div class="stat-value" id="histStatChangePercent">0.00%</div>
         </div>
-    </div>
-
-    <!-- Filter -->
-    <div class="add-box">
-        <label style="font-size:12px; opacity:0.7; text-transform:uppercase;">Filter by Stock:</label>
-        <select id="histStockFilter" onchange="loadStockHistory()" style="margin-top:4px;">
-            <option value="all">All Stocks</option>
-        </select>
     </div>
 
     <!-- Chart -->
     <div style="padding:12px; border:1px solid var(--border); margin-bottom:16px;">
-        <h3 style="margin:0 0 12px 0; font-size:14px;">PORTFOLIO VALUE OVER TIME</h3>
+        <h3 style="margin:0 0 12px 0; font-size:14px;">STOCK PRICE HISTORY</h3>
         <canvas id="historyChart" height="100"></canvas>
     </div>
 

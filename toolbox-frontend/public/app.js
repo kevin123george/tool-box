@@ -1574,18 +1574,33 @@ async function loadStockHistory() {
             filterSelect.appendChild(opt);
         });
 
-        // Filter data
-        const filtered = currentFilter === 'all'
+        // Apply filters
+        let filtered = currentFilter === 'all'
             ? histories
             : histories.filter(h => h.symbol === currentFilter);
 
-        // Calculate stats
-        const stats = calculateHistoryStats(filtered);
-        updateHistoryStats(stats);
+        // Apply date filters
+        const dateFrom = document.getElementById('histDateFrom').value;
+        const dateTo = document.getElementById('histDateTo').value;
 
-        // Prepare chart data
-        const chartData = prepareChartData(filtered);
-        renderHistoryChart(chartData);
+        if (dateFrom) {
+            const fromDate = new Date(dateFrom);
+            filtered = filtered.filter(h => new Date(h.updatedAt) >= fromDate);
+        }
+
+        if (dateTo) {
+            const toDate = new Date(dateTo);
+            toDate.setHours(23, 59, 59, 999); // End of day
+            filtered = filtered.filter(h => new Date(h.updatedAt) <= toDate);
+        }
+
+        // Calculate stats
+        const stats = calculatePriceStats(filtered);
+        updatePriceStats(stats);
+
+        // Prepare chart data - group by symbol and date
+        const chartData = preparePriceChartData(filtered);
+        renderPriceChart(chartData, currentFilter);
 
         // Render table
         renderHistoryTable(filtered);
@@ -1595,52 +1610,63 @@ async function loadStockHistory() {
     }
 }
 
-function calculateHistoryStats(histories) {
+function calculatePriceStats(histories) {
     if (histories.length === 0) {
-        return { totalValue: 0, totalCost: 0, gain: 0, gainPercent: 0 };
+        return { avgBuyPrice: 0, currentPrice: 0, priceChange: 0, changePercent: 0 };
     }
 
-    const totalValue = histories.reduce((sum, h) => sum + (h.quantity * h.currentPrice), 0);
-    const totalCost = histories.reduce((sum, h) => sum + (h.quantity * h.buyPrice), 0);
-    const gain = totalValue - totalCost;
-    const gainPercent = totalCost > 0 ? ((gain / totalCost) * 100).toFixed(2) : 0;
+    // Get most recent entry
+    const latest = histories[histories.length - 1];
 
-    return { totalValue, totalCost, gain, gainPercent };
+    // Calculate average buy price across all entries
+    const avgBuyPrice = histories.reduce((sum, h) => sum + h.buyPrice, 0) / histories.length;
+    const currentPrice = latest.currentPrice;
+    const priceChange = currentPrice - avgBuyPrice;
+    const changePercent = avgBuyPrice > 0 ? ((priceChange / avgBuyPrice) * 100).toFixed(2) : 0;
+
+    return { avgBuyPrice, currentPrice, priceChange, changePercent };
 }
 
-function updateHistoryStats(stats) {
-    const valueEl = document.getElementById('histStatValue');
-    const costEl = document.getElementById('histStatCost');
-    const gainEl = document.getElementById('histStatGain');
-    const returnEl = document.getElementById('histStatReturn');
+function updatePriceStats(stats) {
+    const buyPriceEl = document.getElementById('histStatBuyPrice');
+    const currentPriceEl = document.getElementById('histStatCurrentPrice');
+    const priceChangeEl = document.getElementById('histStatPriceChange');
+    const changePercentEl = document.getElementById('histStatChangePercent');
 
-    valueEl.textContent = `$${stats.totalValue.toFixed(2)}`;
-    costEl.textContent = `$${stats.totalCost.toFixed(2)}`;
-    gainEl.textContent = `$${stats.gain.toFixed(2)}`;
-    returnEl.textContent = `${stats.gainPercent}%`;
+    buyPriceEl.textContent = `$${stats.avgBuyPrice.toFixed(2)}`;
+    currentPriceEl.textContent = `$${stats.currentPrice.toFixed(2)}`;
+    priceChangeEl.textContent = `$${stats.priceChange.toFixed(2)}`;
+    changePercentEl.textContent = `${stats.changePercent}%`;
 
-    gainEl.classList.toggle('positive', stats.gain >= 0);
-    gainEl.classList.toggle('negative', stats.gain < 0);
-    returnEl.classList.toggle('positive', stats.gainPercent >= 0);
-    returnEl.classList.toggle('negative', stats.gainPercent < 0);
+    priceChangeEl.classList.toggle('positive', stats.priceChange >= 0);
+    priceChangeEl.classList.toggle('negative', stats.priceChange < 0);
+    changePercentEl.classList.toggle('positive', stats.changePercent >= 0);
+    changePercentEl.classList.toggle('negative', stats.changePercent < 0);
 }
 
-function prepareChartData(histories) {
-    const grouped = {};
+function preparePriceChartData(histories) {
+    if (histories.length === 0) return { labels: [], datasets: [] };
 
-    histories.forEach(item => {
-        const date = new Date(item.updatedAt).toLocaleDateString();
-        if (!grouped[date]) {
-            grouped[date] = { date, totalValue: 0, totalCost: 0 };
+    // Sort by date
+    const sorted = [...histories].sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+
+    // Group by symbol
+    const bySymbol = {};
+    sorted.forEach(item => {
+        if (!bySymbol[item.symbol]) {
+            bySymbol[item.symbol] = [];
         }
-        grouped[date].totalValue += item.quantity * item.currentPrice;
-        grouped[date].totalCost += item.quantity * item.buyPrice;
+        bySymbol[item.symbol].push({
+            date: new Date(item.updatedAt).toLocaleString(),
+            buyPrice: item.buyPrice,
+            currentPrice: item.currentPrice
+        });
     });
 
-    return Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
+    return bySymbol;
 }
 
-function renderHistoryChart(chartData) {
+function renderPriceChart(dataBySymbol, selectedFilter) {
     const ctx = document.getElementById('historyChart');
 
     if (historyChart) {
@@ -1651,74 +1677,134 @@ function renderHistoryChart(chartData) {
     const textColor = isDark ? '#fff' : '#000';
     const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
-    historyChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartData.map(d => d.date),
-            datasets: [
-                {
-                    label: 'Current Value',
-                    data: chartData.map(d => d.totalValue),
-                    borderColor: '#0f0',
-                    backgroundColor: 'rgba(0,255,0,0.1)',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    fill: false
-                },
-                {
-                    label: 'Cost Basis',
-                    data: chartData.map(d => d.totalCost),
-                    borderColor: '#666',
-                    backgroundColor: 'rgba(100,100,100,0.1)',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    fill: false
+    // Prepare datasets
+    const datasets = [];
+    const colors = ['#0f0', '#0ff', '#ff0', '#f0f', '#fa0', '#0af'];
+    let colorIndex = 0;
+
+    // If showing all stocks, create a dataset for each symbol
+    // If showing one stock, show both buy price and current price
+    const symbols = Object.keys(dataBySymbol);
+
+    if (selectedFilter !== 'all') {
+        // Single stock - show buy price and current price
+        const data = dataBySymbol[selectedFilter] || [];
+
+        datasets.push({
+            label: `${selectedFilter} - Current Price`,
+            data: data.map(d => d.currentPrice),
+            borderColor: '#0f0',
+            backgroundColor: 'rgba(0,255,0,0.1)',
+            borderWidth: 2,
+            tension: 0.1,
+            fill: false
+        });
+
+        datasets.push({
+            label: `${selectedFilter} - Buy Price`,
+            data: data.map(d => d.buyPrice),
+            borderColor: '#666',
+            backgroundColor: 'rgba(100,100,100,0.1)',
+            borderWidth: 2,
+            tension: 0.1,
+            fill: false,
+            borderDash: [5, 5]
+        });
+
+        const labels = data.map(d => d.date);
+
+        historyChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: getChartOptions(textColor, gridColor, isDark)
+        });
+
+    } else {
+        // Multiple stocks - show current price for each
+        let allLabels = [];
+
+        symbols.forEach(symbol => {
+            const data = dataBySymbol[symbol];
+
+            datasets.push({
+                label: `${symbol}`,
+                data: data.map(d => d.currentPrice),
+                borderColor: colors[colorIndex % colors.length],
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            });
+
+            // Collect all unique labels
+            data.forEach(d => {
+                if (!allLabels.includes(d.date)) {
+                    allLabels.push(d.date);
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: textColor,
-                        font: { family: 'monospace', size: 12 }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: isDark ? '#000' : '#fff',
-                    titleColor: textColor,
-                    bodyColor: textColor,
-                    borderColor: textColor,
-                    borderWidth: 1,
-                    titleFont: { family: 'monospace', size: 12 },
-                    bodyFont: { family: 'monospace', size: 11 },
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
-                        }
-                    }
+            });
+
+            colorIndex++;
+        });
+
+        // Sort labels chronologically
+        allLabels.sort((a, b) => new Date(a) - new Date(b));
+
+        historyChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: allLabels, datasets },
+            options: getChartOptions(textColor, gridColor, isDark)
+        });
+    }
+}
+
+function getChartOptions(textColor, gridColor, isDark) {
+    return {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                labels: {
+                    color: textColor,
+                    font: { family: 'monospace', size: 12 }
                 }
             },
-            scales: {
-                x: {
-                    ticks: { color: textColor, font: { family: 'monospace', size: 10 } },
-                    grid: { color: gridColor }
-                },
-                y: {
-                    ticks: {
-                        color: textColor,
-                        font: { family: 'monospace', size: 10 },
-                        callback: function(value) {
-                            return '$' + value.toFixed(0);
-                        }
-                    },
-                    grid: { color: gridColor }
+            tooltip: {
+                backgroundColor: isDark ? '#000' : '#fff',
+                titleColor: textColor,
+                bodyColor: textColor,
+                borderColor: textColor,
+                borderWidth: 1,
+                titleFont: { family: 'monospace', size: 12 },
+                bodyFont: { family: 'monospace', size: 11 },
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                    }
                 }
             }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: textColor,
+                    font: { family: 'monospace', size: 9 },
+                    maxRotation: 45,
+                    minRotation: 45
+                },
+                grid: { color: gridColor }
+            },
+            y: {
+                ticks: {
+                    color: textColor,
+                    font: { family: 'monospace', size: 10 },
+                    callback: function(value) {
+                        return '$' + value.toFixed(2);
+                    }
+                },
+                grid: { color: gridColor }
+            }
         }
-    });
+    };
 }
 
 function renderHistoryTable(histories) {
@@ -1762,6 +1848,12 @@ function renderHistoryTable(histories) {
     });
 
     tableEl.innerHTML = html;
+}
+
+function clearDateFilter() {
+    document.getElementById('histDateFrom').value = '';
+    document.getElementById('histDateTo').value = '';
+    loadStockHistory();
 }
 
 loadMemos();
