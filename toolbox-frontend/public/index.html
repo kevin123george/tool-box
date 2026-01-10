@@ -26,6 +26,7 @@
     <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
     <div id="tabStocks" class="tab" onclick="switchTab('stocks')">Stocks</div>
     <div id="tabStockHistory" class="tab" onclick="switchTab('stockhistory')">Stock History</div>
+    <div id="tabResearch" class="tab" onclick="switchTab('research')">Research</div>
     <div id="tabBudget" class="tab" onclick="switchTab('budget')">Budget</div>
     <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')">System Stats</div>
 </div>
@@ -468,6 +469,45 @@
     <!-- Holdings Table -->
     <h3>Recent Holdings</h3>
     <div id="historyTable"></div>
+</div>
+
+<!-- Add this content section after your stockHistory tab content -->
+<div id="researchTabContent" class="tab-content hidden">
+    <h2>STOCK RESEARCH & ANALYSIS</h2>
+
+    <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+        <button class="btn" onclick="generateResearch()" id="generateBtn">
+            🔍 GENERATE RESEARCH REPORT
+        </button>
+        <button class="btn" onclick="loadLatestResearch()">
+            📄 LOAD LATEST REPORT
+        </button>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div id="portfolioSummary" class="hidden" style="margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+            <div class="stat-card">
+                <div class="stat-label">Total Value</div>
+                <div class="stat-value" id="portfolioValue">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Gain/Loss</div>
+                <div class="stat-value" id="portfolioGain">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Return %</div>
+                <div class="stat-value" id="portfolioReturn">0.00%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Overall Sentiment</div>
+                <div class="stat-value" id="overallSentiment">NEUTRAL</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Analysis Cards -->
+    <div id="researchResults"></div>
 </div>
 
 <!-- =================== BUDGET TAB =================== -->

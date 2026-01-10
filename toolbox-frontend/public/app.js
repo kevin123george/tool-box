@@ -83,6 +83,7 @@ function switchTab(which) {
     document.getElementById("tabStockHistory").classList.toggle("active", which === "stockhistory");
     document.getElementById("tabBudget").classList.toggle("active", which === "budget");
     document.getElementById("tabSystemStats").classList.toggle("active", which === "systemstats");
+    document.getElementById("tabResearch").classList.toggle("active", which === "research");
 
     memoTabContent.classList.toggle("hidden", which !== "memo");
     financeTabContent.classList.toggle("hidden", which !== "finance");
@@ -90,6 +91,7 @@ function switchTab(which) {
     stockHistoryTabContent.classList.toggle("hidden", which !== "stockhistory");
     budgetTabContent.classList.toggle("hidden", which !== "budget");
     systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
+    researchTabContent.classList.toggle("hidden", which !== "research");
 
     if (which === "finance") {
         loadFinance();
@@ -2091,6 +2093,161 @@ function exportChartImage() {
     link.download = `stock-chart-${new Date().toISOString().split('T')[0]}.png`;
     link.href = url;
     link.click();
+}
+
+// ============================================
+// STOCK RESEARCH
+// ============================================
+
+async function generateResearch() {
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ ANALYZING...';
+
+    try {
+        const res = await fetch(`${API}/api/research/generate`, { method: 'POST' });
+        const report = await res.json();
+        displayResearchReport(report);
+        showMessage('Research report generated successfully!');
+    } catch (error) {
+        console.error('Error generating research:', error);
+        showMessage('Error generating research report', true);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 GENERATE RESEARCH REPORT';
+    }
+}
+
+async function loadLatestResearch() {
+    try {
+        const res = await fetch(`${API}/api/research/latest`);
+        const report = await res.json();
+
+        if (report && report.id) {
+            displayResearchReport(report);
+        } else {
+            showMessage('No research reports found. Generate one first!', true);
+        }
+    } catch (error) {
+        console.error('Error loading research:', error);
+        showMessage('Error loading research report', true);
+    }
+}
+
+function displayResearchReport(report) {
+    // Show portfolio summary
+    document.getElementById('portfolioSummary').classList.remove('hidden');
+    document.getElementById('portfolioValue').textContent = `$${report.totalValue?.toFixed(2) || '0.00'}`;
+
+    const gain = report.totalGain || 0;
+    const gainEl = document.getElementById('portfolioGain');
+    gainEl.textContent = `$${gain.toFixed(2)}`;
+    gainEl.style.color = gain >= 0 ? '#0f0' : '#f00';
+
+    const returnPct = report.gainPercentage || 0;
+    const returnEl = document.getElementById('portfolioReturn');
+    returnEl.textContent = `${returnPct.toFixed(2)}%`;
+    returnEl.style.color = returnPct >= 0 ? '#0f0' : '#f00';
+
+    const sentiment = report.overallSentiment || 'NEUTRAL';
+    const sentimentEl = document.getElementById('overallSentiment');
+    sentimentEl.textContent = sentiment;
+    sentimentEl.style.color = sentiment === 'BULLISH' ? '#0f0' : sentiment === 'BEARISH' ? '#f00' : '#fff';
+
+    // Display stock analyses
+    const container = document.getElementById('researchResults');
+    container.innerHTML = '';
+
+    Object.entries(report.analyses || {}).forEach(([symbol, analysis]) => {
+        const holding = report.holdings.find(h => h.symbol === symbol);
+        const card = createStockAnalysisCard(symbol, analysis, holding);
+        container.appendChild(card);
+    });
+}
+
+function createStockAnalysisCard(symbol, analysis, holding) {
+    const card = document.createElement('div');
+    card.className = 'add-box';
+    card.style.marginBottom = '20px';
+
+    // Calculate gain/loss
+    const currentValue = holding ? holding.currentPrice * holding.quantity : 0;
+    const costBasis = holding ? holding.buyPrice * holding.quantity : 0;
+    const gain = currentValue - costBasis;
+    const gainPct = costBasis > 0 ? (gain / costBasis) * 100 : 0;
+
+    // Sentiment color
+    const sentiment = analysis.sentimentScore || 0;
+    const sentimentColor = sentiment > 0.2 ? '#0f0' : sentiment < -0.2 ? '#f00' : '#fff';
+
+    // RSI indicator
+    const rsi = analysis.technicalIndicators?.rsi;
+    const rsiStatus = rsi ?
+        (rsi > 70 ? '🔴 OVERBOUGHT' : rsi < 30 ? '🟢 OVERSOLD' : '🟡 NEUTRAL') : 'N/A';
+
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0; font-size:18px;">${symbol}</h3>
+            <div style="text-align:right;">
+                <div style="font-size:12px; color:#888;">Position</div>
+                <div style="font-size:16px; color:${gain >= 0 ? '#0f0' : '#f00'};">
+                    ${gainPct.toFixed(2)}% (${gain >= 0 ? '+' : ''}$${gain.toFixed(2)})
+                </div>
+            </div>
+        </div>
+        
+        <!-- Metrics Grid -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:16px;">
+            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
+                <div style="font-size:11px; color:#888;">SENTIMENT</div>
+                <div style="font-size:16px; color:${sentimentColor};">${sentiment.toFixed(3)}</div>
+            </div>
+            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
+                <div style="font-size:11px; color:#888;">RSI (14)</div>
+                <div style="font-size:14px;">${rsi ? rsi.toFixed(1) : 'N/A'}</div>
+                <div style="font-size:10px; margin-top:2px;">${rsiStatus}</div>
+            </div>
+            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
+                <div style="font-size:11px; color:#888;">CURRENT PRICE</div>
+                <div style="font-size:16px;">$${holding?.currentPrice.toFixed(2) || 'N/A'}</div>
+            </div>
+            <div style="padding:8px; border:1px solid var(--border); border-radius:4px;">
+                <div style="font-size:11px; color:#888;">SHARES</div>
+                <div style="font-size:16px;">${holding?.quantity.toFixed(2) || 'N/A'}</div>
+            </div>
+        </div>
+        
+        <!-- Recommendation -->
+        <div style="padding:12px; background:rgba(255,255,255,0.05); border-radius:4px; margin-bottom:16px;">
+            <div style="font-size:11px; color:#888; margin-bottom:8px;">RECOMMENDATION</div>
+            <div style="font-size:13px; white-space:pre-wrap; font-family:monospace;">${analysis.recommendation || 'No recommendation available'}</div>
+        </div>
+        
+        <!-- Recent News -->
+        <div>
+            <div style="font-size:12px; color:#888; margin-bottom:8px;">RECENT NEWS (${analysis.news?.length || 0})</div>
+            ${(analysis.news || []).slice(0, 3).map(article => `
+                <div style="padding:8px; margin-bottom:8px; border-left:3px solid ${
+        article.tickerSentimentScore > 0.2 ? '#0f0' :
+            article.tickerSentimentScore < -0.2 ? '#f00' : '#888'
+    };">
+                    <div style="font-size:13px; margin-bottom:4px;">
+                        <a href="${article.url}" target="_blank" style="color:#0af; text-decoration:none;">
+                            ${article.title}
+                        </a>
+                    </div>
+                    <div style="font-size:11px; color:#888;">
+                        ${article.source || 'Unknown'} | 
+                        Sentiment: ${article.tickerSentimentScore?.toFixed(3) || 'N/A'} | 
+                        Relevance: ${article.relevanceScore?.toFixed(2) || 'N/A'}
+                    </div>
+                </div>
+            `).join('')}
+            ${analysis.news?.length > 3 ? `<div style="font-size:11px; color:#888;">+ ${analysis.news.length - 3} more articles</div>` : ''}
+        </div>
+    `;
+
+    return card;
 }
 
 loadMemos();
