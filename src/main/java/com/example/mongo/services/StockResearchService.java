@@ -221,6 +221,8 @@ public class StockResearchService {
     }
 
     try {
+      Thread.sleep(1500); // Wait 1.2 seconds BEFORE each API call
+
       String url =
           String.format(
               "https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=%s&limit=10&apikey=%s",
