@@ -1908,9 +1908,13 @@ function getAdvancedChartOptions(textColor, gridColor, isDark, isSingleStock) {
                 }
             }
         },
-        animation: {
-            duration: 750,
-            easing: 'easeInOutQuart'
+        animation: false,
+        transitions: {
+            active: {
+                animation: {
+                    duration: 0
+                }
+            }
         }
     };
 }
