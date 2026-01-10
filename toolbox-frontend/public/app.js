@@ -1827,7 +1827,8 @@ function getAdvancedChartOptions(textColor, gridColor, isDark, isSingleStock) {
                             day: 'numeric',
                             year: 'numeric',
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
+                            second: '2-digit'
                         });
                     },
                     label: function(context) {
@@ -1855,12 +1856,20 @@ function getAdvancedChartOptions(textColor, gridColor, isDark, isSingleStock) {
             x: {
                 type: 'time',
                 time: {
-                    unit: 'day',
+                    // Let Chart.js auto-detect the best unit
+                    minUnit: 'minute',
                     displayFormats: {
+                        millisecond: 'HH:mm:ss.SSS',
+                        second: 'HH:mm:ss',
+                        minute: 'HH:mm',
+                        hour: 'MMM d, HH:mm',
                         day: 'MMM d',
-                        hour: 'MMM d, HH:mm'
+                        week: 'MMM d',
+                        month: 'MMM yyyy',
+                        quarter: 'MMM yyyy',
+                        year: 'yyyy'
                     },
-                    tooltipFormat: 'MMM d, yyyy HH:mm'
+                    tooltipFormat: 'MMM d, yyyy HH:mm:ss'
                 },
                 ticks: {
                     color: textColor,
@@ -1872,7 +1881,7 @@ function getAdvancedChartOptions(textColor, gridColor, isDark, isSingleStock) {
                     minRotation: 45,
                     autoSkip: true,
                     autoSkipPadding: 20,
-                    maxTicksLimit: 12
+                    maxTicksLimit: 15
                 },
                 grid: {
                     color: gridColor,
@@ -1981,6 +1990,15 @@ function setChartTimeRange(range) {
     let fromDate = new Date();
 
     switch(range) {
+        case '1h':
+            fromDate.setHours(now.getHours() - 1);
+            break;
+        case '6h':
+            fromDate.setHours(now.getHours() - 6);
+            break;
+        case '12h':
+            fromDate.setHours(now.getHours() - 12);
+            break;
         case '1d':
             fromDate.setDate(now.getDate() - 1);
             break;
