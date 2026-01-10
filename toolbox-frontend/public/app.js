@@ -1632,20 +1632,36 @@ function calculatePriceStats(histories) {
         };
     }
 
-    // Get most recent entry for current price
-    const latest = histories[histories.length - 1];
+    // Get the most recent entry for each stock symbol
+    const latestBySymbol = {};
+    histories.forEach(h => {
+        const existing = latestBySymbol[h.symbol];
+        if (!existing || new Date(h.updatedAt) > new Date(existing.updatedAt)) {
+            latestBySymbol[h.symbol] = h;
+        }
+    });
 
-    // Calculate total invested and current value
-    const totalInvested = histories.reduce((sum, h) => sum + (h.quantity * h.buyPrice), 0);
-    const totalValue = histories.reduce((sum, h) => sum + (h.quantity * h.currentPrice), 0);
+    const latestEntries = Object.values(latestBySymbol);
 
-    // Calculate average buy price across all entries
-    const avgBuyPrice = histories.reduce((sum, h) => sum + h.buyPrice, 0) / histories.length;
-    const currentPrice = latest.currentPrice;
-    const priceChange = currentPrice - avgBuyPrice;
+    // Calculate total invested and current value using only latest entries
+    const totalInvested = latestEntries.reduce((sum, h) => sum + (h.quantity * h.buyPrice), 0);
+    const totalValue = latestEntries.reduce((sum, h) => sum + (h.quantity * h.currentPrice), 0);
+
+    // Calculate average buy price and current price from latest entries
+    const avgBuyPrice = latestEntries.reduce((sum, h) => sum + h.buyPrice, 0) / latestEntries.length;
+    const avgCurrentPrice = latestEntries.reduce((sum, h) => sum + h.currentPrice, 0) / latestEntries.length;
+
+    const priceChange = avgCurrentPrice - avgBuyPrice;
     const changePercent = avgBuyPrice > 0 ? ((priceChange / avgBuyPrice) * 100).toFixed(2) : 0;
 
-    return { totalInvested, totalValue, avgBuyPrice, currentPrice, priceChange, changePercent };
+    return {
+        totalInvested,
+        totalValue,
+        avgBuyPrice,
+        currentPrice: avgCurrentPrice,
+        priceChange,
+        changePercent
+    };
 }
 
 function updatePriceStats(stats) {
