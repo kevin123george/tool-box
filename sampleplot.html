@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stock Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+    }
+    canvas {
+      max-width: 1000px;
+      margin-bottom: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Stock Prices Over Time</h2>
+<canvas id="priceChart"></canvas>
+
+<h2>Profit / Loss by Symbol</h2>
+<canvas id="profitChart"></canvas>
+
+<h2>Portfolio Value Over Time</h2>
+<canvas id="portfolioChart"></canvas>
+
+<script>
+  async function loadData() {
+    const res = await fetch("http://localhost:9099/api/hist");
+    const data = await res.json();
+
+    // Sort by date
+    data.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+
+    /* ==============================
+       1. PRICE OVER TIME (LINE)
+    ============================== */
+    const symbols = [...new Set(data.map(d => d.symbol))];
+
+    const priceDatasets = symbols.map(symbol => {
+      const rows = data.filter(d => d.symbol === symbol);
+      return {
+        label: symbol,
+        data: rows.map(r => ({
+          x: r.updatedAt,
+          y: r.currentPrice
+        })),
+        fill: false
+      };
+    });
+
+    new Chart(document.getElementById("priceChart"), {
+      type: "line",
+      data: { datasets: priceDatasets },
+      options: {
+        parsing: false,
+        scales: {
+          x: { type: "time", time: { unit: "day" } },
+          y: {
+            ticks: {
+              callback: v => `$${v}`
+            }
+          }
+        }
+      }
+    });
+
+    /* ==============================
+       2. PROFIT BY SYMBOL (BAR)
+    ============================== */
+    const profitBySymbol = {};
+
+    data.forEach(d => {
+      const profit =
+              (d.currentPrice - d.buyPrice) * d.quantity;
+
+      profitBySymbol[d.symbol] =
+              (profitBySymbol[d.symbol] || 0) + profit;
+    });
+
+    new Chart(document.getElementById("profitChart"), {
+      type: "bar",
+      data: {
+        labels: Object.keys(profitBySymbol),
+        datasets: [{
+          label: "Total Profit / Loss ($)",
+          data: Object.values(profitBySymbol)
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            ticks: { callback: v => `$${v}` }
+          }
+        }
+      }
+    });
+
+    /* ==============================
+       3. PORTFOLIO VALUE OVER TIME
+    ============================== */
+    const portfolioMap = {};
+
+    data.forEach(d => {
+      const date = d.updatedAt;
+      const value = d.currentPrice * d.quantity;
+      portfolioMap[date] = (portfolioMap[date] || 0) + value;
+    });
+
+    const portfolioData = Object.entries(portfolioMap).map(
+            ([date, value]) => ({ x: date, y: value })
+    );
+
+    new Chart(document.getElementById("portfolioChart"), {
+      type: "line",
+      data: {
+        datasets: [{
+          label: "Portfolio Value ($)",
+          data: portfolioData,
+          fill: true
+        }]
+      },
+      options: {
+        parsing: false,
+        scales: {
+          x: { type: "time", time: { unit: "day" } },
+          y: {
+            ticks: { callback: v => `$${v}` }
+          }
+        }
+      }
+    });
+  }
+
+  loadData();
+</script>
+
+</body>
+</html>

@@ -334,6 +334,12 @@ input, textarea, select {
     animation: popIn .25s ease-out;
 }
 
+/* Chart canvas */
+canvas {
+    max-width: 100%;
+    height: auto !important;
+}
+
 /* FIXED PREVIEW BLOCK */
 .view-block {
     border: 1px solid var(--border);

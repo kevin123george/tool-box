@@ -73,12 +73,14 @@ function switchTab(which) {
     document.getElementById("tabMemo").classList.toggle("active", which === "memo");
     document.getElementById("tabFinance").classList.toggle("active", which === "finance");
     document.getElementById("tabStocks").classList.toggle("active", which === "stocks");
+    document.getElementById("tabStockHistory").classList.toggle("active", which === "stockhistory");
     document.getElementById("tabBudget").classList.toggle("active", which === "budget");
     document.getElementById("tabSystemStats").classList.toggle("active", which === "systemstats");
 
     memoTabContent.classList.toggle("hidden", which !== "memo");
     financeTabContent.classList.toggle("hidden", which !== "finance");
     stocksTabContent.classList.toggle("hidden", which !== "stocks");
+    stockHistoryTabContent.classList.toggle("hidden", which !== "stockhistory");
     budgetTabContent.classList.toggle("hidden", which !== "budget");
     systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
 
@@ -90,6 +92,8 @@ function switchTab(which) {
         if (!stocksRefreshInterval) {
             stocksRefreshInterval = setInterval(loadStocks, 30000);
         }
+    } else if (which === "stockhistory") {
+        loadStockHistory();
     } else if (which === "budget") {
         goToCurrentMonth();
     } else if (which === "systemstats") {
@@ -1544,5 +1548,220 @@ function arrayBufferToBase64(buffer) {
 document.addEventListener('DOMContentLoaded', function() {
     initPushNotifications();
 });
+
+// ============================================
+// STOCK HISTORY
+// ============================================
+
+let historyChart = null;
+
+async function loadStockHistory() {
+    try {
+        const res = await fetch(`${API}/api/hist`);
+        const histories = await res.json();
+
+        // Update filter dropdown
+        const uniqueSymbols = [...new Set(histories.map(h => h.symbol))];
+        const filterSelect = document.getElementById('histStockFilter');
+        const currentFilter = filterSelect.value;
+
+        filterSelect.innerHTML = '<option value="all">All Stocks</option>';
+        uniqueSymbols.forEach(symbol => {
+            const opt = document.createElement('option');
+            opt.value = symbol;
+            opt.textContent = symbol;
+            if (symbol === currentFilter) opt.selected = true;
+            filterSelect.appendChild(opt);
+        });
+
+        // Filter data
+        const filtered = currentFilter === 'all'
+            ? histories
+            : histories.filter(h => h.symbol === currentFilter);
+
+        // Calculate stats
+        const stats = calculateHistoryStats(filtered);
+        updateHistoryStats(stats);
+
+        // Prepare chart data
+        const chartData = prepareChartData(filtered);
+        renderHistoryChart(chartData);
+
+        // Render table
+        renderHistoryTable(filtered);
+
+    } catch (error) {
+        console.error('Error loading stock history:', error);
+    }
+}
+
+function calculateHistoryStats(histories) {
+    if (histories.length === 0) {
+        return { totalValue: 0, totalCost: 0, gain: 0, gainPercent: 0 };
+    }
+
+    const totalValue = histories.reduce((sum, h) => sum + (h.quantity * h.currentPrice), 0);
+    const totalCost = histories.reduce((sum, h) => sum + (h.quantity * h.buyPrice), 0);
+    const gain = totalValue - totalCost;
+    const gainPercent = totalCost > 0 ? ((gain / totalCost) * 100).toFixed(2) : 0;
+
+    return { totalValue, totalCost, gain, gainPercent };
+}
+
+function updateHistoryStats(stats) {
+    const valueEl = document.getElementById('histStatValue');
+    const costEl = document.getElementById('histStatCost');
+    const gainEl = document.getElementById('histStatGain');
+    const returnEl = document.getElementById('histStatReturn');
+
+    valueEl.textContent = `$${stats.totalValue.toFixed(2)}`;
+    costEl.textContent = `$${stats.totalCost.toFixed(2)}`;
+    gainEl.textContent = `$${stats.gain.toFixed(2)}`;
+    returnEl.textContent = `${stats.gainPercent}%`;
+
+    gainEl.classList.toggle('positive', stats.gain >= 0);
+    gainEl.classList.toggle('negative', stats.gain < 0);
+    returnEl.classList.toggle('positive', stats.gainPercent >= 0);
+    returnEl.classList.toggle('negative', stats.gainPercent < 0);
+}
+
+function prepareChartData(histories) {
+    const grouped = {};
+
+    histories.forEach(item => {
+        const date = new Date(item.updatedAt).toLocaleDateString();
+        if (!grouped[date]) {
+            grouped[date] = { date, totalValue: 0, totalCost: 0 };
+        }
+        grouped[date].totalValue += item.quantity * item.currentPrice;
+        grouped[date].totalCost += item.quantity * item.buyPrice;
+    });
+
+    return Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+function renderHistoryChart(chartData) {
+    const ctx = document.getElementById('historyChart');
+
+    if (historyChart) {
+        historyChart.destroy();
+    }
+
+    const isDark = !document.body.classList.contains('light');
+    const textColor = isDark ? '#fff' : '#000';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+    historyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Current Value',
+                    data: chartData.map(d => d.totalValue),
+                    borderColor: '#0f0',
+                    backgroundColor: 'rgba(0,255,0,0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: false
+                },
+                {
+                    label: 'Cost Basis',
+                    data: chartData.map(d => d.totalCost),
+                    borderColor: '#666',
+                    backgroundColor: 'rgba(100,100,100,0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor,
+                        font: { family: 'monospace', size: 12 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: isDark ? '#000' : '#fff',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: textColor,
+                    borderWidth: 1,
+                    titleFont: { family: 'monospace', size: 12 },
+                    bodyFont: { family: 'monospace', size: 11 },
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor, font: { family: 'monospace', size: 10 } },
+                    grid: { color: gridColor }
+                },
+                y: {
+                    ticks: {
+                        color: textColor,
+                        font: { family: 'monospace', size: 10 },
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    },
+                    grid: { color: gridColor }
+                }
+            }
+        }
+    });
+}
+
+function renderHistoryTable(histories) {
+    const tableEl = document.getElementById('historyTable');
+
+    if (histories.length === 0) {
+        tableEl.innerHTML = '<div style="padding:12px; border:1px solid var(--border); opacity:0.6;">No history data available</div>';
+        return;
+    }
+
+    // Get last 20 entries
+    const recent = histories.slice(-20).reverse();
+
+    let html = `
+        <div class="stock-row stock-header">
+            <div>SYMBOL</div>
+            <div>QTY</div>
+            <div>BUY PRICE</div>
+            <div>CURR PRICE</div>
+            <div>GAIN/LOSS</div>
+            <div>UPDATED</div>
+        </div>
+    `;
+
+    recent.forEach(item => {
+        const gainLoss = (item.currentPrice - item.buyPrice) * item.quantity;
+        const gainPercent = ((item.currentPrice - item.buyPrice) / item.buyPrice * 100).toFixed(2);
+        const gainClass = gainLoss >= 0 ? 'positive' : 'negative';
+        const updatedDate = new Date(item.updatedAt).toLocaleString();
+
+        html += `
+            <div class="stock-row">
+                <div style="font-weight:bold;">${item.symbol}</div>
+                <div>${item.quantity}</div>
+                <div>$${item.buyPrice.toFixed(2)}</div>
+                <div>$${item.currentPrice.toFixed(2)}</div>
+                <div class="${gainClass}">$${gainLoss.toFixed(2)} (${gainPercent}%)</div>
+                <div style="font-size:10px; opacity:0.7;">${updatedDate}</div>
+            </div>
+        `;
+    });
+
+    tableEl.innerHTML = html;
+}
 
 loadMemos();

@@ -8,6 +8,9 @@
     <!-- Quill Editor CSS -->
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <link rel="stylesheet" href="styles.css">
 
 </head>
@@ -21,7 +24,8 @@
     <div id="tabMemo" class="tab active" onclick="switchTab('memo')">Memos</div>
     <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
     <div id="tabStocks" class="tab" onclick="switchTab('stocks')">Stocks</div>
-    <div id="tabBudget" class="tab" onclick="switchTab('budget')">Budget</div> <!-- NEW -->
+    <div id="tabStockHistory" class="tab" onclick="switchTab('stockhistory')">Stock History</div>
+    <div id="tabBudget" class="tab" onclick="switchTab('budget')">Budget</div>
     <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')">System Stats</div>
 </div>
 
@@ -371,6 +375,49 @@
     </div>
 
     <div id="watchlistList"></div>
+</div>
+
+<!-- =================== STOCK HISTORY TAB =================== -->
+<div id="stockHistoryTabContent" class="tab-content hidden">
+    <h2>Stock Performance History</h2>
+
+    <!-- Stats Summary -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Current Value</div>
+            <div class="stat-value" id="histStatValue">$0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Cost</div>
+            <div class="stat-value" id="histStatCost">$0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Gain/Loss</div>
+            <div class="stat-value" id="histStatGain">$0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Return %</div>
+            <div class="stat-value" id="histStatReturn">0.00%</div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="add-box">
+        <label style="font-size:12px; opacity:0.7; text-transform:uppercase;">Filter by Stock:</label>
+        <select id="histStockFilter" onchange="loadStockHistory()" style="margin-top:4px;">
+            <option value="all">All Stocks</option>
+        </select>
+    </div>
+
+    <!-- Chart -->
+    <div style="padding:12px; border:1px solid var(--border); margin-bottom:16px;">
+        <h3 style="margin:0 0 12px 0; font-size:14px;">PORTFOLIO VALUE OVER TIME</h3>
+        <canvas id="historyChart" height="100"></canvas>
+    </div>
+
+    <!-- Holdings Table -->
+    <h3>Recent Holdings</h3>
+    <div id="historyTable"></div>
 </div>
 
 <!-- =================== BUDGET TAB =================== -->
