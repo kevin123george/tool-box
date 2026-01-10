@@ -1564,6 +1564,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 
 let historyChart = null;
+let currentChartType = 'line';
+let isFullscreen = false;
 
 async function loadStockHistory() {
     try {
@@ -1672,6 +1674,9 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
     const textColor = isDark ? '#fff' : '#000';
     const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
+    // Get current chart type from selector
+    currentChartType = document.getElementById('chartType').value;
+
     // Prepare datasets
     const datasets = [];
     const colors = ['#0f0', '#0ff', '#ff0', '#f0f', '#fa0', '#0af'];
@@ -1694,16 +1699,18 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
             y: d.buyPrice
         }));
 
+        const isAreaChart = currentChartType === 'area';
+
         datasets.push({
             label: `${selectedFilter} - Current Price`,
             data: currentPriceData,
             borderColor: '#0f0',
-            backgroundColor: 'rgba(0,255,0,0.1)',
-            borderWidth: 3,
+            backgroundColor: isAreaChart ? 'rgba(0,255,0,0.3)' : 'rgba(0,255,0,0.1)',
+            borderWidth: currentChartType === 'bar' ? 0 : 3,
             tension: 0.4,
-            fill: false,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            fill: isAreaChart,
+            pointRadius: currentChartType === 'bar' ? 0 : 4,
+            pointHoverRadius: currentChartType === 'bar' ? 0 : 6,
             pointBackgroundColor: '#0f0',
             pointBorderColor: isDark ? '#000' : '#fff',
             pointBorderWidth: 2
@@ -1713,26 +1720,28 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
             label: `${selectedFilter} - Buy Price`,
             data: buyPriceData,
             borderColor: '#666',
-            backgroundColor: 'rgba(100,100,100,0.1)',
-            borderWidth: 2,
+            backgroundColor: isAreaChart ? 'rgba(100,100,100,0.2)' : 'rgba(100,100,100,0.1)',
+            borderWidth: currentChartType === 'bar' ? 0 : 2,
             tension: 0.4,
-            fill: false,
-            borderDash: [8, 4],
-            pointRadius: 3,
-            pointHoverRadius: 5,
+            fill: isAreaChart,
+            borderDash: currentChartType === 'bar' ? [] : [8, 4],
+            pointRadius: currentChartType === 'bar' ? 0 : 3,
+            pointHoverRadius: currentChartType === 'bar' ? 0 : 5,
             pointBackgroundColor: '#666',
             pointBorderColor: isDark ? '#000' : '#fff',
             pointBorderWidth: 2
         });
 
         historyChart = new Chart(ctx, {
-            type: 'line',
+            type: currentChartType === 'area' ? 'line' : currentChartType,
             data: { datasets },
             options: getAdvancedChartOptions(textColor, gridColor, isDark, true)
         });
 
     } else {
         // Multiple stocks - show current price for each
+        const isAreaChart = currentChartType === 'area';
+
         symbols.forEach(symbol => {
             const data = dataBySymbol[symbol];
 
@@ -1745,12 +1754,14 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
                 label: symbol,
                 data: priceData,
                 borderColor: colors[colorIndex % colors.length],
-                backgroundColor: 'transparent',
-                borderWidth: 3,
+                backgroundColor: isAreaChart
+                    ? colors[colorIndex % colors.length].replace(')', ', 0.3)').replace('rgb', 'rgba')
+                    : 'transparent',
+                borderWidth: currentChartType === 'bar' ? 0 : 3,
                 tension: 0.4,
-                fill: false,
-                pointRadius: 3,
-                pointHoverRadius: 6,
+                fill: isAreaChart,
+                pointRadius: currentChartType === 'bar' ? 0 : 3,
+                pointHoverRadius: currentChartType === 'bar' ? 0 : 6,
                 pointBackgroundColor: colors[colorIndex % colors.length],
                 pointBorderColor: isDark ? '#000' : '#fff',
                 pointBorderWidth: 2
@@ -1760,7 +1771,7 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
         });
 
         historyChart = new Chart(ctx, {
-            type: 'line',
+            type: currentChartType === 'area' ? 'line' : currentChartType,
             data: { datasets },
             options: getAdvancedChartOptions(textColor, gridColor, isDark, false)
         });
@@ -2002,6 +2013,56 @@ function setChartTimeRange(range) {
     document.getElementById('histDateFrom').value = fromStr;
     document.getElementById('histDateTo').value = toStr;
     loadStockHistory();
+}
+
+function changeChartType() {
+    // Reload chart with new type
+    loadStockHistory();
+}
+
+function toggleFullscreen() {
+    const container = document.getElementById('chartContainer');
+    const btn = document.getElementById('fullscreenBtn');
+
+    if (!isFullscreen) {
+        // Enter fullscreen
+        container.classList.add('fullscreen');
+        btn.textContent = '⛶ EXIT FULLSCREEN';
+        isFullscreen = true;
+
+        // Resize chart
+        if (historyChart) {
+            historyChart.resize();
+        }
+
+        // Add escape key listener
+        document.addEventListener('keydown', handleFullscreenEscape);
+    } else {
+        exitFullscreen();
+    }
+}
+
+function exitFullscreen() {
+    const container = document.getElementById('chartContainer');
+    const btn = document.getElementById('fullscreenBtn');
+
+    container.classList.remove('fullscreen');
+    btn.textContent = '⛶ FULLSCREEN';
+    isFullscreen = false;
+
+    // Resize chart
+    if (historyChart) {
+        historyChart.resize();
+    }
+
+    // Remove escape key listener
+    document.removeEventListener('keydown', handleFullscreenEscape);
+}
+
+function handleFullscreenEscape(e) {
+    if (e.key === 'Escape' && isFullscreen) {
+        exitFullscreen();
+    }
 }
 
 function exportChartImage() {

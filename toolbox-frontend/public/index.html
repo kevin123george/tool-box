@@ -432,18 +432,31 @@
     </div>
 
     <!-- Chart -->
-    <div style="padding:12px; border:1px solid var(--border); margin-bottom:16px;">
+    <div id="chartContainer" style="padding:12px; border:1px solid var(--border); margin-bottom:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
             <h3 style="margin:0; font-size:14px;">STOCK PRICE HISTORY</h3>
-            <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button class="btn" onclick="setChartTimeRange('1d')" style="padding:4px 8px;">1D</button>
-                <button class="btn" onclick="setChartTimeRange('1w')" style="padding:4px 8px;">1W</button>
-                <button class="btn" onclick="setChartTimeRange('1m')" style="padding:4px 8px;">1M</button>
-                <button class="btn" onclick="setChartTimeRange('3m')" style="padding:4px 8px;">3M</button>
-                <button class="btn" onclick="setChartTimeRange('6m')" style="padding:4px 8px;">6M</button>
-                <button class="btn" onclick="setChartTimeRange('1y')" style="padding:4px 8px;">1Y</button>
-                <button class="btn" onclick="setChartTimeRange('all')" style="padding:4px 8px;">ALL</button>
-                <button class="btn" onclick="exportChartImage()" style="padding:4px 8px; margin-left:8px;">📊 EXPORT</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <!-- Chart Type Selector -->
+                <select id="chartType" onchange="changeChartType()" style="padding:4px 8px; width:auto;">
+                    <option value="line">LINE</option>
+                    <option value="bar">BAR</option>
+                    <option value="area">AREA</option>
+                </select>
+
+                <!-- Time Range Buttons -->
+                <div style="display:flex; gap:4px;">
+                    <button class="btn" onclick="setChartTimeRange('1d')" style="padding:4px 8px;">1D</button>
+                    <button class="btn" onclick="setChartTimeRange('1w')" style="padding:4px 8px;">1W</button>
+                    <button class="btn" onclick="setChartTimeRange('1m')" style="padding:4px 8px;">1M</button>
+                    <button class="btn" onclick="setChartTimeRange('3m')" style="padding:4px 8px;">3M</button>
+                    <button class="btn" onclick="setChartTimeRange('6m')" style="padding:4px 8px;">6M</button>
+                    <button class="btn" onclick="setChartTimeRange('1y')" style="padding:4px 8px;">1Y</button>
+                    <button class="btn" onclick="setChartTimeRange('all')" style="padding:4px 8px;">ALL</button>
+                </div>
+
+                <!-- Action Buttons -->
+                <button class="btn" onclick="exportChartImage()" style="padding:4px 8px;">📊 EXPORT</button>
+                <button class="btn" onclick="toggleFullscreen()" id="fullscreenBtn" style="padding:4px 8px;">⛶ FULLSCREEN</button>
             </div>
         </div>
         <canvas id="historyChart" height="100"></canvas>

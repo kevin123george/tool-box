@@ -340,6 +340,29 @@ canvas {
     height: auto !important;
 }
 
+/* Fullscreen chart styles */
+#chartContainer.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: var(--bg);
+    margin: 0;
+    border: none;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+#chartContainer.fullscreen canvas {
+    height: calc(100vh - 120px) !important;
+}
+
+#chartContainer.fullscreen h3 {
+    font-size: 18px;
+}
+
 /* FIXED PREVIEW BLOCK */
 .view-block {
     border: 1px solid var(--border);
