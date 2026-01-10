@@ -33,12 +33,54 @@ public class StockResearchService {
     List<StockHoldingHistory> holdings = getLatestHoldings();
     Map<String, StockAnalysis> analyses = new HashMap<>();
 
+    log.info("=== GENERATING RESEARCH REPORT ===");
+    log.info("Total holdings to analyze: {}", holdings.size());
+    holdings.forEach(h -> log.info("  - {}: {} shares", h.getSymbol(), h.getQuantity()));
+
+    int count = 0;
     for (StockHoldingHistory holding : holdings) {
+      count++;
+      log.info(
+          "\n[{}/{}] ========== Analyzing {} ==========",
+          count,
+          holdings.size(),
+          holding.getSymbol());
+
       StockAnalysis analysis = analyzeStock(holding.getSymbol());
+
+      log.info("  News articles found: {}", analysis.getNews().size());
+      if (!analysis.getNews().isEmpty()) {
+        analysis
+            .getNews()
+            .forEach(
+                article ->
+                    log.info(
+                        "    - {}",
+                        article
+                            .getTitle()
+                            .substring(0, Math.min(60, article.getTitle().length()))));
+      }
+      log.info("  Sentiment score: {}", String.format("%.3f", analysis.getSentimentScore()));
+      log.info("  RSI: {}", analysis.getTechnicalIndicators().getRsi());
+
       // Generate position-aware recommendation
       analysis.setRecommendation(generatePositionAwareRecommendation(analysis, holding));
       analyses.put(holding.getSymbol(), analysis);
+
+      // Add delay between stocks to avoid rate limiting (3 API calls per stock)
+      if (count < holdings.size()) {
+        try {
+          log.info("  Waiting 2 seconds before next stock to avoid rate limiting...");
+          Thread.sleep(2000); // 2 second delay between stocks
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
     }
+
+    log.info("\n=== ANALYSIS COMPLETE ===");
+    log.info("Total stocks analyzed: {}", analyses.size());
+    log.info("Overall sentiment: {}", calculateOverallSentiment(analyses));
 
     StockResearchReport report = new StockResearchReport();
     report.setGeneratedAt(LocalDateTime.now());
@@ -49,7 +91,10 @@ public class StockResearchService {
     // Calculate portfolio metrics
     calculatePortfolioMetrics(report, holdings);
 
-    return reportRepository.save(report);
+    StockResearchReport saved = reportRepository.save(report);
+    log.info("Report saved with ID: {}", saved.getId());
+
+    return saved;
   }
 
   /** Get latest holding for each unique symbol */
@@ -171,6 +216,7 @@ public class StockResearchService {
    */
   private List<NewsArticle> fetchNews(String symbol) {
     if (alphaVantageKey == null || alphaVantageKey.isEmpty()) {
+      log.warn("  [NEWS] Alpha Vantage API key not configured");
       return Collections.emptyList();
     }
 
@@ -180,72 +226,101 @@ public class StockResearchService {
               "https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=%s&limit=10&apikey=%s",
               symbol, alphaVantageKey);
 
-      log.info(
-          String.format(
-              String.format(
-                  "https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=%s&limit=10&apikey=",
-                  symbol)));
+      log.debug("  [NEWS] Fetching news for {}", symbol);
 
       Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
-      if (response == null || !response.containsKey("feed")) {
+      if (response == null) {
+        log.warn("  [NEWS] Null response from Alpha Vantage for {}", symbol);
+        return Collections.emptyList();
+      }
+
+      if (!response.containsKey("feed")) {
+        log.warn("  [NEWS] No 'feed' key in response for {}", symbol);
+        if (response.containsKey("Information")) {
+          log.error("  [NEWS] API Message: {}", response.get("Information"));
+        }
         return Collections.emptyList();
       }
 
       List<Map<String, Object>> feed = (List<Map<String, Object>>) response.get("feed");
+      log.info("  [NEWS] Retrieved {} articles from Alpha Vantage for {}", feed.size(), symbol);
 
-      return feed.stream()
-          .limit(5)
-          .map(
-              article -> {
-                NewsArticle news = new NewsArticle();
+      List<NewsArticle> articles =
+          feed.stream()
+              .limit(5)
+              .map(
+                  article -> {
+                    NewsArticle news = new NewsArticle();
 
-                try {
-                  news.setTitle((String) article.get("title"));
-                  news.setSummary((String) article.get("summary"));
-                  news.setUrl((String) article.get("url"));
-                  news.setPublishedAt((String) article.get("time_published"));
+                    try {
+                      news.setTitle((String) article.get("title"));
+                      news.setSummary((String) article.get("summary"));
+                      news.setUrl((String) article.get("url"));
+                      news.setPublishedAt((String) article.get("time_published"));
 
-                  // AUTHORS IS ARRAY OF STRINGS: ["Author Name"]
-                  Object authorsObj = article.get("authors");
-                  if (authorsObj instanceof List) {
-                    List<?> authorsList = (List<?>) authorsObj;
-                    if (!authorsList.isEmpty() && authorsList.get(0) instanceof String) {
-                      news.setSource((String) authorsList.get(0));
-                    }
-                  }
-
-                  // Parse sentiment scores
-                  Double overallScore = parseDouble(article.get("overall_sentiment_score"));
-                  news.setAlphaSentimentScore(overallScore);
-
-                  // Parse ticker sentiment array
-                  Object tickerSentObj = article.get("ticker_sentiment");
-                  if (tickerSentObj instanceof List) {
-                    List<?> tickerSentList = (List<?>) tickerSentObj;
-                    for (Object tsObj : tickerSentList) {
-                      if (tsObj instanceof Map) {
-                        Map<?, ?> ts = (Map<?, ?>) tsObj;
-                        Object tickerObj = ts.get("ticker");
-                        if (tickerObj != null && symbol.equalsIgnoreCase(tickerObj.toString())) {
-                          news.setRelevanceScore(parseDouble(ts.get("relevance_score")));
-                          news.setTickerSentimentScore(
-                              parseDouble(ts.get("ticker_sentiment_score")));
-                          break;
+                      // AUTHORS IS ARRAY OF STRINGS: ["Author Name"]
+                      Object authorsObj = article.get("authors");
+                      if (authorsObj instanceof List) {
+                        List<?> authorsList = (List<?>) authorsObj;
+                        if (!authorsList.isEmpty() && authorsList.get(0) instanceof String) {
+                          news.setSource((String) authorsList.get(0));
                         }
                       }
-                    }
-                  }
-                } catch (Exception e) {
-                  System.err.println("Error parsing article: " + e.getMessage());
-                  // Continue with partial data
-                }
 
-                return news;
-              })
-          .collect(Collectors.toList());
+                      // Parse sentiment scores
+                      Double overallScore = parseDouble(article.get("overall_sentiment_score"));
+                      news.setAlphaSentimentScore(overallScore);
+
+                      // Parse ticker sentiment array - FIND THE SPECIFIC TICKER
+                      Object tickerSentObj = article.get("ticker_sentiment");
+                      if (tickerSentObj instanceof List) {
+                        List<?> tickerSentList = (List<?>) tickerSentObj;
+
+                        boolean foundTicker = false;
+                        for (Object tsObj : tickerSentList) {
+                          if (tsObj instanceof Map) {
+                            Map<?, ?> ts = (Map<?, ?>) tsObj;
+                            Object tickerObj = ts.get("ticker");
+
+                            if (tickerObj != null
+                                && symbol.equalsIgnoreCase(tickerObj.toString())) {
+                              news.setRelevanceScore(parseDouble(ts.get("relevance_score")));
+                              news.setTickerSentimentScore(
+                                  parseDouble(ts.get("ticker_sentiment_score")));
+                              foundTicker = true;
+
+                              log.debug(
+                                  "    ✓ Found ticker sentiment for {} in article: {}",
+                                  symbol,
+                                  news.getTickerSentimentScore());
+                              break;
+                            }
+                          }
+                        }
+
+                        if (!foundTicker) {
+                          log.debug(
+                              "    ✗ Article does not have ticker_sentiment for {}: {}",
+                              symbol,
+                              news.getTitle().substring(0, Math.min(50, news.getTitle().length())));
+                        }
+                      }
+                    } catch (Exception e) {
+                      log.error("  [NEWS] Error parsing article: {}", e.getMessage());
+                      // Continue with partial data
+                    }
+
+                    return news;
+                  })
+              .collect(Collectors.toList());
+
+      log.info("  [NEWS] Processed {} articles for {}", articles.size(), symbol);
+
+      return articles;
+
     } catch (Exception e) {
-      System.err.println("Error fetching news for " + symbol + ": " + e.getMessage());
+      log.error("  [NEWS] Error fetching news for {}: {}", symbol, e.getMessage());
       e.printStackTrace();
       return Collections.emptyList();
     }
