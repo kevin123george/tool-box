@@ -1567,101 +1567,72 @@ let historyChart = null;
 
 async function loadStockHistory() {
     try {
-        const res = await fetch(`${API}/api/hist`);
-        const histories = await res.json();
-
-        // Update filter dropdown
-        const uniqueSymbols = [...new Set(histories.map(h => h.symbol))];
-        const filterSelect = document.getElementById('histStockFilter');
-        const currentFilter = filterSelect.value;
-
-        filterSelect.innerHTML = '<option value="all">All Stocks</option>';
-        uniqueSymbols.forEach(symbol => {
-            const opt = document.createElement('option');
-            opt.value = symbol;
-            opt.textContent = symbol;
-            if (symbol === currentFilter) opt.selected = true;
-            filterSelect.appendChild(opt);
-        });
-
-        // Apply filters
-        let filtered = currentFilter === 'all'
-            ? histories
-            : histories.filter(h => h.symbol === currentFilter);
-
-        // Apply date filters
+        const symbol = document.getElementById('histStockFilter').value;
         const dateFrom = document.getElementById('histDateFrom').value;
         const dateTo = document.getElementById('histDateTo').value;
 
-        if (dateFrom) {
-            const fromDate = new Date(dateFrom);
-            filtered = filtered.filter(h => new Date(h.updatedAt) >= fromDate);
-        }
-
+        // Build query params
+        let statsParams = new URLSearchParams();
+        if (symbol) statsParams.append('symbol', symbol);
+        if (dateFrom) statsParams.append('from', new Date(dateFrom).toISOString());
         if (dateTo) {
             const toDate = new Date(dateTo);
-            toDate.setHours(23, 59, 59, 999); // End of day
-            filtered = filtered.filter(h => new Date(h.updatedAt) <= toDate);
+            toDate.setHours(23, 59, 59, 999);
+            statsParams.append('to', toDate.toISOString());
         }
 
-        // Calculate stats
-        const stats = calculatePriceStats(filtered);
-        updatePriceStats(stats);
+        // Fetch aggregated stats
+        const statsRes = await fetch(`${API}/api/hist/stats?${statsParams}`);
+        const statsData = await statsRes.json();
 
-        // Prepare chart data - group by symbol and date
-        const chartData = preparePriceChartData(filtered);
-        renderPriceChart(chartData, currentFilter);
+        // Update symbols dropdown if needed
+        if (document.getElementById('histStockFilter').options.length <= 1) {
+            const filterSelect = document.getElementById('histStockFilter');
+            const currentFilter = filterSelect.value;
+
+            filterSelect.innerHTML = '<option value="all">All Stocks</option>';
+            statsData.symbols.forEach(sym => {
+                const opt = document.createElement('option');
+                opt.value = sym;
+                opt.textContent = sym;
+                if (sym === currentFilter) opt.selected = true;
+                filterSelect.appendChild(opt);
+            });
+        }
+
+        // Update stats cards
+        updatePriceStats(statsData);
+
+        // Fetch chart data
+        let chartParams = new URLSearchParams();
+        if (symbol) chartParams.append('symbol', symbol);
+        if (dateFrom) chartParams.append('from', new Date(dateFrom).toISOString());
+        if (dateTo) {
+            const toDate = new Date(dateTo);
+            toDate.setHours(23, 59, 59, 999);
+            chartParams.append('to', toDate.toISOString());
+        }
+
+        const chartRes = await fetch(`${API}/api/hist/chart?${chartParams}`);
+        const chartData = await chartRes.json();
+
+        // Render chart
+        renderPriceChart(chartData.data, symbol);
+
+        // Fetch recent entries for table
+        let tableParams = new URLSearchParams();
+        tableParams.append('limit', '20');
+        if (symbol) tableParams.append('symbol', symbol);
+
+        const tableRes = await fetch(`${API}/api/hist/recent?${tableParams}`);
+        const tableData = await tableRes.json();
 
         // Render table
-        renderHistoryTable(filtered);
+        renderHistoryTable(tableData);
 
     } catch (error) {
         console.error('Error loading stock history:', error);
     }
-}
-
-function calculatePriceStats(histories) {
-    if (histories.length === 0) {
-        return {
-            totalInvested: 0,
-            totalValue: 0,
-            avgBuyPrice: 0,
-            currentPrice: 0,
-            priceChange: 0,
-            changePercent: 0
-        };
-    }
-
-    // Get the most recent entry for each stock symbol
-    const latestBySymbol = {};
-    histories.forEach(h => {
-        const existing = latestBySymbol[h.symbol];
-        if (!existing || new Date(h.updatedAt) > new Date(existing.updatedAt)) {
-            latestBySymbol[h.symbol] = h;
-        }
-    });
-
-    const latestEntries = Object.values(latestBySymbol);
-
-    // Calculate total invested and current value using only latest entries
-    const totalInvested = latestEntries.reduce((sum, h) => sum + (h.quantity * h.buyPrice), 0);
-    const totalValue = latestEntries.reduce((sum, h) => sum + (h.quantity * h.currentPrice), 0);
-
-    // Calculate average buy price and current price from latest entries
-    const avgBuyPrice = latestEntries.reduce((sum, h) => sum + h.buyPrice, 0) / latestEntries.length;
-    const avgCurrentPrice = latestEntries.reduce((sum, h) => sum + h.currentPrice, 0) / latestEntries.length;
-
-    const priceChange = avgCurrentPrice - avgBuyPrice;
-    const changePercent = avgBuyPrice > 0 ? ((priceChange / avgBuyPrice) * 100).toFixed(2) : 0;
-
-    return {
-        totalInvested,
-        totalValue,
-        avgBuyPrice,
-        currentPrice: avgCurrentPrice,
-        priceChange,
-        changePercent
-    };
 }
 
 function updatePriceStats(stats) {
@@ -1677,7 +1648,7 @@ function updatePriceStats(stats) {
     buyPriceEl.textContent = `$${stats.avgBuyPrice.toFixed(2)}`;
     currentPriceEl.textContent = `$${stats.currentPrice.toFixed(2)}`;
     priceChangeEl.textContent = `$${stats.priceChange.toFixed(2)}`;
-    changePercentEl.textContent = `${stats.changePercent}%`;
+    changePercentEl.textContent = `${stats.changePercent.toFixed(2)}%`;
 
     // Color total value based on gain/loss
     const valueGain = stats.totalValue - stats.totalInvested;
@@ -1688,28 +1659,6 @@ function updatePriceStats(stats) {
     priceChangeEl.classList.toggle('negative', stats.priceChange < 0);
     changePercentEl.classList.toggle('positive', stats.changePercent >= 0);
     changePercentEl.classList.toggle('negative', stats.changePercent < 0);
-}
-
-function preparePriceChartData(histories) {
-    if (histories.length === 0) return { labels: [], datasets: [] };
-
-    // Sort by date
-    const sorted = [...histories].sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
-
-    // Group by symbol
-    const bySymbol = {};
-    sorted.forEach(item => {
-        if (!bySymbol[item.symbol]) {
-            bySymbol[item.symbol] = [];
-        }
-        bySymbol[item.symbol].push({
-            date: new Date(item.updatedAt).toLocaleString(),
-            buyPrice: item.buyPrice,
-            currentPrice: item.currentPrice
-        });
-    });
-
-    return bySymbol;
 }
 
 function renderPriceChart(dataBySymbol, selectedFilter) {
@@ -1728,11 +1677,9 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
     const colors = ['#0f0', '#0ff', '#ff0', '#f0f', '#fa0', '#0af'];
     let colorIndex = 0;
 
-    // If showing all stocks, create a dataset for each symbol
-    // If showing one stock, show both buy price and current price
     const symbols = Object.keys(dataBySymbol);
 
-    if (selectedFilter !== 'all') {
+    if (selectedFilter !== 'all' && symbols.length === 1) {
         // Single stock - show buy price and current price
         const data = dataBySymbol[selectedFilter] || [];
 
@@ -1757,7 +1704,7 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
             borderDash: [5, 5]
         });
 
-        const labels = data.map(d => d.date);
+        const labels = data.map(d => new Date(d.date).toLocaleString());
 
         historyChart = new Chart(ctx, {
             type: 'line',
@@ -1784,8 +1731,9 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
 
             // Collect all unique labels
             data.forEach(d => {
-                if (!allLabels.includes(d.date)) {
-                    allLabels.push(d.date);
+                const label = new Date(d.date).toLocaleString();
+                if (!allLabels.includes(label)) {
+                    allLabels.push(label);
                 }
             });
 
@@ -1861,9 +1809,6 @@ function renderHistoryTable(histories) {
         return;
     }
 
-    // Get last 20 entries
-    const recent = histories.slice(-20).reverse();
-
     let html = `
         <div class="stock-row stock-header">
             <div>SYMBOL</div>
@@ -1875,7 +1820,7 @@ function renderHistoryTable(histories) {
         </div>
     `;
 
-    recent.forEach(item => {
+    histories.forEach(item => {
         const gainLoss = (item.currentPrice - item.buyPrice) * item.quantity;
         const gainPercent = ((item.currentPrice - item.buyPrice) / item.buyPrice * 100).toFixed(2);
         const gainClass = gainLoss >= 0 ? 'positive' : 'negative';
