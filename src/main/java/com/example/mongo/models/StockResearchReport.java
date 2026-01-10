@@ -1,6 +1,6 @@
 package com.example.mongo.models;
 
-import com.example.mongo.service.StockResearchService.StockAnalysis;
+import com.example.mongo.services.StockResearchService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +17,7 @@ public class StockResearchReport {
 
   private LocalDateTime generatedAt;
   private List<StockHoldingHistory> holdings;
-  private Map<String, StockAnalysis> analyses;
+  private Map<String, StockResearchService.StockAnalysis> analyses;
   private String recommendations;
   private String overallSentiment; // BULLISH, BEARISH, NEUTRAL
 

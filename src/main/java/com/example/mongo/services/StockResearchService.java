@@ -1,4 +1,4 @@
-package com.example.mongo.service;
+package com.example.mongo.services;
 
 import com.example.mongo.models.StockHoldingHistory;
 import com.example.mongo.models.StockResearchReport;
@@ -7,6 +7,8 @@ import com.example.mongo.repos.StockResearchReportRepository;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -161,7 +163,10 @@ public class StockResearchService {
     return rec.toString();
   }
 
-  /** Fetch news with sentiment from Alpha Vantage */
+  /**
+   * Fetch news with sentiment from Alpha Vantage AUTHORS FIELD IS AN ARRAY OF STRINGS: ["Author
+   * Name"]
+   */
   private List<NewsArticle> fetchNews(String symbol) {
     if (alphaVantageKey == null || alphaVantageKey.isEmpty()) {
       return Collections.emptyList();
@@ -186,30 +191,46 @@ public class StockResearchService {
           .map(
               article -> {
                 NewsArticle news = new NewsArticle();
-                news.setTitle((String) article.get("title"));
-                news.setSummary((String) article.get("summary"));
-                news.setUrl((String) article.get("url"));
-                news.setPublishedAt((String) article.get("time_published"));
 
-                List<Map<String, String>> authors =
-                    (List<Map<String, String>>) article.get("authors");
-                if (authors != null && !authors.isEmpty()) {
-                  news.setSource(authors.get(0).get("name"));
-                }
+                try {
+                  news.setTitle((String) article.get("title"));
+                  news.setSummary((String) article.get("summary"));
+                  news.setUrl((String) article.get("url"));
+                  news.setPublishedAt((String) article.get("time_published"));
 
-                Double overallScore = parseDouble(article.get("overall_sentiment_score"));
-                news.setAlphaSentimentScore(overallScore);
-
-                List<Map<String, Object>> tickerSentiment =
-                    (List<Map<String, Object>>) article.get("ticker_sentiment");
-                if (tickerSentiment != null) {
-                  for (Map<String, Object> ts : tickerSentiment) {
-                    if (symbol.equalsIgnoreCase((String) ts.get("ticker"))) {
-                      news.setRelevanceScore(parseDouble(ts.get("relevance_score")));
-                      news.setTickerSentimentScore(parseDouble(ts.get("ticker_sentiment_score")));
-                      break;
+                  // AUTHORS IS ARRAY OF STRINGS: ["Author Name"]
+                  Object authorsObj = article.get("authors");
+                  if (authorsObj instanceof List) {
+                    List<?> authorsList = (List<?>) authorsObj;
+                    if (!authorsList.isEmpty() && authorsList.get(0) instanceof String) {
+                      news.setSource((String) authorsList.get(0));
                     }
                   }
+
+                  // Parse sentiment scores
+                  Double overallScore = parseDouble(article.get("overall_sentiment_score"));
+                  news.setAlphaSentimentScore(overallScore);
+
+                  // Parse ticker sentiment array
+                  Object tickerSentObj = article.get("ticker_sentiment");
+                  if (tickerSentObj instanceof List) {
+                    List<?> tickerSentList = (List<?>) tickerSentObj;
+                    for (Object tsObj : tickerSentList) {
+                      if (tsObj instanceof Map) {
+                        Map<?, ?> ts = (Map<?, ?>) tsObj;
+                        Object tickerObj = ts.get("ticker");
+                        if (tickerObj != null && symbol.equalsIgnoreCase(tickerObj.toString())) {
+                          news.setRelevanceScore(parseDouble(ts.get("relevance_score")));
+                          news.setTickerSentimentScore(
+                              parseDouble(ts.get("ticker_sentiment_score")));
+                          break;
+                        }
+                      }
+                    }
+                  }
+                } catch (Exception e) {
+                  System.err.println("Error parsing article: " + e.getMessage());
+                  // Continue with partial data
                 }
 
                 return news;
@@ -217,6 +238,7 @@ public class StockResearchService {
           .collect(Collectors.toList());
     } catch (Exception e) {
       System.err.println("Error fetching news for " + symbol + ": " + e.getMessage());
+      e.printStackTrace();
       return Collections.emptyList();
     }
   }
@@ -235,7 +257,7 @@ public class StockResearchService {
           String.format(
               "https://www.alphavantage.co/query?function=RSI&symbol=%s&interval=daily&time_period=14&series_type=close&apikey=%s",
               symbol, alphaVantageKey);
-      Map<String, Object> rsiResponse = restTemplate.getForObject(rsiUrl, Map.class);
+      Map rsiResponse = restTemplate.getForObject(rsiUrl, Map.class);
       indicators.setRsi(parseLatestIndicator(rsiResponse, "Technical Analysis: RSI"));
 
       // Add small delay to avoid rate limiting
@@ -337,54 +359,18 @@ public class StockResearchService {
   }
 
   // Inner classes
+  @Setter
+  @Getter
   public static class StockAnalysis {
     private String symbol;
     private List<NewsArticle> news;
     private TechnicalIndicators technicalIndicators;
     private double sentimentScore;
     private String recommendation;
-
-    public String getSymbol() {
-      return symbol;
-    }
-
-    public void setSymbol(String symbol) {
-      this.symbol = symbol;
-    }
-
-    public List<NewsArticle> getNews() {
-      return news;
-    }
-
-    public void setNews(List<NewsArticle> news) {
-      this.news = news;
-    }
-
-    public TechnicalIndicators getTechnicalIndicators() {
-      return technicalIndicators;
-    }
-
-    public void setTechnicalIndicators(TechnicalIndicators indicators) {
-      this.technicalIndicators = indicators;
-    }
-
-    public double getSentimentScore() {
-      return sentimentScore;
-    }
-
-    public void setSentimentScore(double score) {
-      this.sentimentScore = score;
-    }
-
-    public String getRecommendation() {
-      return recommendation;
-    }
-
-    public void setRecommendation(String recommendation) {
-      this.recommendation = recommendation;
-    }
   }
 
+  @Setter
+  @Getter
   public static class NewsArticle {
     private String title;
     private String summary;
@@ -394,108 +380,14 @@ public class StockResearchService {
     private Double alphaSentimentScore;
     private Double tickerSentimentScore;
     private Double relevanceScore;
-
-    public String getTitle() {
-      return title;
-    }
-
-    public void setTitle(String title) {
-      this.title = title;
-    }
-
-    public String getSummary() {
-      return summary;
-    }
-
-    public void setSummary(String summary) {
-      this.summary = summary;
-    }
-
-    public String getUrl() {
-      return url;
-    }
-
-    public void setUrl(String url) {
-      this.url = url;
-    }
-
-    public String getPublishedAt() {
-      return publishedAt;
-    }
-
-    public void setPublishedAt(String publishedAt) {
-      this.publishedAt = publishedAt;
-    }
-
-    public String getSource() {
-      return source;
-    }
-
-    public void setSource(String source) {
-      this.source = source;
-    }
-
-    public Double getAlphaSentimentScore() {
-      return alphaSentimentScore;
-    }
-
-    public void setAlphaSentimentScore(Double score) {
-      this.alphaSentimentScore = score;
-    }
-
-    public Double getTickerSentimentScore() {
-      return tickerSentimentScore;
-    }
-
-    public void setTickerSentimentScore(Double score) {
-      this.tickerSentimentScore = score;
-    }
-
-    public Double getRelevanceScore() {
-      return relevanceScore;
-    }
-
-    public void setRelevanceScore(Double score) {
-      this.relevanceScore = score;
-    }
   }
 
+  @Setter
+  @Getter
   public static class TechnicalIndicators {
     private Double rsi;
     private Double macd;
     private Double movingAverage50;
     private Double movingAverage200;
-
-    public Double getRsi() {
-      return rsi;
-    }
-
-    public void setRsi(Double rsi) {
-      this.rsi = rsi;
-    }
-
-    public Double getMacd() {
-      return macd;
-    }
-
-    public void setMacd(Double macd) {
-      this.macd = macd;
-    }
-
-    public Double getMovingAverage50() {
-      return movingAverage50;
-    }
-
-    public void setMovingAverage50(Double ma) {
-      this.movingAverage50 = ma;
-    }
-
-    public Double getMovingAverage200() {
-      return movingAverage200;
-    }
-
-    public void setMovingAverage200(Double ma) {
-      this.movingAverage200 = ma;
-    }
   }
 }

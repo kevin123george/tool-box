@@ -2,7 +2,7 @@ package com.example.mongo.controller;
 
 import com.example.mongo.models.StockResearchReport;
 import com.example.mongo.repos.StockResearchReportRepository;
-import com.example.mongo.service.StockResearchService;
+import com.example.mongo.services.StockResearchService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
