@@ -421,7 +421,6 @@ canvas {
 .news-header {
     font-weight: bold;
     margin-bottom: 15px;
-    color: #00ff00;
     font-size: 14px;
     letter-spacing: 1px;
 }
@@ -442,7 +441,6 @@ canvas {
 
 .news-item:hover {
     background: #1a1a1a;
-    border-color: #00ff00;
     transform: translateX(5px);
 }
 
@@ -451,7 +449,6 @@ canvas {
 }
 
 .news-title {
-    color: #00bfff;
     text-decoration: none;
     font-size: 14px;
     line-height: 1.5;
@@ -460,7 +457,6 @@ canvas {
 }
 
 .news-title:hover {
-    color: #00ff00;
     text-decoration: underline;
 }
 
@@ -474,10 +470,7 @@ canvas {
 .show-more-news {
     margin-top: 10px;
     padding: 10px;
-    background: #0a0a0a;
-    border: 1px solid #00ff00;
     border-radius: 6px;
-    color: #00ff00;
     text-align: center;
     cursor: pointer;
     font-size: 13px;
@@ -487,30 +480,20 @@ canvas {
 }
 
 .show-more-news:hover {
-    background: #00ff00;
-    color: #000;
     transform: scale(1.02);
 }
 
 .show-more-news.expanded {
-    background: #1a1a1a;
-    border-color: #ffff00;
-    color: #ffff00;
 }
 
 .show-more-news.expanded:hover {
-    background: #ffff00;
-    color: #000;
+
 }
 
 /* Stock analysis card */
 .stock-analysis-card {
-    background: #0a0a0a;
-    border: 2px solid #00ff00;
-    border-radius: 10px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
 }
 
 .stock-header {
@@ -519,13 +502,11 @@ canvas {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid #00ff00;
 }
 
 .stock-symbol {
     font-size: 28px;
     font-weight: bold;
-    color: #00ff00;
     margin: 0;
     letter-spacing: 2px;
 }
@@ -547,7 +528,6 @@ canvas {
 .metric-box {
     background: #1a1a1a;
     border: 1px solid #333;
-    border-radius: 8px;
     padding: 15px;
     text-align: center;
 }
@@ -575,14 +555,12 @@ canvas {
 .recommendation-box {
     background: #1a1a1a;
     border: 1px solid #333;
-    border-radius: 8px;
     padding: 15px;
     margin-bottom: 20px;
 }
 
 .recommendation-label {
     font-size: 12px;
-    color: #00ff00;
     font-weight: bold;
     margin-bottom: 10px;
     letter-spacing: 1px;
@@ -605,9 +583,6 @@ canvas {
 }
 
 .summary-card {
-    background: #0a0a0a;
-    border: 2px solid #00ff00;
-    border-radius: 10px;
     padding: 20px;
     text-align: center;
 }
@@ -637,7 +612,6 @@ canvas {
 .error {
     background: #330000;
     border: 2px solid #ff0000;
-    border-radius: 10px;
     padding: 20px;
     color: #ff0000;
     text-align: center;
