@@ -10,6 +10,10 @@ echo "=============================="
 echo "🚀 Deploying Toolbox"
 echo "=============================="
 
+echo "🔄 Updating source code..."
+git reset --hard
+git pull
+echo "✓ Source code updated"
 ### Stop backend gracefully
 echo "🔴 Stopping existing backend..."
 PID=$(pgrep -f "java.*$JAR_NAME" || true)
