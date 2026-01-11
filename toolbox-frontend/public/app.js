@@ -2117,14 +2117,20 @@ async function generateResearch() {
     }
 
     try {
+        // Add 2-minute timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
+
         const response = await fetch('/api/research/generate', {
-            method: 'POST'
+            method: 'POST',
+            signal: controller.signal  // ✅ Adds timeout control
         });
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-
+// After fetch, add:
+        clearTimeout(timeoutId);
         const report = await response.json();
         displayResearchReport(report);
 
