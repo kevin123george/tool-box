@@ -110,6 +110,8 @@ function switchTab(which) {
         goToCurrentMonth();
     } else if (which === "systemstats") {
         initSystemStatsTab();
+    } else if (which === "research") {
+        loadLatestResearch();
     } else {
         if (stocksRefreshInterval) {
             clearInterval(stocksRefreshInterval);
@@ -2103,7 +2105,7 @@ function exportChartImage() {
  * Generate research report
  */
 async function generateResearch() {
-    const button = document.querySelector('#generateResearchBtn');
+    const button = document.querySelector('#generateBtn');
     if (!button) return;
 
     button.disabled = true;
