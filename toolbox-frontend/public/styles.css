@@ -479,3 +479,90 @@ input, textarea, select {
 }
 
 
+
+
+
+
+
+/* =========================
+   NEWS - CLEAN TERMINAL STYLE
+   ========================= */
+
+.news-section {
+    border:1px solid var(--border);
+    padding:12px;
+    margin-top:16px;
+}
+
+.news-header {
+    font-size:12px;
+    text-transform:uppercase;
+    border-bottom:1px solid var(--border);
+    padding-bottom:6px;
+    margin-bottom:10px;
+}
+
+.news-list {
+    display:flex;
+    flex-direction:column;
+    gap:0; /* No gaps between items */
+}
+
+.news-item {
+    border:none; /* ✅ NO BOXES */
+    padding:8px 0; /* Vertical padding only */
+    margin:0;
+    border-bottom:1px solid var(--border); /* Just a line separator */
+}
+
+.news-item:last-child {
+    border-bottom:none; /* No line after last visible item */
+}
+
+.news-item:hover {
+    background:none; /* ✅ NO HOVER BACKGROUND */
+    opacity:0.7; /* Just fade slightly */
+}
+
+.news-title {
+    font-size:12px;
+    color:var(--text);
+    text-decoration:none;
+    display:block;
+    margin-bottom:4px;
+}
+
+.news-title:hover {
+    text-decoration:underline;
+}
+
+.news-meta {
+    font-size:10px;
+    opacity:.6;
+}
+
+/* Hidden news items */
+.news-item.hidden-news-item {
+    display:none;
+}
+
+/* Show more button */
+.show-more-news {
+    border:1px solid var(--border);
+    padding:6px;
+    text-align:center;
+    font-size:11px;
+    cursor:pointer;
+    margin-top:8px;
+    text-transform:uppercase;
+}
+
+.show-more-news:hover {
+    background:var(--text);
+    color:var(--bg);
+}
+
+/* Keep the news section within border when expanded */
+.show-more-news.expanded + .news-item {
+    border-top:1px solid var(--border);
+}

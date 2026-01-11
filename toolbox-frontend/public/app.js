@@ -2096,11 +2096,133 @@ function exportChartImage() {
 }
 
 // ============================================
-// STOCK RESEARCH
+// STOCK RESEARCH - FIXED VERSION
 // ============================================
 
 /**
- * Display a single stock analysis card with sorted and expandable news
+ * Generate research report
+ */
+async function generateResearch() {
+    const button = document.querySelector('#generateResearchBtn');
+    if (!button) return;
+
+    button.disabled = true;
+    button.textContent = 'GENERATING...';
+
+    const container = document.getElementById('researchResults');
+    if (container) {
+        container.innerHTML = '<div style="padding:20px;text-align:center;opacity:0.7;">GENERATING RESEARCH REPORT...</div>';
+    }
+
+    try {
+        const response = await fetch('/api/research/generate', {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const report = await response.json();
+        displayResearchReport(report);
+
+    } catch (error) {
+        console.error('Error generating research:', error);
+        if (container) {
+            container.innerHTML = `
+                <div style="padding:20px;text-align:center;border:1px solid var(--border);">
+                    ERROR: ${error.message}
+                </div>
+            `;
+        }
+    } finally {
+        button.disabled = false;
+        button.textContent = '🔍 GENERATE RESEARCH REPORT';
+    }
+}
+
+/**
+ * Load latest research report
+ */
+async function loadLatestResearch() {
+    try {
+        const response = await fetch('/api/research/latest');
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.log('No research reports found');
+                return;
+            }
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const report = await response.json();
+        displayResearchReport(report);
+
+    } catch (error) {
+        console.error('Error loading latest research:', error);
+    }
+}
+
+/**
+ * Display the research report
+ */
+function displayResearchReport(report) {
+    const container = document.getElementById('researchResults');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Portfolio summary
+    const summarySection = document.createElement('div');
+    summarySection.className = 'portfolio-summary';
+    summarySection.innerHTML = `
+        <div class="summary-card">
+            <div class="summary-label">TOTAL VALUE</div>
+            <div class="summary-value">$${report.totalValue.toFixed(2)}</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">TOTAL GAIN/LOSS</div>
+            <div class="summary-value ${report.totalGain >= 0 ? 'positive' : 'negative'}">
+                ${report.totalGain >= 0 ? '+' : ''}$${report.totalGain.toFixed(2)}
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">RETURN %</div>
+            <div class="summary-value ${report.gainPercentage >= 0 ? 'positive' : 'negative'}">
+                ${report.gainPercentage >= 0 ? '+' : ''}${report.gainPercentage.toFixed(2)}%
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">OVERALL SENTIMENT</div>
+            <div class="summary-value ${
+        report.overallSentiment === 'BULLISH' ? 'positive' :
+            report.overallSentiment === 'BEARISH' ? 'negative' : 'neutral'
+    }">
+                ${report.overallSentiment}
+            </div>
+        </div>
+    `;
+    container.appendChild(summarySection);
+
+    // Stock analysis cards
+    const holdingsMap = {};
+    report.holdings.forEach(h => holdingsMap[h.symbol] = h);
+
+    for (const [symbol, analysis] of Object.entries(report.analyses)) {
+        const holding = holdingsMap[symbol];
+        if (holding) {
+            const card = createStockAnalysisCard(symbol, analysis, holding);
+            container.appendChild(card);
+        }
+    }
+
+    // ✅ CRITICAL: Attach event listeners for show more buttons
+    attachShowMoreListeners();
+}
+
+/**
+ * Create stock analysis card with sorted news
  */
 function createStockAnalysisCard(symbol, analysis, holding) {
     const card = document.createElement('div');
@@ -2116,21 +2238,21 @@ function createStockAnalysisCard(symbol, analysis, holding) {
             analysis.sentimentScore < -0.2 ? 'negative' : 'neutral';
 
     const rsi = analysis.technicalIndicators?.rsi ?? null;
-    const rsiStatus = rsi === null
-        ? 'N/A'
-        : rsi > 70 ? 'OVERBOUGHT'
-            : rsi < 30 ? 'OVERSOLD'
-                : 'NEUTRAL';
+    const rsiStatus = rsi === null ? 'N/A' :
+        rsi > 70 ? 'OVERBOUGHT' :
+            rsi < 30 ? 'OVERSOLD' : 'NEUTRAL';
 
     const rsiClass =
         rsi === null ? 'neutral' :
             rsi > 70 ? 'negative' :
                 rsi < 30 ? 'positive' : 'neutral';
 
+    // ✅ SORT NEWS BY RELEVANCE (HIGHEST FIRST)
     const sortedNews = [...analysis.news].sort(
         (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
     );
 
+    // ✅ GENERATE NEWS HTML WITH HIDDEN CLASS
     const newsHTML = sortedNews.map((n, i) => `
         <div class="news-item ${i >= 3 ? 'hidden-news-item' : ''}">
             <a href="${n.url}" target="_blank" class="news-title">${n.title}</a>
@@ -2154,7 +2276,7 @@ function createStockAnalysisCard(symbol, analysis, holding) {
 
         <div class="stock-metrics">
             <div class="metric-box">
-                <div class="metric-label">Sentiment</div>
+                <div class="metric-label">SENTIMENT</div>
                 <div class="metric-value ${sentimentClass}">
                     ${analysis.sentimentScore.toFixed(3)}
                 </div>
@@ -2169,23 +2291,23 @@ function createStockAnalysisCard(symbol, analysis, holding) {
             </div>
 
             <div class="metric-box">
-                <div class="metric-label">Current Price</div>
+                <div class="metric-label">CURRENT PRICE</div>
                 <div class="metric-value">$${holding.currentPrice.toFixed(2)}</div>
             </div>
 
             <div class="metric-box">
-                <div class="metric-label">Shares</div>
+                <div class="metric-label">SHARES</div>
                 <div class="metric-value">${holding.quantity.toFixed(2)}</div>
             </div>
         </div>
 
         <div class="recommendation-box">
-            <div class="recommendation-label">Recommendation</div>
+            <div class="recommendation-label">RECOMMENDATION</div>
             <div class="recommendation-text">${analysis.recommendation}</div>
         </div>
 
         <div class="news-section">
-            <div class="news-header">Recent News (${sortedNews.length})</div>
+            <div class="news-header">RECENT NEWS (${sortedNews.length})</div>
             <div class="news-list" data-symbol="${symbol}">
                 ${newsHTML}
                 ${
@@ -2203,64 +2325,7 @@ function createStockAnalysisCard(symbol, analysis, holding) {
 }
 
 /**
- * Display the research report
- */
-function displayResearchReport(report) {
-    const container = document.getElementById('researchResults');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    // Portfolio summary cards
-    const summarySection = document.createElement('div');
-    summarySection.className = 'portfolio-summary';
-    summarySection.innerHTML = `
-        <div class="summary-card">
-            <div class="summary-label">TOTAL VALUE</div>
-            <div class="summary-value">$${report.totalValue.toFixed(2)}</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-label">TOTAL GAIN/LOSS</div>
-            <div class="summary-value" style="color: ${report.totalGain >= 0 ? '#00ff00' : '#ff0000'}">
-                ${report.totalGain >= 0 ? '+' : ''}$${report.totalGain.toFixed(2)}
-            </div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-label">RETURN %</div>
-            <div class="summary-value" style="color: ${report.gainPercentage >= 0 ? '#00ff00' : '#ff0000'}">
-                ${report.gainPercentage >= 0 ? '+' : ''}${report.gainPercentage.toFixed(2)}%
-            </div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-label">OVERALL SENTIMENT</div>
-            <div class="summary-value" style="color: ${
-        report.overallSentiment === 'BULLISH' ? '#00ff00' :
-            report.overallSentiment === 'BEARISH' ? '#ff0000' : '#ffff00'
-    }">
-                ${report.overallSentiment}
-            </div>
-        </div>
-    `;
-    container.appendChild(summarySection);
-
-    // Stock analysis cards
-    const holdingsMap = {};
-    report.holdings.forEach(h => holdingsMap[h.symbol] = h);
-
-    for (const [symbol, analysis] of Object.entries(report.analyses)) {
-        const holding = holdingsMap[symbol];
-        if (holding) {
-            const card = createStockAnalysisCard(symbol, analysis, holding);
-            container.appendChild(card);
-        }
-    }
-
-    // Add event listeners for "Show more" buttons
-    attachShowMoreListeners();
-}
-
-/**
- * Attach event listeners to all "Show more" buttons
+ * ✅ ATTACH EVENT LISTENERS TO SHOW MORE BUTTONS
  */
 function attachShowMoreListeners() {
     const showMoreButtons = document.querySelectorAll('.show-more-news');
@@ -2275,87 +2340,23 @@ function attachShowMoreListeners() {
             const isExpanded = this.classList.contains('expanded');
 
             if (isExpanded) {
-                // Collapse: hide items
+                // Collapse
                 hiddenItems.forEach(item => {
                     item.style.display = 'none';
                 });
                 this.textContent = `+ ${hiddenItems.length} more article${hiddenItems.length > 1 ? 's' : ''}`;
                 this.classList.remove('expanded');
             } else {
-                // Expand: show items
+                // Expand
                 hiddenItems.forEach(item => {
                     item.style.display = 'block';
                 });
-                this.textContent = '− Show less';
+                this.textContent = '− SHOW LESS';
                 this.classList.add('expanded');
             }
         });
     });
 }
 
-/**
- * Generate research report
- */
-async function generateResearch() {
-    const button = document.querySelector('#generateResearchBtn');
-    if (!button) return;
-
-    button.disabled = true;
-    button.textContent = 'Generating...';
-
-    const container = document.getElementById('researchResults');
-    if (container) {
-        container.innerHTML = '<div class="loading">Generating research report... This may take 10-15 seconds.</div>';
-    }
-
-    try {
-        const response = await fetch('/api/research/generate', {
-            method: 'POST'
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const report = await response.json();
-        displayResearchReport(report);
-
-    } catch (error) {
-        console.error('Error generating research:', error);
-        if (container) {
-            container.innerHTML = `
-                <div class="error">
-                    Failed to generate research report: ${error.message}
-                </div>
-            `;
-        }
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Generate Research';
-    }
-}
-
-/**
- * Load latest research report on page load
- */
-async function loadLatestResearch() {
-    try {
-        const response = await fetch('/api/research/latest');
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.log('No research reports found yet');
-                return;
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const report = await response.json();
-        displayResearchReport(report);
-
-    } catch (error) {
-        console.error('Error loading latest research:', error);
-    }
-}
 
 loadMemos();
