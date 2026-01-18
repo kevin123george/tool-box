@@ -5,9 +5,9 @@ import com.example.mongo.models.dto.PortfolioStats;
 import com.example.mongo.models.dto.StockRequest;
 import com.example.mongo.services.StockService;
 import java.util.List;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
