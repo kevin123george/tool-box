@@ -463,7 +463,17 @@
                 <button class="btn" onclick="toggleFullscreen()" id="fullscreenBtn" style="padding:4px 8px;">⛶ FULLSCREEN</button>
             </div>
         </div>
-        <canvas id="historyChart" height="100"></canvas>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                <select id="historySymbolSelect"></select>
+                <select id="historyRangeSelect">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="365">Last 365 days</option>
+                </select>
+                <button class="btn" onclick="refreshHistoryChart()">Refresh</button>
+            </div>
+            <canvas id="historyChart" height="300"></canvas>
     </div>
 
     <!-- Holdings Table -->
@@ -697,6 +707,7 @@
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
 <script src="app.js"></script>
+<script src="history-enhancements.js"></script>
 
 </body>
 </html>

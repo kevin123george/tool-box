@@ -6,6 +6,8 @@ import com.example.mongo.models.dto.StockRequest;
 import com.example.mongo.services.StockService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,6 +29,30 @@ public class StockController {
   public ResponseEntity<List<StockHolding>> getAllStocks() {
     return ResponseEntity.ok(
         service.getAllStocks().stream().filter(i -> i.getSold() == false).toList());
+  }
+
+  @GetMapping("/export")
+  public ResponseEntity<String> exportCsv() {
+    List<StockHolding> holdings =
+        service.getAllStocks().stream().filter(i -> i.getSold() == false).toList();
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("symbol,quantity,buyPrice,buyDate,currentPrice\n");
+    for (StockHolding s : holdings) {
+      sb.append(
+          String.format(
+              "%s,%.4f,%.2f,%s,%.2f\n",
+              s.getSymbol(),
+              s.getQuantity(),
+              s.getBuyPrice(),
+              s.getBuyDate() != null ? s.getBuyDate().toString() : "",
+              s.getCurrentPrice()));
+    }
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"portfolio.csv\"")
+        .contentType(MediaType.parseMediaType("text/csv"))
+        .body(sb.toString());
   }
 
   @PutMapping("/{id}")
