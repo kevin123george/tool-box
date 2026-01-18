@@ -563,6 +563,28 @@ input, textarea, select {
 }
 
 /* Keep the news section within border when expanded */
+/* Fullscreen chart container */
+#chartContainer.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    padding: 16px;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+}
+#chartContainer.fullscreen > div {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+#chartContainer.fullscreen canvas,
+#chartContainer.fullscreen > canvas {
+    width: 100% !important;
+    height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 80px);
+}
+
 .show-more-news.expanded + .news-item {
     border-top:1px solid var(--border);
 }

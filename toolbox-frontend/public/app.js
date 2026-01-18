@@ -2047,20 +2047,36 @@ function toggleFullscreen() {
     const btn = document.getElementById('fullscreenBtn');
 
     if (!isFullscreen) {
-        // Enter fullscreen
-        container.classList.add('fullscreen');
+        // Enter fullscreen using Fullscreen API if available
+        if (container.requestFullscreen) {
+            container.requestFullscreen().catch(() => {
+                // fallback to CSS fullscreen
+                container.classList.add('fullscreen');
+            });
+        } else if (container.webkitRequestFullscreen) { /* Safari */
+            container.webkitRequestFullscreen();
+        } else {
+            container.classList.add('fullscreen');
+        }
         btn.textContent = '⛶ EXIT FULLSCREEN';
         isFullscreen = true;
 
-        // Resize chart
-        if (historyChart) {
-            historyChart.resize();
-        }
+        // Resize chart after a short delay to allow layout
+        setTimeout(() => {
+            if (historyChart) historyChart.resize();
+        }, 100);
 
         // Add escape key listener
         document.addEventListener('keydown', handleFullscreenEscape);
     } else {
-        exitFullscreen();
+        // Exit fullscreen via API if possible
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => exitFullscreen());
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else {
+            exitFullscreen();
+        }
     }
 }
 
@@ -2079,6 +2095,16 @@ function exitFullscreen() {
 
     // Remove escape key listener
     document.removeEventListener('keydown', handleFullscreenEscape);
+
+    // Ensure browser exits fullscreen state if needed
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        try {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } catch (e) {
+            // ignore
+        }
+    }
 }
 
 function handleFullscreenEscape(e) {
