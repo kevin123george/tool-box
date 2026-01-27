@@ -2,7 +2,8 @@
 // ADVANCED STOCK CHART - Lightweight Charts Implementation
 // ============================================
 
-const API = '';
+// Use API from app.js (don't redeclare)
+// const API is already defined in app.js
 
 // Chart instances
 let mainChart = null;
