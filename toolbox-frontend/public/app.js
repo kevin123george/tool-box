@@ -439,10 +439,13 @@ function switchTab(which) {
             stocksRefreshInterval = setInterval(loadStocks, 30000);
         }
     } else if (which === "stockhistory") {
-        loadStockHistory();
-        if (!historyRefreshInterval) {
-            historyRefreshInterval = setInterval(loadStockHistory, 2000);
+        // Initialize advanced charts when tab is shown
+        if (typeof window.onStockHistoryTabShown === 'function') {
+            window.onStockHistoryTabShown();
+        } else {
+            loadStockHistory();
         }
+        // Disable auto-refresh for advanced charts (user controls refresh)
     } else if (which === "budget") {
         goToCurrentMonth();
     } else if (which === "systemstats") {

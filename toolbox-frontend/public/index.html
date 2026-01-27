@@ -624,7 +624,7 @@
     </div>
 
     <!-- Main Chart Container -->
-    <div id="chartContainer" class="chart-container" style="border:1px solid var(--border); margin-bottom:16px; position:relative;">
+    <div id="chartContainer" class="chart-container" style="border:1px solid var(--border); margin-bottom:16px; position:relative; padding:12px;">
         <!-- Crosshair Info Panel -->
         <div id="crosshairInfo" class="crosshair-info">
             <span id="crosshairDate">--</span>
@@ -636,10 +636,10 @@
         </div>
 
         <!-- Candlestick Chart -->
-        <div id="candlestickChart" style="height:400px;"></div>
+        <div id="candlestickChart" style="width:100%; height:400px; min-height:400px;"></div>
 
         <!-- Volume Chart -->
-        <div id="volumeChart" style="height:100px;"></div>
+        <div id="volumeChart" style="width:100%; height:100px; min-height:100px;"></div>
 
         <!-- RSI Chart (hidden by default) -->
         <div id="rsiChart" style="height:100px; display:none;"></div>
