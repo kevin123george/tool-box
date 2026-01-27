@@ -181,11 +181,15 @@ function initializeCharts() {
                 priceFormat: { type: 'volume' }
             });
 
-            // Sync time scales
+            // Sync time scales (with safety checks)
             mainChart.timeScale().subscribeVisibleTimeRangeChange(() => {
-                const range = mainChart.timeScale().getVisibleRange();
-                if (range && volumeChart) {
-                    volumeChart.timeScale().setVisibleRange(range);
+                try {
+                    const range = mainChart.timeScale().getVisibleRange();
+                    if (range && range.from && range.to && volumeChart) {
+                        volumeChart.timeScale().setVisibleRange(range);
+                    }
+                } catch (e) {
+                    // Ignore sync errors
                 }
             });
 
@@ -435,9 +439,11 @@ function setMetric(id, value, suffix = '', colorize = false, invert = false, cur
     if (colorize) {
         el.className = 'metric-value';
         if (invert) {
-            el.classList.add(value < 0 ? 'negative' : (value > 0 ? 'positive' : ''));
+            if (value < 0) el.classList.add('negative');
+            else if (value > 0) el.classList.add('positive');
         } else {
-            el.classList.add(value > 0 ? 'positive' : (value < 0 ? 'negative' : ''));
+            if (value > 0) el.classList.add('positive');
+            else if (value < 0) el.classList.add('negative');
         }
     }
 }
@@ -695,8 +701,13 @@ function toggleFullscreen() {
     if (container) {
         container.classList.toggle('fullscreen');
         setTimeout(() => {
-            if (mainChart) mainChart.applyOptions({ width: container.clientWidth - 40 });
-            if (volumeChart) volumeChart.applyOptions({ width: container.clientWidth - 40 });
+            try {
+                const newWidth = container.clientWidth - 40;
+                if (mainChart && newWidth > 50) mainChart.applyOptions({ width: newWidth });
+                if (volumeChart && newWidth > 50) volumeChart.applyOptions({ width: newWidth });
+            } catch (e) {
+                // Ignore resize errors
+            }
         }, 100);
     }
 }
@@ -750,20 +761,24 @@ window.changeChartType = changeChartType;
 window.addEventListener('resize', () => {
     if (!chartsInitialized) return;
 
-    const container = document.getElementById('candlestickChart');
-    if (container && mainChart) {
-        const newWidth = container.clientWidth;
-        if (newWidth > 50) {
-            mainChart.applyOptions({ width: newWidth });
+    try {
+        const container = document.getElementById('candlestickChart');
+        if (container && mainChart) {
+            const newWidth = container.clientWidth;
+            if (newWidth > 50) {
+                mainChart.applyOptions({ width: newWidth });
+            }
         }
-    }
 
-    const volContainer = document.getElementById('volumeChart');
-    if (volContainer && volumeChart) {
-        const newWidth = volContainer.clientWidth;
-        if (newWidth > 50) {
-            volumeChart.applyOptions({ width: newWidth });
+        const volContainer = document.getElementById('volumeChart');
+        if (volContainer && volumeChart) {
+            const newWidth = volContainer.clientWidth;
+            if (newWidth > 50) {
+                volumeChart.applyOptions({ width: newWidth });
+            }
         }
+    } catch (e) {
+        // Ignore resize errors
     }
 });
 
