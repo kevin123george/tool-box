@@ -40,13 +40,33 @@ let bbMiddleSeries = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[AdvChart] DOMContentLoaded');
+
+    // Add visible debug info to the page
+    const debugInfo = document.createElement('div');
+    debugInfo.id = 'chartDebug';
+    debugInfo.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#333;color:#0f0;padding:10px;font-size:11px;z-index:9999;max-width:300px;font-family:monospace;';
+    debugInfo.innerHTML = 'Chart Debug: Loading...';
+    document.body.appendChild(debugInfo);
+
     loadSymbolsForFilter();
     setupRangeButtons();
 });
 
+function updateDebug(msg) {
+    const el = document.getElementById('chartDebug');
+    if (el) el.innerHTML = 'Chart Debug:<br>' + msg;
+    console.log('[AdvChart]', msg);
+}
+
 // Called when Stock History tab becomes visible
 window.onStockHistoryTabShown = function() {
     console.log('[AdvChart] Tab shown');
+
+    // Show loading message in chart container
+    const chartDiv = document.getElementById('candlestickChart');
+    if (chartDiv && !chartsInitialized) {
+        chartDiv.innerHTML = '<div style="padding:20px;text-align:center;">Initializing chart...</div>';
+    }
 
     // Small delay to ensure tab is fully visible
     setTimeout(() => {
@@ -56,25 +76,38 @@ window.onStockHistoryTabShown = function() {
 
         // Load data
         const symbol = document.getElementById('histStockFilter')?.value;
+        console.log('[AdvChart] Current symbol in dropdown:', symbol);
         if (symbol) {
             loadAdvancedChart();
+        } else {
+            // Try to load symbols again if not loaded
+            loadSymbolsForFilter().then(() => {
+                const newSymbol = document.getElementById('histStockFilter')?.value;
+                if (newSymbol) {
+                    loadAdvancedChart();
+                }
+            });
         }
-    }, 100);
+    }, 200);
 };
 
 function initializeCharts() {
-    console.log('[AdvChart] Initializing charts...');
+    updateDebug('Initializing charts...');
 
     if (typeof LightweightCharts === 'undefined') {
-        console.error('[AdvChart] LightweightCharts not loaded!');
-        document.getElementById('candlestickChart').innerHTML =
-            '<div style="padding:20px;color:red;">Chart library failed to load. Please refresh.</div>';
+        updateDebug('ERROR: LightweightCharts library not loaded!');
+        const chartDiv = document.getElementById('candlestickChart');
+        if (chartDiv) {
+            chartDiv.innerHTML = '<div style="padding:20px;color:red;">Chart library failed to load. Please refresh.</div>';
+        }
         return;
     }
 
+    updateDebug('LightweightCharts version: ' + (LightweightCharts.version || 'unknown'));
+
     const container = document.getElementById('candlestickChart');
     if (!container) {
-        console.error('[AdvChart] Chart container not found!');
+        updateDebug('ERROR: candlestickChart container not found!');
         return;
     }
 
@@ -83,7 +116,7 @@ function initializeCharts() {
     // Create main chart
     try {
         const chartWidth = container.clientWidth > 50 ? container.clientWidth : 800;
-        console.log('[AdvChart] Creating chart with width:', chartWidth);
+        updateDebug('Creating chart, width: ' + chartWidth);
 
         mainChart = LightweightCharts.createChart(container, {
             width: chartWidth,
@@ -117,11 +150,11 @@ function initializeCharts() {
         // Crosshair handler
         mainChart.subscribeCrosshairMove(handleCrosshairMove);
 
-        console.log('[AdvChart] Main chart created');
+        updateDebug('Main chart created successfully!');
         chartsInitialized = true;
 
     } catch (e) {
-        console.error('[AdvChart] Error creating chart:', e);
+        updateDebug('ERROR creating chart: ' + e.message);
         container.innerHTML = '<div style="padding:20px;color:red;">Error creating chart: ' + e.message + '</div>';
     }
 
@@ -167,56 +200,83 @@ function initializeCharts() {
 // ============================================
 
 async function loadSymbolsForFilter() {
-    console.log('[AdvChart] Loading symbols...');
+    updateDebug('Loading symbols from API...');
     try {
         const res = await fetch(`${API}/api/hist/stats`);
+        updateDebug('Stats response: ' + res.status);
+
+        if (!res.ok) {
+            updateDebug('ERROR: API returned ' + res.status);
+            return;
+        }
+
         const data = await res.json();
+        updateDebug('Got data: ' + JSON.stringify(data).substring(0, 100));
 
         const select = document.getElementById('histStockFilter');
-        if (select && data.symbols) {
-            select.innerHTML = '<option value="">Select Stock</option>';
+        if (!select) {
+            updateDebug('ERROR: histStockFilter not found!');
+            return;
+        }
 
-            // Convert to array if it's a Set
-            const symbols = Array.isArray(data.symbols) ? data.symbols : Array.from(data.symbols);
-            console.log('[AdvChart] Found symbols:', symbols);
+        if (!data.symbols) {
+            updateDebug('ERROR: No symbols in response');
+            return;
+        }
 
-            symbols.forEach(symbol => {
-                const opt = document.createElement('option');
-                opt.value = symbol;
-                opt.textContent = symbol;
-                select.appendChild(opt);
-            });
+        select.innerHTML = '<option value="">Select Stock</option>';
 
-            // Auto-select first
-            if (symbols.length > 0) {
-                select.value = symbols[0];
-                currentSymbol = symbols[0];
-            }
+        // Convert to array
+        let symbols;
+        if (Array.isArray(data.symbols)) {
+            symbols = data.symbols;
+        } else if (typeof data.symbols === 'object') {
+            symbols = Object.values(data.symbols);
+        } else {
+            symbols = [];
+        }
+
+        updateDebug('Found ' + symbols.length + ' symbols: ' + symbols.join(', '));
+
+        symbols.forEach(symbol => {
+            const opt = document.createElement('option');
+            opt.value = symbol;
+            opt.textContent = symbol;
+            select.appendChild(opt);
+        });
+
+        if (symbols.length > 0) {
+            select.value = symbols[0];
+            currentSymbol = symbols[0];
+            updateDebug('Selected: ' + symbols[0]);
+        } else {
+            updateDebug('No symbols available');
         }
     } catch (e) {
-        console.error('[AdvChart] Error loading symbols:', e);
+        updateDebug('ERROR: ' + e.message);
+        console.error('[AdvChart] Error:', e);
     }
 }
 
 async function loadAdvancedChart() {
     const symbol = document.getElementById('histStockFilter')?.value;
     if (!symbol) {
-        console.log('[AdvChart] No symbol selected');
+        updateDebug('No symbol selected');
         return;
     }
 
-    console.log('[AdvChart] Loading data for:', symbol);
+    updateDebug('Loading chart for: ' + symbol);
     currentSymbol = symbol;
 
     // Ensure charts exist
     if (!chartsInitialized || !candlestickSeries) {
-        console.log('[AdvChart] Charts not ready, initializing...');
+        updateDebug('Initializing charts...');
         initializeCharts();
         await new Promise(r => setTimeout(r, 100));
     }
 
     if (!candlestickSeries) {
-        console.error('[AdvChart] candlestickSeries still null after init');
+        updateDebug('ERROR: Chart series not created!');
         return;
     }
 
@@ -231,15 +291,21 @@ async function loadAdvancedChart() {
         addDateRangeParams(params);
 
         const url = `${API}/api/hist/ohlc/${symbol}?${params}`;
-        console.log('[AdvChart] Fetching:', url);
+        updateDebug('Fetching: ' + url);
 
         const res = await fetch(url);
-        const ohlcData = await res.json();
+        if (!res.ok) {
+            updateDebug('ERROR: OHLC API returned ' + res.status);
+            hideLoading();
+            return;
+        }
 
-        console.log('[AdvChart] Received data points:', ohlcData?.length || 0);
+        const ohlcData = await res.json();
+        updateDebug('Got ' + (ohlcData?.length || 0) + ' data points');
 
         if (!ohlcData || ohlcData.length === 0) {
             hideLoading();
+            updateDebug('No OHLC data available for ' + symbol);
             showToast('No data available for ' + symbol, 'info');
             return;
         }
@@ -261,7 +327,7 @@ async function loadAdvancedChart() {
 
         // Set data
         candlestickSeries.setData(candleData);
-        console.log('[AdvChart] Candlestick data set');
+        updateDebug('Chart data set! ' + candleData.length + ' candles');
 
         // Volume
         if (volumeSeries && indicatorStates.volume) {
@@ -294,10 +360,10 @@ async function loadAdvancedChart() {
         loadHistoryTable(symbol);
 
         hideLoading();
-        console.log('[AdvChart] Chart loaded successfully');
+        updateDebug('SUCCESS! Chart loaded with ' + candleData.length + ' candles');
 
     } catch (e) {
-        console.error('[AdvChart] Error loading chart:', e);
+        updateDebug('ERROR loading chart: ' + e.message);
         hideLoading();
         showToast('Failed to load chart: ' + e.message, 'error');
     }

@@ -49,7 +49,9 @@ public class DashboardController {
     double portfolioValue = portfolioStats.currentValue;
     double portfolioInvested = portfolioStats.totalInvested;
     double portfolioReturn =
-        portfolioInvested > 0 ? ((portfolioValue - portfolioInvested) / portfolioInvested * 100) : 0;
+        portfolioInvested > 0
+            ? ((portfolioValue - portfolioInvested) / portfolioInvested * 100)
+            : 0;
 
     // Get current month budget
     YearMonth currentMonth = YearMonth.now();

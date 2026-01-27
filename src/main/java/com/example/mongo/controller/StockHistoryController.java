@@ -196,8 +196,7 @@ public class StockHistoryController {
   }
 
   /**
-   * Get OHLC (candlestick) data for charting
-   * Aggregates price data into candles based on interval
+   * Get OHLC (candlestick) data for charting Aggregates price data into candles based on interval
    */
   @GetMapping("/ohlc/{symbol}")
   public List<OHLCData> getOHLCData(
@@ -211,16 +210,18 @@ public class StockHistoryController {
     // Apply date filters
     if (from != null) {
       LocalDateTime fromDate = LocalDateTime.ofInstant(Instant.parse(from), ZoneId.systemDefault());
-      histories = histories.stream()
-          .filter(h -> h.getUpdatedAt().isAfter(fromDate))
-          .collect(Collectors.toList());
+      histories =
+          histories.stream()
+              .filter(h -> h.getUpdatedAt().isAfter(fromDate))
+              .collect(Collectors.toList());
     }
 
     if (to != null) {
       LocalDateTime toDate = LocalDateTime.ofInstant(Instant.parse(to), ZoneId.systemDefault());
-      histories = histories.stream()
-          .filter(h -> h.getUpdatedAt().isBefore(toDate))
-          .collect(Collectors.toList());
+      histories =
+          histories.stream()
+              .filter(h -> h.getUpdatedAt().isBefore(toDate))
+              .collect(Collectors.toList());
     }
 
     if (histories.isEmpty()) {
@@ -246,26 +247,27 @@ public class StockHistoryController {
 
       double open = candle.get(0).getCurrentPrice();
       double close = candle.get(candle.size() - 1).getCurrentPrice();
-      double high = candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).max().orElse(open);
-      double low = candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).min().orElse(open);
+      double high =
+          candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).max().orElse(open);
+      double low =
+          candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).min().orElse(open);
       double volume = candle.size(); // Use count as volume proxy
 
-      ohlcList.add(OHLCData.builder()
-          .time(entry.getKey())
-          .open(open)
-          .high(high)
-          .low(low)
-          .close(close)
-          .volume(volume)
-          .build());
+      ohlcList.add(
+          OHLCData.builder()
+              .time(entry.getKey())
+              .open(open)
+              .high(high)
+              .low(low)
+              .close(close)
+              .volume(volume)
+              .build());
     }
 
     return ohlcList;
   }
 
-  /**
-   * Get performance metrics for a symbol
-   */
+  /** Get performance metrics for a symbol */
   @GetMapping("/metrics/{symbol}")
   public PerformanceMetrics getPerformanceMetrics(
       @PathVariable String symbol,
@@ -277,16 +279,18 @@ public class StockHistoryController {
     // Apply date filters
     if (from != null) {
       LocalDateTime fromDate = LocalDateTime.ofInstant(Instant.parse(from), ZoneId.systemDefault());
-      histories = histories.stream()
-          .filter(h -> h.getUpdatedAt().isAfter(fromDate))
-          .collect(Collectors.toList());
+      histories =
+          histories.stream()
+              .filter(h -> h.getUpdatedAt().isAfter(fromDate))
+              .collect(Collectors.toList());
     }
 
     if (to != null) {
       LocalDateTime toDate = LocalDateTime.ofInstant(Instant.parse(to), ZoneId.systemDefault());
-      histories = histories.stream()
-          .filter(h -> h.getUpdatedAt().isBefore(toDate))
-          .collect(Collectors.toList());
+      histories =
+          histories.stream()
+              .filter(h -> h.getUpdatedAt().isBefore(toDate))
+              .collect(Collectors.toList());
     }
 
     if (histories.isEmpty()) {
@@ -294,16 +298,18 @@ public class StockHistoryController {
     }
 
     // Extract prices
-    List<Double> prices = histories.stream()
-        .map(StockHoldingHistory::getCurrentPrice)
-        .collect(Collectors.toList());
+    List<Double> prices =
+        histories.stream().map(StockHoldingHistory::getCurrentPrice).collect(Collectors.toList());
 
     // Basic price stats
     double currentPrice = prices.get(prices.size() - 1);
     double firstPrice = prices.get(0);
-    double highestPrice = prices.stream().mapToDouble(Double::doubleValue).max().orElse(currentPrice);
-    double lowestPrice = prices.stream().mapToDouble(Double::doubleValue).min().orElse(currentPrice);
-    double avgPrice = prices.stream().mapToDouble(Double::doubleValue).average().orElse(currentPrice);
+    double highestPrice =
+        prices.stream().mapToDouble(Double::doubleValue).max().orElse(currentPrice);
+    double lowestPrice =
+        prices.stream().mapToDouble(Double::doubleValue).min().orElse(currentPrice);
+    double avgPrice =
+        prices.stream().mapToDouble(Double::doubleValue).average().orElse(currentPrice);
 
     // Calculate returns
     List<Double> returns = new ArrayList<>();
@@ -326,16 +332,17 @@ public class StockHistoryController {
     double cagr = years > 0 ? (Math.pow(currentPrice / firstPrice, 1.0 / years) - 1) * 100 : 0;
 
     // Daily return average
-    double dailyReturn = returns.isEmpty() ? 0 : returns.stream().mapToDouble(Double::doubleValue).average().orElse(0) * 100;
+    double dailyReturn =
+        returns.isEmpty()
+            ? 0
+            : returns.stream().mapToDouble(Double::doubleValue).average().orElse(0) * 100;
 
     // Volatility (annualized standard deviation of returns)
     double volatility = 0;
     if (returns.size() > 1) {
       double mean = returns.stream().mapToDouble(Double::doubleValue).average().orElse(0);
-      double variance = returns.stream()
-          .mapToDouble(r -> Math.pow(r - mean, 2))
-          .average()
-          .orElse(0);
+      double variance =
+          returns.stream().mapToDouble(r -> Math.pow(r - mean, 2)).average().orElse(0);
       volatility = Math.sqrt(variance) * Math.sqrt(252) * 100; // Annualized
     }
 
@@ -357,13 +364,21 @@ public class StockHistoryController {
 
     // Sharpe Ratio (assuming 2% risk-free rate)
     double riskFreeRate = 0.02 / 252; // Daily risk-free rate
-    double excessReturn = returns.isEmpty() ? 0 : returns.stream().mapToDouble(Double::doubleValue).average().orElse(0) - riskFreeRate;
+    double excessReturn =
+        returns.isEmpty()
+            ? 0
+            : returns.stream().mapToDouble(Double::doubleValue).average().orElse(0) - riskFreeRate;
     double sharpeRatio = 0;
     if (volatility > 0 && !returns.isEmpty()) {
-      double dailyVol = returns.stream()
-          .mapToDouble(r -> Math.pow(r - returns.stream().mapToDouble(Double::doubleValue).average().orElse(0), 2))
-          .average()
-          .orElse(0);
+      double dailyVol =
+          returns.stream()
+              .mapToDouble(
+                  r ->
+                      Math.pow(
+                          r - returns.stream().mapToDouble(Double::doubleValue).average().orElse(0),
+                          2))
+              .average()
+              .orElse(0);
       dailyVol = Math.sqrt(dailyVol);
       sharpeRatio = dailyVol > 0 ? (excessReturn / dailyVol) * Math.sqrt(252) : 0;
     }
@@ -372,10 +387,8 @@ public class StockHistoryController {
     List<Double> negativeReturns = returns.stream().filter(r -> r < 0).collect(Collectors.toList());
     double sortinoRatio = 0;
     if (!negativeReturns.isEmpty()) {
-      double downsideVariance = negativeReturns.stream()
-          .mapToDouble(r -> Math.pow(r, 2))
-          .average()
-          .orElse(0);
+      double downsideVariance =
+          negativeReturns.stream().mapToDouble(r -> Math.pow(r, 2)).average().orElse(0);
       double downsideVol = Math.sqrt(downsideVariance);
       sortinoRatio = downsideVol > 0 ? (excessReturn / downsideVol) * Math.sqrt(252) : 0;
     }
@@ -402,9 +415,7 @@ public class StockHistoryController {
         .build();
   }
 
-  /**
-   * Get buy points for annotations on chart
-   */
+  /** Get buy points for annotations on chart */
   @GetMapping("/buypoints/{symbol}")
   public List<Map<String, Object>> getBuyPoints(@PathVariable String symbol) {
     List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
@@ -449,7 +460,6 @@ public class StockHistoryController {
     long epochMinutes = time.atZone(ZoneId.systemDefault()).toEpochSecond() / 60;
     long truncatedMinutes = (epochMinutes / intervalMinutes) * intervalMinutes;
     return LocalDateTime.ofInstant(
-        Instant.ofEpochSecond(truncatedMinutes * 60),
-        ZoneId.systemDefault());
+        Instant.ofEpochSecond(truncatedMinutes * 60), ZoneId.systemDefault());
   }
 }

@@ -62,17 +62,24 @@ public class BudgetAlertService {
     switch (level) {
       case 1:
         title = "Budget Alert: 80% Reached";
-        body = String.format("You've spent %.1f%% of your monthly budget. Consider slowing down!", adherence);
+        body =
+            String.format(
+                "You've spent %.1f%% of your monthly budget. Consider slowing down!", adherence);
         type = "warning";
         break;
       case 2:
         title = "Budget Warning: 90% Reached";
-        body = String.format("You've spent %.1f%% of your monthly budget. Almost at the limit!", adherence);
+        body =
+            String.format(
+                "You've spent %.1f%% of your monthly budget. Almost at the limit!", adherence);
         type = "warning";
         break;
       case 3:
         title = "Budget Exceeded!";
-        body = String.format("You've exceeded your monthly budget at %.1f%%. Time to review your expenses.", adherence);
+        body =
+            String.format(
+                "You've exceeded your monthly budget at %.1f%%. Time to review your expenses.",
+                adherence);
         type = "error";
         break;
       default:
