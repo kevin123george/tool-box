@@ -38,19 +38,19 @@ public class StockService {
 
   public StockHolding addStock(StockRequest req) {
     StockHolding stock = new StockHolding();
-    stock.setSymbol(req.symbol);
-    stock.setQuantity(req.quantity);
-    stock.setBuyPrice(req.buyPrice);
-    stock.setBuyDate(req.buyDate);
-    stock.setCurrentPrice(req.currentPrice);
+    stock.setSymbol(req.getSymbol());
+    stock.setQuantity(req.getQuantity());
+    stock.setBuyPrice(req.getBuyPrice());
+    stock.setBuyDate(req.getBuyDate());
+    stock.setCurrentPrice(req.getCurrentPrice());
     return stockRepository.save(stock);
   }
 
   public StockHolding updatePrice(String id, StockRequest req) {
     StockHolding stock =
         stockRepository.findById(id).orElseThrow(() -> new RuntimeException("Stock not found"));
-    stock.setCurrentPrice(req.currentPrice);
-    stock.setQuantity(req.quantity);
+    stock.setCurrentPrice(req.getCurrentPrice());
+    stock.setQuantity(req.getQuantity());
     return stockRepository.save(stock);
   }
 

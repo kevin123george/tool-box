@@ -30,11 +30,11 @@ public class StockUpdater {
     stockService.updateHoldingCurrentPrice();
   }
 
-  //    @Scheduled(fixedDelay = 240000)
-  //    public void updatedWatcher() {
-  //
-  // stockWatchRepository.findDistinctStockSymbols().forEach(stockWatchService::recordCurrentPrice);
-  //    }
+  @Scheduled(fixedDelay = 240000)
+  public void updatedWatcher() {
+    System.out.println("Running watchlist price update cron job...");
+    stockWatchRepository.findDistinctStockSymbols().forEach(stockWatchService::recordCurrentPrice);
+  }
 }
 
 // watch list -- nike salando apple benz bmw adiddas amundi

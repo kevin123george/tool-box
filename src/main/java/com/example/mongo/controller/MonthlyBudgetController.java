@@ -120,6 +120,13 @@ public class MonthlyBudgetController {
     return ResponseEntity.ok(budgetService.updateNotes(yearMonth, request.getNotes()));
   }
 
+  // Multi-month comparison endpoint
+  @GetMapping("/compare")
+  public ResponseEntity<List<BudgetComparisonDTO>> compareBudgets(
+      @RequestParam(defaultValue = "6") int months) {
+    return ResponseEntity.ok(budgetService.getBudgetComparison(months));
+  }
+
   // Helper Classes
   @Data
   public static class PlannedBudgetRequest {
@@ -131,5 +138,15 @@ public class MonthlyBudgetController {
   @Data
   public static class NotesRequest {
     private String notes;
+  }
+
+  @Data
+  public static class BudgetComparisonDTO {
+    private String month;
+    private double income;
+    private double expenses;
+    private double savings;
+    private double savingsRate;
+    private double budgetAdherence;
   }
 }

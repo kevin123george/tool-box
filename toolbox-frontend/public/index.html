@@ -17,18 +17,124 @@
 </head>
 <body>
 
-<button id="modeToggle" class="btn" onclick="toggleMode()">LIGHT MODE</button>
+<!-- Skip link for accessibility -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+    </div>
+</div>
+
+<button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
 
 <h1>Hey Kevin!!!</h1>
 
-<div class="tabs">
-    <div id="tabMemo" class="tab active" onclick="switchTab('memo')">Memos</div>
-    <div id="tabFinance" class="tab" onclick="switchTab('finance')">Finance</div>
-    <div id="tabStocks" class="tab" onclick="switchTab('stocks')">Stocks</div>
-    <div id="tabStockHistory" class="tab" onclick="switchTab('stockhistory')">Stock History</div>
-    <div id="tabResearch" class="tab" onclick="switchTab('research')">Research</div>
-    <div id="tabBudget" class="tab" onclick="switchTab('budget')">Budget</div>
-    <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')">System Stats</div>
+<div class="tabs" role="tablist" aria-label="Main navigation">
+    <div id="tabDashboard" class="tab" onclick="switchTab('dashboard')" role="tab" aria-selected="false" aria-controls="dashboardTabContent" tabindex="0">Dashboard</div>
+    <div id="tabMemo" class="tab active" onclick="switchTab('memo')" role="tab" aria-selected="true" aria-controls="memoTabContent" tabindex="0">Memos</div>
+    <div id="tabFinance" class="tab" onclick="switchTab('finance')" role="tab" aria-selected="false" aria-controls="financeTabContent" tabindex="0">Finance</div>
+    <div id="tabStocks" class="tab" onclick="switchTab('stocks')" role="tab" aria-selected="false" aria-controls="stocksTabContent" tabindex="0">Stocks</div>
+    <div id="tabStockHistory" class="tab" onclick="switchTab('stockhistory')" role="tab" aria-selected="false" aria-controls="stockHistoryTabContent" tabindex="0">Stock History</div>
+    <div id="tabResearch" class="tab" onclick="switchTab('research')" role="tab" aria-selected="false" aria-controls="researchTabContent" tabindex="0">Research</div>
+    <div id="tabBudget" class="tab" onclick="switchTab('budget')" role="tab" aria-selected="false" aria-controls="budgetTabContent" tabindex="0">Budget</div>
+    <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')" role="tab" aria-selected="false" aria-controls="systemStatsTabContent" tabindex="0">System Stats</div>
+</div>
+
+<main id="main-content">
+
+<!-- =================== DASHBOARD TAB =================== -->
+<div id="dashboardTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabDashboard">
+    <h2>Dashboard Overview</h2>
+
+    <!-- Net Worth Summary -->
+    <div class="stats-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <div class="stat-label">Total Cash</div>
+            <div class="stat-value" id="dashTotalCash">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Portfolio Value</div>
+            <div class="stat-value" id="dashPortfolioValue">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Net Worth</div>
+            <div class="stat-value" id="dashNetWorth">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Portfolio Return</div>
+            <div class="stat-value" id="dashPortfolioReturn">0.00%</div>
+        </div>
+    </div>
+
+    <!-- Budget & Goal Progress -->
+    <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div class="add-box">
+            <h3 style="margin-top:0;">Current Month Budget</h3>
+            <div style="font-size:12px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Income:</span>
+                    <span id="dashBudgetIncome" style="font-weight:bold;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Expenses:</span>
+                    <span id="dashBudgetExpenses" style="font-weight:bold;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0; padding-top:8px; border-top:1px solid var(--border);">
+                    <span>Savings:</span>
+                    <span id="dashBudgetSavings" style="font-weight:bold; color:#0f0;">€0.00</span>
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <div style="font-size:11px; opacity:0.7; margin-bottom:4px;">Budget Adherence</div>
+                <div style="height:12px; width:100%; background:#222; border:1px solid var(--border);">
+                    <div id="dashBudgetBar" style="height:100%; width:0%; background:#0f0;"></div>
+                </div>
+                <div style="font-size:11px; text-align:right; margin-top:4px;" id="dashBudgetPercent">0%</div>
+            </div>
+        </div>
+
+        <div class="add-box">
+            <h3 style="margin-top:0;">FIRE Goal Progress</h3>
+            <div style="font-size:12px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Current Corpus:</span>
+                    <span id="dashGoalCurrent" style="font-weight:bold;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Target Corpus:</span>
+                    <span id="dashGoalTarget" style="font-weight:bold;">€0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                    <span>Estimated FIRE Age:</span>
+                    <span id="dashGoalFireAge" style="font-weight:bold;">--</span>
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <div style="font-size:11px; opacity:0.7; margin-bottom:4px;">Progress to Goal</div>
+                <div style="height:12px; width:100%; background:#222; border:1px solid var(--border);">
+                    <div id="dashGoalBar" style="height:100%; width:0%; background:#0f0;"></div>
+                </div>
+                <div style="font-size:11px; text-align:right; margin-top:4px;" id="dashGoalPercent">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="add-box">
+        <h3 style="margin-top:0;">Quick Actions</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" onclick="switchTab('stocks'); showAddHolding();">Add Stock</button>
+            <button class="btn" onclick="switchTab('finance')">Manage Accounts</button>
+            <button class="btn" onclick="switchTab('budget')">Track Budget</button>
+            <button class="btn" onclick="switchTab('memo')">Add Memo</button>
+        </div>
+    </div>
 </div>
 
 <!-- ---------------- VIEW MODALS ---------------- -->
@@ -364,8 +470,9 @@
     <!-- Holdings Section -->
     <div class="add-box">
         <h3>Holdings</h3>
-        <button class="btn" onclick="showAddHolding()">ADD HOLDING</button>
-        <button class="btn" onclick="refreshStocks()">REFRESH</button>
+        <button class="btn" onclick="showAddHolding()" aria-label="Add new stock holding">ADD HOLDING</button>
+        <button class="btn" onclick="refreshStocks()" aria-label="Refresh stock data">REFRESH</button>
+        <button class="btn" onclick="exportPortfolioCsv()" aria-label="Export portfolio to CSV">EXPORT CSV</button>
     </div>
 
     <div id="holdingsList"></div>
@@ -672,6 +779,25 @@
             <div id="expenseRecordsList"></div>
         </div>
     </div>
+
+    <!-- Multi-Month Comparison -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Budget Comparison</h3>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:12px;">Months:</label>
+                <select id="comparisonMonths" onchange="loadBudgetComparison()" style="width:auto; padding:4px 8px;">
+                    <option value="3">3</option>
+                    <option value="6" selected>6</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+        </div>
+        <div id="budgetComparisonChart" style="border:1px solid var(--border); padding:12px; margin-bottom:16px;">
+            <canvas id="comparisonChart" height="250"></canvas>
+        </div>
+        <div id="budgetComparisonTable"></div>
+    </div>
 </div>
 
 <!-- Add this tab content section with your other tab contents -->
@@ -702,6 +828,8 @@
         <div id="notificationStatus" style="font-size:11px; opacity:0.6;"></div>
     </div>
 </div>
+</main>
+
 <!-- ---------------- JS ---------------- -->
 <!-- Quill Editor JS -->
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>

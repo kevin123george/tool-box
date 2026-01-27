@@ -9,6 +9,329 @@ let historyRefreshInterval = null;
 let memoPage = { current: 0, total: 1, size: 10, totalElements: 0 };
 let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
 
+/* ===========================================================
+   TOAST NOTIFICATION SYSTEM
+=============================================================*/
+
+function showToast(message, type = 'info', title = null, duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+
+    const titles = {
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Info'
+    };
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <div class="toast-content">
+            <div class="toast-title">${title || titles[type] || titles.info}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="closeToast(this.parentElement)" aria-label="Close notification">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+        setTimeout(() => closeToast(toast), duration);
+    }
+
+    return toast;
+}
+
+function closeToast(toast) {
+    if (!toast || toast.classList.contains('hiding')) return;
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+}
+
+/* ===========================================================
+   LOADING STATE MANAGEMENT
+=============================================================*/
+
+function showLoading(text = 'Loading...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    if (overlay) {
+        overlay.classList.add('active');
+        if (loadingText) loadingText.textContent = text;
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+}
+
+function setButtonLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+        button.classList.add('loading');
+        button.disabled = true;
+        button.dataset.originalText = button.textContent;
+        button.textContent = '';
+    } else {
+        button.classList.remove('loading');
+        button.disabled = false;
+        if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+        }
+    }
+}
+
+/* ===========================================================
+   DASHBOARD
+=============================================================*/
+
+async function loadDashboard() {
+    try {
+        // Fetch dashboard data from API
+        const res = await fetch(`${API}/api/dashboard`);
+        if (!res.ok) {
+            // If endpoint doesn't exist yet, aggregate locally
+            await loadDashboardFallback();
+            return;
+        }
+        const data = await res.json();
+        renderDashboard(data);
+    } catch (e) {
+        console.error("Failed to load dashboard:", e);
+        await loadDashboardFallback();
+    }
+}
+
+async function loadDashboardFallback() {
+    try {
+        // Aggregate data from existing endpoints
+        let totalCash = 0;
+        let portfolioValue = 0;
+        let portfolioInvested = 0;
+        let budgetData = null;
+        let goalData = null;
+
+        // Fetch finance summary
+        try {
+            const finRes = await fetch(`${API}/api/finance/summary`);
+            if (finRes.ok) {
+                const finData = await finRes.json();
+                totalCash = finData.totalBalance || 0;
+            }
+        } catch (e) { console.error('Finance fetch error:', e); }
+
+        // Fetch stock stats
+        try {
+            const stockRes = await fetch(`${API}/api/stocks/stats`);
+            if (stockRes.ok) {
+                const stockData = await stockRes.json();
+                portfolioValue = stockData.currentValue || 0;
+                portfolioInvested = stockData.totalInvested || 0;
+            }
+        } catch (e) { console.error('Stock fetch error:', e); }
+
+        // Fetch current month budget
+        try {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const budgetRes = await fetch(`${API}/api/budget/${year}/${month}`);
+            if (budgetRes.ok) {
+                budgetData = await budgetRes.json();
+            }
+        } catch (e) { console.error('Budget fetch error:', e); }
+
+        // Fetch first goal
+        try {
+            const goalsRes = await fetch(`${API}/api/goal`);
+            if (goalsRes.ok) {
+                const goals = await goalsRes.json();
+                if (goals.length > 0) {
+                    const goalRes = await fetch(`${API}/api/goal/${goals[0].id}`);
+                    if (goalRes.ok) {
+                        goalData = await goalRes.json();
+                    }
+                }
+            }
+        } catch (e) { console.error('Goal fetch error:', e); }
+
+        // Render dashboard with aggregated data
+        const netWorth = totalCash + portfolioValue;
+        const portfolioReturn = portfolioInvested > 0
+            ? ((portfolioValue - portfolioInvested) / portfolioInvested * 100)
+            : 0;
+
+        document.getElementById('dashTotalCash').textContent = '€' + totalCash.toFixed(2);
+        document.getElementById('dashPortfolioValue').textContent = '€' + portfolioValue.toFixed(2);
+        document.getElementById('dashNetWorth').textContent = '€' + netWorth.toFixed(2);
+
+        const returnEl = document.getElementById('dashPortfolioReturn');
+        returnEl.textContent = (portfolioReturn >= 0 ? '+' : '') + portfolioReturn.toFixed(2) + '%';
+        returnEl.className = 'stat-value ' + (portfolioReturn >= 0 ? 'positive' : 'negative');
+
+        // Budget data
+        if (budgetData) {
+            document.getElementById('dashBudgetIncome').textContent = '€' + (budgetData.totalIncome || 0).toFixed(2);
+            document.getElementById('dashBudgetExpenses').textContent = '€' + (budgetData.totalExpenses || 0).toFixed(2);
+            const savings = (budgetData.totalIncome || 0) - (budgetData.totalExpenses || 0);
+            const savingsEl = document.getElementById('dashBudgetSavings');
+            savingsEl.textContent = '€' + savings.toFixed(2);
+            savingsEl.style.color = savings >= 0 ? '#0f0' : '#f33';
+
+            const adherence = budgetData.budgetAdherence || 100;
+            document.getElementById('dashBudgetBar').style.width = Math.min(adherence, 100) + '%';
+            document.getElementById('dashBudgetBar').style.background = adherence > 100 ? '#f33' : '#0f0';
+            document.getElementById('dashBudgetPercent').textContent = adherence.toFixed(1) + '%';
+        }
+
+        // Goal data
+        if (goalData) {
+            document.getElementById('dashGoalCurrent').textContent = '€' + (goalData.currentCorpus || 0).toFixed(2);
+            document.getElementById('dashGoalTarget').textContent = '€' + (goalData.requiredCorpus || 0).toFixed(2);
+            document.getElementById('dashGoalFireAge').textContent = goalData.goalAchievedAge || '--';
+
+            const progress = goalData.requiredCorpus > 0
+                ? (goalData.currentCorpus / goalData.requiredCorpus * 100)
+                : 0;
+            document.getElementById('dashGoalBar').style.width = Math.min(progress, 100) + '%';
+            document.getElementById('dashGoalPercent').textContent = progress.toFixed(1) + '%';
+        }
+    } catch (e) {
+        console.error("Failed to load dashboard fallback:", e);
+        showToast("Failed to load dashboard data", "error");
+    }
+}
+
+function renderDashboard(data) {
+    document.getElementById('dashTotalCash').textContent = '€' + (data.totalCash || 0).toFixed(2);
+    document.getElementById('dashPortfolioValue').textContent = '€' + (data.portfolioValue || 0).toFixed(2);
+    document.getElementById('dashNetWorth').textContent = '€' + (data.netWorth || 0).toFixed(2);
+
+    const returnEl = document.getElementById('dashPortfolioReturn');
+    const portfolioReturn = data.portfolioReturn || 0;
+    returnEl.textContent = (portfolioReturn >= 0 ? '+' : '') + portfolioReturn.toFixed(2) + '%';
+    returnEl.className = 'stat-value ' + (portfolioReturn >= 0 ? 'positive' : 'negative');
+
+    // Budget
+    document.getElementById('dashBudgetIncome').textContent = '€' + (data.budgetIncome || 0).toFixed(2);
+    document.getElementById('dashBudgetExpenses').textContent = '€' + (data.budgetExpenses || 0).toFixed(2);
+    const savings = (data.budgetIncome || 0) - (data.budgetExpenses || 0);
+    const savingsEl = document.getElementById('dashBudgetSavings');
+    savingsEl.textContent = '€' + savings.toFixed(2);
+    savingsEl.style.color = savings >= 0 ? '#0f0' : '#f33';
+
+    const adherence = data.budgetAdherence || 100;
+    document.getElementById('dashBudgetBar').style.width = Math.min(adherence, 100) + '%';
+    document.getElementById('dashBudgetBar').style.background = adherence > 100 ? '#f33' : '#0f0';
+    document.getElementById('dashBudgetPercent').textContent = adherence.toFixed(1) + '%';
+
+    // Goal
+    document.getElementById('dashGoalCurrent').textContent = '€' + (data.goalCurrent || 0).toFixed(2);
+    document.getElementById('dashGoalTarget').textContent = '€' + (data.goalTarget || 0).toFixed(2);
+    document.getElementById('dashGoalFireAge').textContent = data.goalFireAge || '--';
+
+    const progress = data.goalProgress || 0;
+    document.getElementById('dashGoalBar').style.width = Math.min(progress, 100) + '%';
+    document.getElementById('dashGoalPercent').textContent = progress.toFixed(1) + '%';
+}
+
+/* ===========================================================
+   CSV EXPORT
+=============================================================*/
+
+async function exportPortfolioCsv() {
+    try {
+        showLoading('Exporting CSV...');
+        const res = await fetch(`${API}/api/stocks/export`);
+
+        if (!res.ok) {
+            throw new Error('Export failed');
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `portfolio-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        hideLoading();
+        showToast('Portfolio exported successfully!', 'success');
+    } catch (e) {
+        hideLoading();
+        showToast('Failed to export portfolio: ' + e.message, 'error');
+    }
+}
+
+/* ===========================================================
+   EMPTY STATES
+=============================================================*/
+
+function renderEmptyState(containerId, icon, title, message, buttonText, buttonAction) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon">${icon}</div>
+            <div class="empty-state-title">${title}</div>
+            <div class="empty-state-message">${message}</div>
+            ${buttonText ? `<button class="btn" onclick="${buttonAction}">${buttonText}</button>` : ''}
+        </div>
+    `;
+}
+
+/* ===========================================================
+   KEYBOARD NAVIGATION FOR TABS
+=============================================================*/
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tablist = document.querySelector('[role="tablist"]');
+    if (tablist) {
+        tablist.addEventListener('keydown', function(e) {
+            const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+            const currentIndex = tabs.findIndex(tab => tab.classList.contains('active'));
+
+            let newIndex = currentIndex;
+
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                newIndex = (currentIndex + 1) % tabs.length;
+                e.preventDefault();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                e.preventDefault();
+            } else if (e.key === 'Home') {
+                newIndex = 0;
+                e.preventDefault();
+            } else if (e.key === 'End') {
+                newIndex = tabs.length - 1;
+                e.preventDefault();
+            }
+
+            if (newIndex !== currentIndex) {
+                tabs[newIndex].focus();
+                tabs[newIndex].click();
+            }
+        });
+    }
+});
+
 // Quill editors
 let quillMain = null;
 let quillEdit = null;
@@ -64,7 +387,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* Tabs */
-/* Tabs */
 function switchTab(which) {
     // Clean up system stats interval when leaving the tab
     if (document.getElementById("tabSystemStats")?.classList.contains("active")) {
@@ -77,14 +399,27 @@ function switchTab(which) {
         historyRefreshInterval = null;
     }
 
-    document.getElementById("tabMemo").classList.toggle("active", which === "memo");
-    document.getElementById("tabFinance").classList.toggle("active", which === "finance");
-    document.getElementById("tabStocks").classList.toggle("active", which === "stocks");
-    document.getElementById("tabStockHistory").classList.toggle("active", which === "stockhistory");
-    document.getElementById("tabBudget").classList.toggle("active", which === "budget");
-    document.getElementById("tabSystemStats").classList.toggle("active", which === "systemstats");
-    document.getElementById("tabResearch").classList.toggle("active", which === "research");
+    // Update tab states and aria-selected
+    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'systemstats'];
+    tabs.forEach(tab => {
+        const tabEl = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1).replace('history', 'History').replace('stats', 'Stats')}`);
+        if (tabEl) {
+            tabEl.classList.toggle("active", which === tab);
+            tabEl.setAttribute('aria-selected', which === tab);
+        }
+    });
 
+    // Fix specific tab IDs
+    document.getElementById("tabDashboard")?.classList.toggle("active", which === "dashboard");
+    document.getElementById("tabMemo")?.classList.toggle("active", which === "memo");
+    document.getElementById("tabFinance")?.classList.toggle("active", which === "finance");
+    document.getElementById("tabStocks")?.classList.toggle("active", which === "stocks");
+    document.getElementById("tabStockHistory")?.classList.toggle("active", which === "stockhistory");
+    document.getElementById("tabBudget")?.classList.toggle("active", which === "budget");
+    document.getElementById("tabSystemStats")?.classList.toggle("active", which === "systemstats");
+    document.getElementById("tabResearch")?.classList.toggle("active", which === "research");
+
+    dashboardTabContent?.classList.toggle("hidden", which !== "dashboard");
     memoTabContent.classList.toggle("hidden", which !== "memo");
     financeTabContent.classList.toggle("hidden", which !== "finance");
     stocksTabContent.classList.toggle("hidden", which !== "stocks");
@@ -93,7 +428,9 @@ function switchTab(which) {
     systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
     researchTabContent.classList.toggle("hidden", which !== "research");
 
-    if (which === "finance") {
+    if (which === "dashboard") {
+        loadDashboard();
+    } else if (which === "finance") {
         loadFinance();
         loadGoalList();
     } else if (which === "stocks") {
@@ -260,12 +597,16 @@ async function viewMemo(id){
 function closeMemoViewModal(){ closeModal("memoViewModal"); }
 
 async function copyMemo(id){
-    const res = await fetch(`${API}/api/memos/${id}`);
-    const m = await res.json();
-    const temp=document.createElement("div");
-    temp.innerHTML=m.title+" - "+(m.content||"");
-    await navigator.clipboard.writeText(temp.innerText);
-    alert("Copied!");
+    try {
+        const res = await fetch(`${API}/api/memos/${id}`);
+        const m = await res.json();
+        const temp=document.createElement("div");
+        temp.innerHTML=m.title+" - "+(m.content||"");
+        await navigator.clipboard.writeText(temp.innerText);
+        showToast("Memo copied to clipboard!", "success");
+    } catch (e) {
+        showToast("Failed to copy memo: " + e.message, "error");
+    }
 }
 
 let editingMemoId=null;
@@ -668,6 +1009,17 @@ async function loadHoldings() {
         const res = await fetch(`${API}/api/stocks`);
         const holdings = await res.json();
 
+        if (!holdings || holdings.length === 0) {
+            holdingsList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📈</div>
+                    <div class="empty-state-title">No Holdings Yet</div>
+                    <div class="empty-state-message">Start building your portfolio by adding your first stock!</div>
+                    <button class="btn" onclick="showAddHolding()">ADD YOUR FIRST STOCK</button>
+                </div>`;
+            return;
+        }
+
         let html = `
         <div class="stock-row stock-header">
             <div>Symbol</div>
@@ -697,8 +1049,8 @@ async function loadHoldings() {
                     <div class="profit-bar-fill ${plClass}" style="width:${Math.min(Math.abs(plPercent), 100)}%; background:${pl >= 0 ? '#0f0' : '#f33'};"></div>
                 </div>
                 <div style="text-align:right; margin-top:4px;">
-                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice})">EDIT</button>
-                    <button class="btn" onclick="delHolding('${h.id}')">DEL</button>
+                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice})" aria-label="Edit ${h.symbol}">EDIT</button>
+                    <button class="btn" onclick="delHolding('${h.id}')" aria-label="Delete ${h.symbol}">DEL</button>
                 </div>
             </div>`;
         });
@@ -706,6 +1058,7 @@ async function loadHoldings() {
         holdingsList.innerHTML = html;
     } catch (e) {
         console.error("Failed to load holdings:", e);
+        showToast("Failed to load holdings", "error");
     }
 }
 
@@ -713,6 +1066,17 @@ async function loadWatchlist() {
     try {
         const res = await fetch(`${API}/api/stocks-watch`);
         const watchlist = await res.json();
+
+        if (!watchlist || watchlist.length === 0) {
+            watchlistList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">👀</div>
+                    <div class="empty-state-title">Watchlist Empty</div>
+                    <div class="empty-state-message">Track stocks you're interested in by adding them to your watchlist!</div>
+                    <button class="btn" onclick="showAddWatchlist()">ADD TO WATCHLIST</button>
+                </div>`;
+            return;
+        }
 
         let html = `
         <div class="stock-row stock-header">
@@ -737,7 +1101,7 @@ async function loadWatchlist() {
                 <div class="${deltaClass}">${delta >= 0 ? '+' : ''}${delta.toFixed(2)}</div>
                 <div class="${deltaClass}">${deltaPercent >= 0 ? '+' : ''}${deltaPercent.toFixed(2)}%</div>
                 <div style="text-align:right;">
-                    <button class="btn" onclick="delWatchlist('${w.symbol}')">DEL</button>
+                    <button class="btn" onclick="delWatchlist('${w.symbol}')" aria-label="Remove ${w.symbol} from watchlist">DEL</button>
                 </div>
             </div>`;
         });
@@ -745,6 +1109,7 @@ async function loadWatchlist() {
         watchlistList.innerHTML = html;
     } catch (e) {
         console.error("Failed to load watchlist:", e);
+        showToast("Failed to load watchlist", "error");
     }
 }
 
@@ -783,7 +1148,7 @@ async function saveStockHolding() {
     };
 
     if (!data.symbol || !data.quantity || !data.buyPrice) {
-        alert("Please fill all fields");
+        showToast("Please fill all fields", "warning");
         return;
     }
 
@@ -804,8 +1169,9 @@ async function saveStockHolding() {
 
         closeStockHoldingModal();
         loadStocks();
+        showToast("Stock holding saved successfully!", "success");
     } catch (e) {
-        alert("Error saving holding: " + e.message);
+        showToast("Error saving holding: " + e.message, "error");
     }
 }
 
@@ -836,7 +1202,7 @@ async function saveWatchlist() {
     };
 
     if (!data.symbol || !data.initialPrice) {
-        alert("Please fill all fields");
+        showToast("Please fill all fields", "warning");
         return;
     }
 
@@ -849,8 +1215,9 @@ async function saveWatchlist() {
 
         closeWatchlistModal();
         loadStocks();
+        showToast("Watchlist item saved successfully!", "success");
     } catch (e) {
-        alert("Error saving watchlist item: " + e.message);
+        showToast("Error saving watchlist item: " + e.message, "error");
     }
 }
 
@@ -880,6 +1247,7 @@ function goToCurrentMonth() {
     const current = getCurrentYearMonth();
     document.getElementById('budgetMonthPicker').value = current;
     loadBudgetForSelectedMonth();
+    loadBudgetComparison();
 }
 
 async function loadBudgetForSelectedMonth() {
@@ -1058,22 +1426,27 @@ async function addIncome() {
     const description = document.getElementById('incomeDescription').value;
 
     if (!amount || amount <= 0) {
-        alert('Please enter a valid amount');
+        showToast('Please enter a valid amount', 'warning');
         return;
     }
 
     const record = { category, amount, description };
 
-    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(record)
-    });
+    try {
+        await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+        });
 
-    document.getElementById('incomeAmount').value = '';
-    document.getElementById('incomeDescription').value = '';
+        document.getElementById('incomeAmount').value = '';
+        document.getElementById('incomeDescription').value = '';
 
-    loadBudgetForSelectedMonth();
+        loadBudgetForSelectedMonth();
+        showToast('Income record added!', 'success');
+    } catch (e) {
+        showToast('Failed to add income: ' + e.message, 'error');
+    }
 }
 
 async function addExpense() {
@@ -1084,22 +1457,27 @@ async function addExpense() {
     const description = document.getElementById('expenseDescription').value;
 
     if (!amount || amount <= 0) {
-        alert('Please enter a valid amount');
+        showToast('Please enter a valid amount', 'warning');
         return;
     }
 
     const record = { category, amount, description };
 
-    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(record)
-    });
+    try {
+        await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+        });
 
-    document.getElementById('expenseAmount').value = '';
-    document.getElementById('expenseDescription').value = '';
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseDescription').value = '';
 
-    loadBudgetForSelectedMonth();
+        loadBudgetForSelectedMonth();
+        showToast('Expense record added!', 'success');
+    } catch (e) {
+        showToast('Failed to add expense: ' + e.message, 'error');
+    }
 }
 
 async function deleteIncomeRecord(index) {
@@ -1120,6 +1498,144 @@ async function deleteExpenseRecord(index) {
     });
 
     loadBudgetForSelectedMonth();
+}
+
+// ============================================
+// BUDGET COMPARISON
+// ============================================
+
+let comparisonChart = null;
+
+async function loadBudgetComparison() {
+    const months = document.getElementById('comparisonMonths')?.value || 6;
+
+    try {
+        const res = await fetch(`${API}/api/budget/compare?months=${months}`);
+        if (!res.ok) {
+            console.error('Failed to load budget comparison');
+            return;
+        }
+
+        const data = await res.json();
+        renderBudgetComparisonChart(data);
+        renderBudgetComparisonTable(data);
+    } catch (e) {
+        console.error('Error loading budget comparison:', e);
+    }
+}
+
+function renderBudgetComparisonChart(data) {
+    const canvas = document.getElementById('comparisonChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    // Destroy existing chart if any
+    if (comparisonChart) {
+        comparisonChart.destroy();
+    }
+
+    const labels = data.map(d => d.month);
+    const incomeData = data.map(d => d.income);
+    const expenseData = data.map(d => d.expenses);
+    const savingsData = data.map(d => d.savings);
+
+    comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: '#0f0',
+                    borderColor: '#0f0',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Expenses',
+                    data: expenseData,
+                    backgroundColor: '#f33',
+                    borderColor: '#f33',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Savings',
+                    data: savingsData,
+                    backgroundColor: '#39f',
+                    borderColor: '#39f',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        font: { family: 'monospace', size: 11 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        font: { family: 'monospace', size: 10 }
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,0.1)'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        font: { family: 'monospace', size: 10 },
+                        callback: value => '€' + value.toFixed(0)
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,0.1)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderBudgetComparisonTable(data) {
+    const container = document.getElementById('budgetComparisonTable');
+    if (!container) return;
+
+    let html = `
+        <div class="stock-row stock-header">
+            <div>Month</div>
+            <div>Income</div>
+            <div>Expenses</div>
+            <div>Savings</div>
+            <div>Savings Rate</div>
+            <div>Adherence</div>
+        </div>`;
+
+    data.forEach(d => {
+        const savingsClass = d.savings >= 0 ? 'positive' : 'negative';
+        const adherenceClass = d.budgetAdherence <= 100 ? 'positive' : 'negative';
+
+        html += `
+        <div class="stock-row">
+            <div><strong>${d.month}</strong></div>
+            <div>€${d.income.toFixed(2)}</div>
+            <div>€${d.expenses.toFixed(2)}</div>
+            <div class="${savingsClass}">€${d.savings.toFixed(2)}</div>
+            <div class="${savingsClass}">${d.savingsRate.toFixed(1)}%</div>
+            <div class="${adherenceClass}">${d.budgetAdherence.toFixed(1)}%</div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
 }
 
 // ============================================
@@ -1423,7 +1939,7 @@ async function subscribeToPush() {
         console.log('Notification permission:', permission);
 
         if (permission !== 'granted') {
-            alert('❌ Please enable notifications in your browser settings');
+            showToast('Please enable notifications in your browser settings', 'warning');
             return;
         }
 
@@ -1457,14 +1973,14 @@ async function subscribeToPush() {
         });
 
         if (response.ok) {
-            alert('✅ Push notifications enabled!');
+            showToast('Push notifications enabled!', 'success');
             updateNotificationUI(true);
         } else {
             throw new Error('Failed to subscribe on server');
         }
     } catch (error) {
         console.error('Error subscribing to push:', error);
-        alert('❌ Failed to enable notifications: ' + error.message);
+        showToast('Failed to enable notifications: ' + error.message, 'error');
     }
 }
 
@@ -1482,12 +1998,12 @@ async function unsubscribeFromPush() {
             });
 
             pushSubscription = null;
-            alert('❌ Push notifications disabled');
+            showToast('Push notifications disabled', 'info');
             updateNotificationUI(false);
         }
     } catch (error) {
         console.error('Error unsubscribing:', error);
-        alert('Error: ' + error.message);
+        showToast('Error: ' + error.message, 'error');
     }
 }
 
@@ -1497,13 +2013,13 @@ async function testNotification() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`✅ ${result.message}\n\nCheck your device for the notification!`);
+            showToast(result.message + ' Check your device for the notification!', 'success');
         } else {
-            alert(`❌ ${result.message}`);
+            showToast(result.message, 'error');
         }
     } catch (error) {
         console.error('Error sending test notification:', error);
-        alert('❌ Error: ' + error.message);
+        showToast('Error: ' + error.message, 'error');
     }
 }
 

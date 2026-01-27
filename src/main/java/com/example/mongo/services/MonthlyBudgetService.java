@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.controller.MonthlyBudgetController.BudgetComparisonDTO;
 import com.example.mongo.models.ExpenseCategory;
 import com.example.mongo.models.ExpenseRecord;
 import com.example.mongo.models.IncomeCategory;
@@ -7,6 +8,8 @@ import com.example.mongo.models.IncomeRecord;
 import com.example.mongo.models.MonthlyBudget;
 import com.example.mongo.repos.MonthlyBudgetRepository;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -174,5 +177,40 @@ public class MonthlyBudgetService {
     MonthlyBudget budget = getOrCreateBudget(month);
     budget.setNotes(notes);
     return monthlyBudgetRepository.save(budget);
+  }
+
+  public List<BudgetComparisonDTO> getBudgetComparison(int months) {
+    List<BudgetComparisonDTO> comparisons = new ArrayList<>();
+    YearMonth current = YearMonth.now();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+
+    for (int i = months - 1; i >= 0; i--) {
+      YearMonth targetMonth = current.minusMonths(i);
+
+      // Try to find existing budget, don't create new ones for comparison
+      var budgetOpt = monthlyBudgetRepository.findByMonth(targetMonth);
+
+      BudgetComparisonDTO dto = new BudgetComparisonDTO();
+      dto.setMonth(targetMonth.format(formatter));
+
+      if (budgetOpt.isPresent()) {
+        MonthlyBudget budget = budgetOpt.get();
+        dto.setIncome(budget.getTotalIncome());
+        dto.setExpenses(budget.getTotalExpenses());
+        dto.setSavings(budget.getRemaining());
+        dto.setSavingsRate(budget.getSavingsRate());
+        dto.setBudgetAdherence(budget.getBudgetAdherence());
+      } else {
+        dto.setIncome(0);
+        dto.setExpenses(0);
+        dto.setSavings(0);
+        dto.setSavingsRate(0);
+        dto.setBudgetAdherence(100);
+      }
+
+      comparisons.add(dto);
+    }
+
+    return comparisons;
   }
 }

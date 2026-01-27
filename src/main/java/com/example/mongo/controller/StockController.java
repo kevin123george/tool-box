@@ -4,14 +4,17 @@ import com.example.mongo.models.StockHolding;
 import com.example.mongo.models.dto.PortfolioStats;
 import com.example.mongo.models.dto.StockRequest;
 import com.example.mongo.services.StockService;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/stocks")
+@CrossOrigin(origins = "*")
 public class StockController {
 
   private final StockService service;
@@ -21,8 +24,8 @@ public class StockController {
   }
 
   @PostMapping
-  public ResponseEntity<StockHolding> addStock(@RequestBody StockRequest req) {
-    return ResponseEntity.ok(service.addStock(req));
+  public ResponseEntity<StockHolding> addStock(@Valid @RequestBody StockRequest req) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(service.addStock(req));
   }
 
   @GetMapping
@@ -57,7 +60,7 @@ public class StockController {
 
   @PutMapping("/{id}")
   public ResponseEntity<StockHolding> updatePrice(
-      @PathVariable String id, @RequestBody StockRequest stockRequest) {
+      @PathVariable String id, @Valid @RequestBody StockRequest stockRequest) {
     return ResponseEntity.ok(service.updatePrice(id, stockRequest));
   }
 
