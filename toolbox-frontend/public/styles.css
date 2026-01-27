@@ -847,3 +847,217 @@ textarea:focus,
     background: var(--text);
     color: var(--bg);
 }
+
+/* =========================
+   ADVANCED CHART STYLES
+   ========================= */
+
+.control-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Metrics Panel */
+.metrics-panel {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.metric-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    padding: 12px;
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    font-size: 16px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.metric-value.positive {
+    color: #00ff88;
+}
+
+.metric-value.negative {
+    color: #ff4444;
+}
+
+/* Indicator Toggles */
+.indicator-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.indicator-toggle:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.indicator-toggle input:checked + span,
+.indicator-toggle:has(input:checked) {
+    background: var(--text);
+    color: var(--bg);
+}
+
+.indicator-toggle input {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Range Buttons */
+.range-btn {
+    transition: all 0.2s;
+}
+
+.range-btn.active {
+    background: var(--text);
+    color: var(--bg);
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    background: rgba(0,0,0,0.2);
+}
+
+.light .chart-container {
+    background: rgba(255,255,255,0.5);
+}
+
+/* Crosshair Info Panel */
+.crosshair-info {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    background: rgba(0,0,0,0.8);
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+}
+
+.light .crosshair-info {
+    background: rgba(255,255,255,0.9);
+}
+
+.crosshair-info span {
+    white-space: nowrap;
+}
+
+/* Buy Point Markers */
+.buy-marker {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 10px solid #00ff88;
+    transform: translateX(-50%);
+    cursor: pointer;
+    z-index: 50;
+}
+
+.buy-marker:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* Chart Fullscreen */
+.chart-container.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: var(--bg);
+    padding: 20px;
+    margin: 0;
+    border: none;
+}
+
+.chart-container.fullscreen #candlestickChart {
+    height: calc(100vh - 300px) !important;
+}
+
+.chart-container.fullscreen #volumeChart {
+    height: 120px !important;
+}
+
+/* Legend for indicators */
+.chart-legend {
+    display: flex;
+    gap: 16px;
+    padding: 8px 12px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 3px;
+}
+
+/* RSI Levels */
+.rsi-overbought {
+    color: #ff4444;
+}
+
+.rsi-oversold {
+    color: #00ff88;
+}
+
+/* Loading state for chart */
+.chart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    opacity: 0.5;
+}
+
+.chart-loading::after {
+    content: 'Loading chart data...';
+    font-size: 14px;
+}

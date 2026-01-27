@@ -1,10 +1,13 @@
 package com.example.mongo.controller;
 
 import com.example.mongo.models.StockHoldingHistory;
+import com.example.mongo.models.dto.OHLCData;
+import com.example.mongo.models.dto.PerformanceMetrics;
 import com.example.mongo.repos.StockHoldingHistoryRepository;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -190,5 +193,263 @@ public class StockHistoryController {
     return repository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
         .limit(limit)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Get OHLC (candlestick) data for charting
+   * Aggregates price data into candles based on interval
+   */
+  @GetMapping("/ohlc/{symbol}")
+  public List<OHLCData> getOHLCData(
+      @PathVariable String symbol,
+      @RequestParam(required = false, defaultValue = "1h") String interval,
+      @RequestParam(required = false) String from,
+      @RequestParam(required = false) String to) {
+
+    List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+
+    // Apply date filters
+    if (from != null) {
+      LocalDateTime fromDate = LocalDateTime.ofInstant(Instant.parse(from), ZoneId.systemDefault());
+      histories = histories.stream()
+          .filter(h -> h.getUpdatedAt().isAfter(fromDate))
+          .collect(Collectors.toList());
+    }
+
+    if (to != null) {
+      LocalDateTime toDate = LocalDateTime.ofInstant(Instant.parse(to), ZoneId.systemDefault());
+      histories = histories.stream()
+          .filter(h -> h.getUpdatedAt().isBefore(toDate))
+          .collect(Collectors.toList());
+    }
+
+    if (histories.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // Determine candle duration based on interval
+    long intervalMinutes = parseInterval(interval);
+
+    // Group data into candles
+    Map<LocalDateTime, List<StockHoldingHistory>> candleGroups = new TreeMap<>();
+
+    for (StockHoldingHistory h : histories) {
+      LocalDateTime candleTime = truncateToInterval(h.getUpdatedAt(), intervalMinutes);
+      candleGroups.computeIfAbsent(candleTime, k -> new ArrayList<>()).add(h);
+    }
+
+    // Build OHLC data
+    List<OHLCData> ohlcList = new ArrayList<>();
+    for (Map.Entry<LocalDateTime, List<StockHoldingHistory>> entry : candleGroups.entrySet()) {
+      List<StockHoldingHistory> candle = entry.getValue();
+      candle.sort(Comparator.comparing(StockHoldingHistory::getUpdatedAt));
+
+      double open = candle.get(0).getCurrentPrice();
+      double close = candle.get(candle.size() - 1).getCurrentPrice();
+      double high = candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).max().orElse(open);
+      double low = candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).min().orElse(open);
+      double volume = candle.size(); // Use count as volume proxy
+
+      ohlcList.add(OHLCData.builder()
+          .time(entry.getKey())
+          .open(open)
+          .high(high)
+          .low(low)
+          .close(close)
+          .volume(volume)
+          .build());
+    }
+
+    return ohlcList;
+  }
+
+  /**
+   * Get performance metrics for a symbol
+   */
+  @GetMapping("/metrics/{symbol}")
+  public PerformanceMetrics getPerformanceMetrics(
+      @PathVariable String symbol,
+      @RequestParam(required = false) String from,
+      @RequestParam(required = false) String to) {
+
+    List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+
+    // Apply date filters
+    if (from != null) {
+      LocalDateTime fromDate = LocalDateTime.ofInstant(Instant.parse(from), ZoneId.systemDefault());
+      histories = histories.stream()
+          .filter(h -> h.getUpdatedAt().isAfter(fromDate))
+          .collect(Collectors.toList());
+    }
+
+    if (to != null) {
+      LocalDateTime toDate = LocalDateTime.ofInstant(Instant.parse(to), ZoneId.systemDefault());
+      histories = histories.stream()
+          .filter(h -> h.getUpdatedAt().isBefore(toDate))
+          .collect(Collectors.toList());
+    }
+
+    if (histories.isEmpty()) {
+      return PerformanceMetrics.builder().symbol(symbol).build();
+    }
+
+    // Extract prices
+    List<Double> prices = histories.stream()
+        .map(StockHoldingHistory::getCurrentPrice)
+        .collect(Collectors.toList());
+
+    // Basic price stats
+    double currentPrice = prices.get(prices.size() - 1);
+    double firstPrice = prices.get(0);
+    double highestPrice = prices.stream().mapToDouble(Double::doubleValue).max().orElse(currentPrice);
+    double lowestPrice = prices.stream().mapToDouble(Double::doubleValue).min().orElse(currentPrice);
+    double avgPrice = prices.stream().mapToDouble(Double::doubleValue).average().orElse(currentPrice);
+
+    // Calculate returns
+    List<Double> returns = new ArrayList<>();
+    for (int i = 1; i < prices.size(); i++) {
+      double ret = (prices.get(i) - prices.get(i - 1)) / prices.get(i - 1);
+      returns.add(ret);
+    }
+
+    // Total return
+    double totalReturn = firstPrice > 0 ? ((currentPrice - firstPrice) / firstPrice) * 100 : 0;
+
+    // Calculate days between first and last data point
+    LocalDateTime firstDate = histories.get(0).getUpdatedAt();
+    LocalDateTime lastDate = histories.get(histories.size() - 1).getUpdatedAt();
+    long daysBetween = ChronoUnit.DAYS.between(firstDate, lastDate);
+    int tradingDays = (int) Math.max(daysBetween, 1);
+
+    // CAGR (Compound Annual Growth Rate)
+    double years = tradingDays / 365.0;
+    double cagr = years > 0 ? (Math.pow(currentPrice / firstPrice, 1.0 / years) - 1) * 100 : 0;
+
+    // Daily return average
+    double dailyReturn = returns.isEmpty() ? 0 : returns.stream().mapToDouble(Double::doubleValue).average().orElse(0) * 100;
+
+    // Volatility (annualized standard deviation of returns)
+    double volatility = 0;
+    if (returns.size() > 1) {
+      double mean = returns.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+      double variance = returns.stream()
+          .mapToDouble(r -> Math.pow(r - mean, 2))
+          .average()
+          .orElse(0);
+      volatility = Math.sqrt(variance) * Math.sqrt(252) * 100; // Annualized
+    }
+
+    // Max Drawdown
+    double maxDrawdown = 0;
+    double maxDrawdownPercent = 0;
+    double peak = prices.get(0);
+    for (double price : prices) {
+      if (price > peak) {
+        peak = price;
+      }
+      double drawdown = peak - price;
+      double drawdownPercent = peak > 0 ? (drawdown / peak) * 100 : 0;
+      if (drawdown > maxDrawdown) {
+        maxDrawdown = drawdown;
+        maxDrawdownPercent = drawdownPercent;
+      }
+    }
+
+    // Sharpe Ratio (assuming 2% risk-free rate)
+    double riskFreeRate = 0.02 / 252; // Daily risk-free rate
+    double excessReturn = returns.isEmpty() ? 0 : returns.stream().mapToDouble(Double::doubleValue).average().orElse(0) - riskFreeRate;
+    double sharpeRatio = 0;
+    if (volatility > 0 && !returns.isEmpty()) {
+      double dailyVol = returns.stream()
+          .mapToDouble(r -> Math.pow(r - returns.stream().mapToDouble(Double::doubleValue).average().orElse(0), 2))
+          .average()
+          .orElse(0);
+      dailyVol = Math.sqrt(dailyVol);
+      sharpeRatio = dailyVol > 0 ? (excessReturn / dailyVol) * Math.sqrt(252) : 0;
+    }
+
+    // Sortino Ratio (only considers downside volatility)
+    List<Double> negativeReturns = returns.stream().filter(r -> r < 0).collect(Collectors.toList());
+    double sortinoRatio = 0;
+    if (!negativeReturns.isEmpty()) {
+      double downsideVariance = negativeReturns.stream()
+          .mapToDouble(r -> Math.pow(r, 2))
+          .average()
+          .orElse(0);
+      double downsideVol = Math.sqrt(downsideVariance);
+      sortinoRatio = downsideVol > 0 ? (excessReturn / downsideVol) * Math.sqrt(252) : 0;
+    }
+
+    return PerformanceMetrics.builder()
+        .symbol(symbol)
+        .totalReturn(totalReturn)
+        .cagr(cagr)
+        .dailyReturn(dailyReturn)
+        .volatility(volatility)
+        .maxDrawdown(maxDrawdown)
+        .maxDrawdownPercent(maxDrawdownPercent)
+        .sharpeRatio(sharpeRatio)
+        .sortinoRatio(sortinoRatio)
+        .beta(0) // Requires benchmark data
+        .alpha(0) // Requires benchmark data
+        .correlation(0) // Requires benchmark data
+        .highestPrice(highestPrice)
+        .lowestPrice(lowestPrice)
+        .currentPrice(currentPrice)
+        .avgPrice(avgPrice)
+        .dataPoints(prices.size())
+        .tradingDays(tradingDays)
+        .build();
+  }
+
+  /**
+   * Get buy points for annotations on chart
+   */
+  @GetMapping("/buypoints/{symbol}")
+  public List<Map<String, Object>> getBuyPoints(@PathVariable String symbol) {
+    List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+
+    // Get unique buy dates with their prices
+    Map<String, Map<String, Object>> buyPoints = new LinkedHashMap<>();
+
+    for (StockHoldingHistory h : histories) {
+      if (h.getBuyDate() != null) {
+        String key = h.getBuyDate().toString();
+        if (!buyPoints.containsKey(key)) {
+          Map<String, Object> point = new HashMap<>();
+          point.put("date", h.getBuyDate().toString());
+          point.put("price", h.getBuyPrice());
+          point.put("quantity", h.getQuantity());
+          point.put("symbol", h.getSymbol());
+          buyPoints.put(key, point);
+        }
+      }
+    }
+
+    return new ArrayList<>(buyPoints.values());
+  }
+
+  // Helper methods
+
+  private long parseInterval(String interval) {
+    return switch (interval.toLowerCase()) {
+      case "1m" -> 1;
+      case "5m" -> 5;
+      case "15m" -> 15;
+      case "30m" -> 30;
+      case "1h" -> 60;
+      case "4h" -> 240;
+      case "1d" -> 1440;
+      case "1w" -> 10080;
+      default -> 60; // Default to 1 hour
+    };
+  }
+
+  private LocalDateTime truncateToInterval(LocalDateTime time, long intervalMinutes) {
+    long epochMinutes = time.atZone(ZoneId.systemDefault()).toEpochSecond() / 60;
+    long truncatedMinutes = (epochMinutes / intervalMinutes) * intervalMinutes;
+    return LocalDateTime.ofInstant(
+        Instant.ofEpochSecond(truncatedMinutes * 60),
+        ZoneId.systemDefault());
   }
 }
