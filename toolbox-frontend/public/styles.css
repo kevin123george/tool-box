@@ -1061,3 +1061,96 @@ textarea:focus,
     content: 'Loading chart data...';
     font-size: 14px;
 }
+
+/* =========================
+   CALENDAR GRID
+   ========================= */
+
+.calendar-grid {
+    border: 1px solid var(--border);
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--text);
+    color: var(--bg);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.calendar-header > div {
+    padding: 8px;
+    text-align: center;
+    border-right: 1px solid var(--bg);
+}
+
+.calendar-header > div:last-child {
+    border-right: none;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-day {
+    min-height: 80px;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-left: none;
+    padding: 4px;
+    font-size: 11px;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day.empty {
+    background: rgba(128,128,128,0.1);
+}
+
+.calendar-day.today {
+    background: rgba(0,255,0,0.1);
+}
+
+.calendar-day-number {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.calendar-events {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.calendar-event {
+    font-size: 9px;
+    padding: 2px 4px;
+    border-radius: 2px;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calendar-event-more {
+    font-size: 9px;
+    opacity: 0.7;
+}
+
+/* =========================
+   ANALYTICS STYLES
+   ========================= */
+
+.anomaly-card {
+    border: 1px solid #f90;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.anomaly-card strong {
+    color: #f90;
+}

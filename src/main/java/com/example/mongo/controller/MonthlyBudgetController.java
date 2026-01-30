@@ -5,6 +5,9 @@ import com.example.mongo.models.ExpenseRecord;
 import com.example.mongo.models.IncomeCategory;
 import com.example.mongo.models.IncomeRecord;
 import com.example.mongo.models.MonthlyBudget;
+import com.example.mongo.models.dto.ImportPreviewDTO;
+import com.example.mongo.models.dto.SavingsRateDTO;
+import com.example.mongo.services.BankStatementImportService;
 import com.example.mongo.services.MonthlyBudgetService;
 import java.time.YearMonth;
 import java.util.List;
@@ -13,6 +16,7 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/budget")
@@ -20,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 public class MonthlyBudgetController {
 
   @Autowired private MonthlyBudgetService budgetService;
+
+  @Autowired private BankStatementImportService importService;
 
   // Get budget for specific month (creates if doesn't exist)
   @GetMapping("/{year}/{month}")
@@ -125,6 +131,36 @@ public class MonthlyBudgetController {
   public ResponseEntity<List<BudgetComparisonDTO>> compareBudgets(
       @RequestParam(defaultValue = "6") int months) {
     return ResponseEntity.ok(budgetService.getBudgetComparison(months));
+  }
+
+  // Savings rate history endpoint
+  @GetMapping("/savings-rate")
+  public ResponseEntity<List<SavingsRateDTO>> getSavingsRateHistory(
+      @RequestParam(defaultValue = "12") int months) {
+    return ResponseEntity.ok(budgetService.getSavingsRateHistory(months));
+  }
+
+  // Bank statement import preview
+  @PostMapping("/import/preview")
+  public ResponseEntity<List<ImportPreviewDTO>> importPreview(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(defaultValue = "AUTO") String format) {
+    try {
+      return ResponseEntity.ok(importService.parseCSV(file, format));
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().build();
+    }
+  }
+
+  // Confirm import
+  @PostMapping("/{year}/{month}/import/confirm")
+  public ResponseEntity<MonthlyBudget> confirmImport(
+      @PathVariable int year,
+      @PathVariable int month,
+      @RequestBody List<ImportPreviewDTO> items) {
+    YearMonth yearMonth = YearMonth.of(year, month);
+    importService.confirmImport(year, month, items);
+    return ResponseEntity.ok(budgetService.getOrCreateBudget(yearMonth));
   }
 
   // Helper Classes

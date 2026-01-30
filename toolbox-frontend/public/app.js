@@ -400,7 +400,7 @@ function switchTab(which) {
     }
 
     // Update tab states and aria-selected
-    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'systemstats'];
+    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats'];
     tabs.forEach(tab => {
         const tabEl = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1).replace('history', 'History').replace('stats', 'Stats')}`);
         if (tabEl) {
@@ -416,6 +416,9 @@ function switchTab(which) {
     document.getElementById("tabStocks")?.classList.toggle("active", which === "stocks");
     document.getElementById("tabStockHistory")?.classList.toggle("active", which === "stockhistory");
     document.getElementById("tabBudget")?.classList.toggle("active", which === "budget");
+    document.getElementById("tabSubscriptions")?.classList.toggle("active", which === "subscriptions");
+    document.getElementById("tabCalendar")?.classList.toggle("active", which === "calendar");
+    document.getElementById("tabAnalytics")?.classList.toggle("active", which === "analytics");
     document.getElementById("tabSystemStats")?.classList.toggle("active", which === "systemstats");
     document.getElementById("tabResearch")?.classList.toggle("active", which === "research");
 
@@ -425,6 +428,9 @@ function switchTab(which) {
     stocksTabContent.classList.toggle("hidden", which !== "stocks");
     stockHistoryTabContent.classList.toggle("hidden", which !== "stockhistory");
     budgetTabContent.classList.toggle("hidden", which !== "budget");
+    document.getElementById("subscriptionsTabContent")?.classList.toggle("hidden", which !== "subscriptions");
+    document.getElementById("calendarTabContent")?.classList.toggle("hidden", which !== "calendar");
+    document.getElementById("analyticsTabContent")?.classList.toggle("hidden", which !== "analytics");
     systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
     researchTabContent.classList.toggle("hidden", which !== "research");
 

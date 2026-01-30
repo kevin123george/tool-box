@@ -46,6 +46,9 @@
     <div id="tabStockHistory" class="tab" onclick="switchTab('stockhistory')" role="tab" aria-selected="false" aria-controls="stockHistoryTabContent" tabindex="0">Stock History</div>
     <div id="tabResearch" class="tab" onclick="switchTab('research')" role="tab" aria-selected="false" aria-controls="researchTabContent" tabindex="0">Research</div>
     <div id="tabBudget" class="tab" onclick="switchTab('budget')" role="tab" aria-selected="false" aria-controls="budgetTabContent" tabindex="0">Budget</div>
+    <div id="tabSubscriptions" class="tab" onclick="switchTab('subscriptions')" role="tab" aria-selected="false" aria-controls="subscriptionsTabContent" tabindex="0">Subscriptions</div>
+    <div id="tabCalendar" class="tab" onclick="switchTab('calendar')" role="tab" aria-selected="false" aria-controls="calendarTabContent" tabindex="0">Calendar</div>
+    <div id="tabAnalytics" class="tab" onclick="switchTab('analytics')" role="tab" aria-selected="false" aria-controls="analyticsTabContent" tabindex="0">Analytics</div>
     <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')" role="tab" aria-selected="false" aria-controls="systemStatsTabContent" tabindex="0">System Stats</div>
 </div>
 
@@ -136,6 +139,34 @@
             <button class="btn" onclick="switchTab('finance')">Manage Accounts</button>
             <button class="btn" onclick="switchTab('budget')">Track Budget</button>
             <button class="btn" onclick="switchTab('memo')">Add Memo</button>
+        </div>
+    </div>
+
+    <!-- Savings Goals Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">Savings Goals</h3>
+            <button class="btn" onclick="showAddSavingsGoalModal()">ADD GOAL</button>
+        </div>
+        <div id="savingsGoalsList"></div>
+    </div>
+
+    <!-- Net Worth History Chart -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">Net Worth History</h3>
+            <button class="btn" onclick="captureNetWorthSnapshot()">SNAPSHOT</button>
+        </div>
+        <div style="height:250px;">
+            <canvas id="netWorthChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Savings Rate Chart -->
+    <div class="add-box" style="margin-top:20px;">
+        <h3 style="margin-top:0;">Savings Rate Trend</h3>
+        <div style="height:200px;">
+            <canvas id="savingsRateChart"></canvas>
         </div>
     </div>
 </div>
@@ -231,6 +262,162 @@
 
         <button class="btn" onclick="saveWatchlist()">SAVE</button>
         <button class="btn" onclick="closeWatchlistModal()">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= SAVINGS GOAL MODAL ============= -->
+<div id="savingsGoalModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="savingsGoalModalTitle">Add Savings Goal</h3>
+        <input type="hidden" id="savingsGoalId">
+        <input id="savingsGoalName" placeholder="Goal Name (e.g., Emergency Fund)">
+        <input id="savingsGoalTarget" type="number" step="0.01" placeholder="Target Amount (€)">
+        <input id="savingsGoalCurrent" type="number" step="0.01" placeholder="Current Amount (€)">
+        <input id="savingsGoalDeadline" type="date" placeholder="Deadline">
+        <input id="savingsGoalIcon" placeholder="Icon (emoji)" maxlength="4">
+        <textarea id="savingsGoalNotes" placeholder="Notes" rows="2"></textarea>
+        <button class="btn" onclick="saveSavingsGoal()">SAVE</button>
+        <button class="btn" onclick="closeModal('savingsGoalModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= CONTRIBUTE MODAL ============= -->
+<div id="contributeModal" class="modal-overlay">
+    <div class="modal">
+        <h3>Contribute to Goal</h3>
+        <input type="hidden" id="contributeGoalId">
+        <input id="contributeAmount" type="number" step="0.01" placeholder="Amount to Add (€)">
+        <button class="btn" onclick="contributeToGoal()">CONTRIBUTE</button>
+        <button class="btn" onclick="closeModal('contributeModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= DIVIDEND MODAL ============= -->
+<div id="dividendModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="dividendModalTitle">Add Dividend</h3>
+        <input type="hidden" id="dividendId">
+        <input id="dividendSymbol" placeholder="Stock Symbol (e.g., AAPL)">
+        <input id="dividendAmount" type="number" step="0.01" placeholder="Amount (€)">
+        <input id="dividendPaymentDate" type="date">
+        <select id="dividendFrequency">
+            <option value="MONTHLY">Monthly</option>
+            <option value="QUARTERLY">Quarterly</option>
+            <option value="SEMI_ANNUAL">Semi-Annual</option>
+            <option value="ANNUAL">Annual</option>
+        </select>
+        <textarea id="dividendNotes" placeholder="Notes" rows="2"></textarea>
+        <button class="btn" onclick="saveDividend()">SAVE</button>
+        <button class="btn" onclick="closeModal('dividendModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= PRICE ALERT MODAL ============= -->
+<div id="priceAlertModal" class="modal-overlay">
+    <div class="modal">
+        <h3>Add Price Alert</h3>
+        <input id="alertSymbol" placeholder="Stock Symbol (e.g., AAPL)">
+        <input id="alertTargetPrice" type="number" step="0.01" placeholder="Target Price (€)">
+        <select id="alertDirection">
+            <option value="ABOVE">Above (notify when price rises above)</option>
+            <option value="BELOW">Below (notify when price drops below)</option>
+        </select>
+        <button class="btn" onclick="savePriceAlert()">CREATE ALERT</button>
+        <button class="btn" onclick="closeModal('priceAlertModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= TARGET ALLOCATION MODAL ============= -->
+<div id="targetAllocationModal" class="modal-overlay">
+    <div class="modal">
+        <h3>Set Target Allocation</h3>
+        <p style="font-size:12px; opacity:0.7;">Enter target percentages as JSON (e.g., {"AAPL": 30, "GOOGL": 25})</p>
+        <textarea id="targetAllocationsInput" rows="6" style="font-family:monospace;"></textarea>
+        <button class="btn" onclick="saveTargetAllocation()">SAVE</button>
+        <button class="btn" onclick="closeModal('targetAllocationModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= RECURRING TRANSACTION MODAL ============= -->
+<div id="recurringModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="recurringModalTitle">Add Recurring Transaction</h3>
+        <input type="hidden" id="recurringId">
+        <input id="recurringName" placeholder="Name (e.g., Netflix)">
+        <input id="recurringAmount" type="number" step="0.01" placeholder="Amount (€)">
+        <select id="recurringCategory">
+            <option value="EXPENSE">Expense</option>
+            <option value="INCOME">Income</option>
+        </select>
+        <select id="recurringCategoryType">
+            <optgroup label="Expenses">
+                <option value="RENT">Rent</option>
+                <option value="UTILITIES">Utilities</option>
+                <option value="INTERNET">Internet</option>
+                <option value="TRANSPORT">Transport</option>
+                <option value="SUBSCRIPTIONS">Subscriptions</option>
+                <option value="GYM">Gym</option>
+                <option value="OTHER">Other</option>
+            </optgroup>
+            <optgroup label="Income">
+                <option value="SALARY">Salary</option>
+                <option value="FREELANCE">Freelance</option>
+                <option value="DIVIDEND">Dividend</option>
+                <option value="OTHER">Other</option>
+            </optgroup>
+        </select>
+        <select id="recurringFrequency">
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY">Monthly</option>
+            <option value="YEARLY">Yearly</option>
+        </select>
+        <input id="recurringNextDue" type="date" placeholder="Next Due Date">
+        <label><input type="checkbox" id="recurringActive" checked> Active</label>
+        <button class="btn" onclick="saveRecurringTransaction()">SAVE</button>
+        <button class="btn" onclick="closeModal('recurringModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- ============= IMPORT MODAL ============= -->
+<div id="importModal" class="modal-overlay">
+    <div class="modal" style="max-width:700px;">
+        <h3>Import Bank Statement</h3>
+        <div style="margin-bottom:12px;">
+            <input type="file" id="importFile" accept=".csv">
+            <select id="importFormat" style="margin-top:8px;">
+                <option value="AUTO">Auto-detect</option>
+                <option value="N26">N26</option>
+                <option value="SPARKASSE">Sparkasse</option>
+            </select>
+            <button class="btn" onclick="previewImport()" style="margin-top:8px;">PREVIEW</button>
+        </div>
+        <div id="importPreviewList"></div>
+        <div style="margin-top:12px;">
+            <button class="btn" onclick="confirmImport()">CONFIRM IMPORT</button>
+            <button class="btn" onclick="closeModal('importModal')">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============= SUBSCRIPTION MODAL ============= -->
+<div id="subscriptionModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="subscriptionModalTitle">Add Subscription</h3>
+        <input type="hidden" id="subscriptionId">
+        <input id="subscriptionName" placeholder="Name (e.g., Netflix)">
+        <input id="subscriptionProvider" placeholder="Provider (e.g., Netflix Inc.)">
+        <input id="subscriptionAmount" type="number" step="0.01" placeholder="Amount (€)">
+        <select id="subscriptionBillingCycle">
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY">Monthly</option>
+            <option value="YEARLY">Yearly</option>
+        </select>
+        <input id="subscriptionNextBilling" type="date" placeholder="Next Billing Date">
+        <input id="subscriptionCategory" placeholder="Category (e.g., Entertainment)">
+        <label><input type="checkbox" id="subscriptionActive" checked> Active</label>
+        <textarea id="subscriptionNotes" placeholder="Notes" rows="2"></textarea>
+        <button class="btn" onclick="saveSubscription()">SAVE</button>
+        <button class="btn" onclick="closeModal('subscriptionModal')">CANCEL</button>
     </div>
 </div>
 
@@ -487,6 +674,61 @@
     </div>
 
     <div id="watchlistList"></div>
+
+    <!-- Dividends Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">Dividends</h3>
+            <button class="btn" onclick="showAddDividendModal()">ADD DIVIDEND</button>
+        </div>
+        <div class="stats-grid" style="margin-bottom:12px;">
+            <div class="stat-card">
+                <div class="stat-label">Total Received</div>
+                <div class="stat-value positive" id="dividendTotal">€0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Annual Projection</div>
+                <div class="stat-value" id="dividendProjection">€0.00</div>
+            </div>
+        </div>
+        <div id="dividendsList"></div>
+    </div>
+
+    <!-- Price Alerts Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">Price Alerts</h3>
+            <button class="btn" onclick="showAddPriceAlertModal()">ADD ALERT</button>
+        </div>
+        <div id="priceAlertsList"></div>
+    </div>
+
+    <!-- Capital Gains Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <h3 style="margin-top:0;">Capital Gains Estimator</h3>
+        <div class="stats-grid" id="capitalGainsSummary" style="margin-bottom:12px;"></div>
+        <div id="capitalGainsList"></div>
+    </div>
+
+    <!-- Portfolio Allocation Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">Portfolio Allocation</h3>
+            <button class="btn" onclick="showSetTargetModal()">SET TARGET</button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div style="height:250px;">
+                <canvas id="allocationChart"></canvas>
+            </div>
+            <div>
+                <div id="allocationTable"></div>
+                <div style="margin-top:12px;">
+                    <h4 style="margin:0 0 8px 0; font-size:12px;">Rebalancing Suggestions</h4>
+                    <div id="rebalanceSuggestions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- =================== STOCK HISTORY TAB =================== -->
@@ -889,6 +1131,33 @@
         </div>
     </div>
 
+    <!-- Recurring Transactions Section -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">Recurring Transactions</h3>
+            <button class="btn" onclick="showAddRecurringModal()">ADD RECURRING</button>
+        </div>
+        <div class="stats-grid" style="margin-bottom:12px;">
+            <div class="stat-card">
+                <div class="stat-label">Monthly Recurring Cost</div>
+                <div class="stat-value negative" id="recurringMonthlyCost">€0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Monthly Recurring Income</div>
+                <div class="stat-value positive" id="recurringMonthlyIncome">€0.00</div>
+            </div>
+        </div>
+        <div id="recurringTransactionsList"></div>
+    </div>
+
+    <!-- Bank Statement Import -->
+    <div class="add-box" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">Import Bank Statement</h3>
+            <button class="btn" onclick="showImportModal()">IMPORT CSV</button>
+        </div>
+    </div>
+
     <!-- Multi-Month Comparison -->
     <div class="add-box" style="margin-top:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -906,6 +1175,100 @@
             <canvas id="comparisonChart" height="250"></canvas>
         </div>
         <div id="budgetComparisonTable"></div>
+    </div>
+</div>
+
+<!-- =================== SUBSCRIPTIONS TAB =================== -->
+<div id="subscriptionsTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabSubscriptions">
+    <h2>Subscription Manager</h2>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card">
+            <div class="stat-label">Monthly Cost</div>
+            <div class="stat-value negative" id="subsTotalMonthly">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Annual Cost</div>
+            <div class="stat-value negative" id="subsTotalAnnual">€0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active Subscriptions</div>
+            <div class="stat-value" id="subsActiveCount">0</div>
+        </div>
+    </div>
+
+    <!-- Add Subscription Button -->
+    <div class="add-box" style="margin-bottom:16px;">
+        <button class="btn" onclick="showAddSubscriptionModal()">ADD SUBSCRIPTION</button>
+    </div>
+
+    <!-- Subscriptions List -->
+    <div id="subscriptionsList"></div>
+</div>
+
+<!-- =================== CALENDAR TAB =================== -->
+<div id="calendarTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabCalendar">
+    <h2>Financial Calendar</h2>
+
+    <!-- Month Navigation -->
+    <div class="add-box" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="btn" onclick="prevMonth()">PREV</button>
+            <h3 id="calendarMonthLabel" style="margin:0;"></h3>
+            <button class="btn" onclick="nextMonth()">NEXT</button>
+        </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div id="calendarGrid" class="calendar-grid"></div>
+
+    <!-- Legend -->
+    <div class="add-box" style="margin-top:16px;">
+        <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px;">
+            <span><span style="display:inline-block; width:12px; height:12px; background:#0f0; margin-right:4px;"></span>Income</span>
+            <span><span style="display:inline-block; width:12px; height:12px; background:#f33; margin-right:4px;"></span>Expense</span>
+            <span><span style="display:inline-block; width:12px; height:12px; background:#f90; margin-right:4px;"></span>Subscription</span>
+            <span><span style="display:inline-block; width:12px; height:12px; background:#39f; margin-right:4px;"></span>Dividend</span>
+        </div>
+    </div>
+</div>
+
+<!-- =================== ANALYTICS TAB =================== -->
+<div id="analyticsTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabAnalytics">
+    <h2>Expense Analytics</h2>
+
+    <!-- Anomaly Alerts -->
+    <div class="add-box" style="margin-bottom:20px;">
+        <h3 style="margin-top:0;">Spending Anomalies</h3>
+        <div id="anomaliesList"></div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <!-- Monthly Income vs Expenses -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Income vs Expenses</h3>
+            <div style="height:250px;">
+                <canvas id="monthlyComparisonChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Breakdown (Current Month) -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Category Breakdown</h3>
+            <div style="height:250px;">
+                <canvas id="categoryBreakdownChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Trends -->
+    <div class="add-box">
+        <h3 style="margin-top:0;">Category Trends (6 Months)</h3>
+        <div style="height:300px;">
+            <canvas id="categoryTrendsChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -946,6 +1309,7 @@
 <script src="app.js"></script>
 <script src="history-enhancements.js"></script>
 <script src="advanced-chart.js"></script>
+<script src="features.js"></script>
 
 </body>
 </html>

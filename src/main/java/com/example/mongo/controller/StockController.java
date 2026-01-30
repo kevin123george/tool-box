@@ -1,6 +1,9 @@
 package com.example.mongo.controller;
 
+import com.example.mongo.models.PortfolioTarget;
 import com.example.mongo.models.StockHolding;
+import com.example.mongo.models.dto.CapitalGainsSummaryDTO;
+import com.example.mongo.models.dto.PortfolioAllocationDTO;
 import com.example.mongo.models.dto.PortfolioStats;
 import com.example.mongo.models.dto.StockRequest;
 import com.example.mongo.services.StockService;
@@ -73,5 +76,25 @@ public class StockController {
   @GetMapping("/stats")
   public ResponseEntity<PortfolioStats> getStats() {
     return ResponseEntity.ok(service.getPortfolioStats());
+  }
+
+  @GetMapping("/capital-gains")
+  public ResponseEntity<CapitalGainsSummaryDTO> getCapitalGains() {
+    return ResponseEntity.ok(service.getCapitalGains());
+  }
+
+  @GetMapping("/allocation")
+  public ResponseEntity<PortfolioAllocationDTO> getAllocation() {
+    return ResponseEntity.ok(service.getCurrentAllocation());
+  }
+
+  @GetMapping("/allocation/target")
+  public ResponseEntity<PortfolioTarget> getTargetAllocation() {
+    return ResponseEntity.ok(service.getPortfolioTarget());
+  }
+
+  @PostMapping("/allocation/target")
+  public ResponseEntity<PortfolioTarget> setTargetAllocation(@RequestBody PortfolioTarget target) {
+    return ResponseEntity.ok(service.savePortfolioTarget(target));
   }
 }

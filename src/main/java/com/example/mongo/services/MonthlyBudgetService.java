@@ -6,6 +6,7 @@ import com.example.mongo.models.ExpenseRecord;
 import com.example.mongo.models.IncomeCategory;
 import com.example.mongo.models.IncomeRecord;
 import com.example.mongo.models.MonthlyBudget;
+import com.example.mongo.models.dto.SavingsRateDTO;
 import com.example.mongo.repos.MonthlyBudgetRepository;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -212,5 +213,32 @@ public class MonthlyBudgetService {
     }
 
     return comparisons;
+  }
+
+  public List<SavingsRateDTO> getSavingsRateHistory(int months) {
+    List<SavingsRateDTO> history = new ArrayList<>();
+    YearMonth current = YearMonth.now();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+
+    for (int i = months - 1; i >= 0; i--) {
+      YearMonth targetMonth = current.minusMonths(i);
+      var budgetOpt = monthlyBudgetRepository.findByMonth(targetMonth);
+
+      if (budgetOpt.isPresent()) {
+        MonthlyBudget budget = budgetOpt.get();
+        double income = budget.getTotalIncome();
+        double expenses = budget.getTotalExpenses();
+        double savings = income - expenses;
+        double savingsRate = income > 0 ? (savings / income) * 100 : 0;
+
+        history.add(
+            new SavingsRateDTO(
+                targetMonth.format(formatter), savingsRate, income, expenses, savings));
+      } else {
+        history.add(new SavingsRateDTO(targetMonth.format(formatter), 0, 0, 0, 0));
+      }
+    }
+
+    return history;
   }
 }

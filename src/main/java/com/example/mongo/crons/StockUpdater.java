@@ -1,6 +1,7 @@
 package com.example.mongo.crons;
 
 import com.example.mongo.repos.StockWatchRepository;
+import com.example.mongo.services.PriceAlertService;
 import com.example.mongo.services.StockService;
 import com.example.mongo.services.StockWatchService;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,13 +16,17 @@ public class StockUpdater {
 
   private final StockWatchService stockWatchService;
 
+  private final PriceAlertService priceAlertService;
+
   public StockUpdater(
       StockService stockService,
       StockWatchRepository stockWatchRepository,
-      StockWatchService stockWatchService) {
+      StockWatchService stockWatchService,
+      PriceAlertService priceAlertService) {
     this.stockService = stockService;
     this.stockWatchRepository = stockWatchRepository;
     this.stockWatchService = stockWatchService;
+    this.priceAlertService = priceAlertService;
   }
 
   @Scheduled(fixedDelay = 10000)
@@ -34,6 +39,12 @@ public class StockUpdater {
   public void updatedWatcher() {
     System.out.println("Running watchlist price update cron job...");
     stockWatchRepository.findDistinctStockSymbols().forEach(stockWatchService::recordCurrentPrice);
+  }
+
+  @Scheduled(fixedDelay = 60000)
+  public void checkPriceAlerts() {
+    System.out.println("Checking price alerts...");
+    priceAlertService.checkAlerts();
   }
 }
 
