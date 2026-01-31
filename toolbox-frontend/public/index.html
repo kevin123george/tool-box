@@ -716,7 +716,7 @@
             <h3 style="margin:0;">Portfolio Allocation</h3>
             <button class="btn" onclick="showSetTargetModal()">SET TARGET</button>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
             <div style="height:250px;">
                 <canvas id="allocationChart"></canvas>
             </div>
@@ -737,7 +737,7 @@
 
     <!-- Control Panel -->
     <div class="add-box" style="margin-bottom:16px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; align-items:end;">
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; align-items:end;">
             <div>
                 <label class="control-label">Symbol</label>
                 <select id="histStockFilter" onchange="loadAdvancedChart()" style="margin-top:4px;">
@@ -1245,7 +1245,7 @@
     </div>
 
     <!-- Charts Grid -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+    <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
         <!-- Monthly Income vs Expenses -->
         <div class="add-box">
             <h3 style="margin-top:0;">Income vs Expenses</h3>

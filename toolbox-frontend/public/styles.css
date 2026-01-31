@@ -411,12 +411,463 @@ input, textarea, select {
    RESPONSIVE
    ========================= */
 
-@media (max-width:768px) {
-    .stock-row {
-        grid-template-columns:1fr 60px 60px;
-        font-size:11px;
+/* Finance grid - used for 2-column layouts */
+.finance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
-    .hide-mobile { display:none; }
+
+    .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Mobile landscape / large phones */
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    h1 {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .stock-row {
+        grid-template-columns: 1fr 60px 60px;
+        font-size: 11px;
+    }
+
+    .hide-mobile { display: none; }
+
+    /* Stack 2-column grids */
+    .finance-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Stats grid - 2 columns on tablet */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stock-metrics,
+    .portfolio-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Tabs - horizontal scroll */
+    .tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab {
+        padding: 8px 10px;
+        font-size: 11px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    /* Modal adjustments */
+    .modal {
+        width: 95vw;
+        max-width: 95vw;
+        padding: 14px;
+        max-height: 90vh;
+    }
+
+    /* Calendar grid */
+    .calendar-day {
+        min-height: 60px;
+        padding: 2px;
+        font-size: 10px;
+    }
+
+    .calendar-event {
+        font-size: 8px;
+        padding: 1px 2px;
+    }
+
+    /* Chart containers */
+    .chart-container {
+        min-height: 250px;
+    }
+
+    /* Toast notifications */
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+
+    .toast {
+        min-width: auto;
+        width: 100%;
+    }
+
+    /* Crosshair info panel */
+    .crosshair-info {
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    /* Chart legend */
+    .chart-legend {
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 10px;
+    }
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    h1 {
+        font-size: 13px;
+        padding-right: 80px; /* Space for mode toggle */
+    }
+
+    h2 {
+        font-size: 12px;
+    }
+
+    /* Mode toggle */
+    #modeToggle {
+        top: 8px;
+        right: 8px;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+
+    /* Single column for all grids */
+    .stats-grid,
+    .stock-metrics,
+    .portfolio-summary,
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-value,
+    .metric-value,
+    .summary-value {
+        font-size: 16px;
+    }
+
+    /* Buttons - larger touch targets */
+    .btn {
+        padding: 10px 14px;
+        font-size: 12px;
+        min-height: 44px;
+    }
+
+    /* Card actions wrap */
+    .card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .card-actions {
+        margin-top: 8px;
+        justify-content: flex-end;
+    }
+
+    /* Inputs - larger touch targets */
+    input, textarea, select {
+        padding: 12px;
+        font-size: 16px; /* Prevents iOS zoom */
+        min-height: 44px;
+    }
+
+    /* Pagination */
+    .pagination {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .pagination-controls {
+        justify-content: center;
+    }
+
+    /* Stock rows - minimal columns */
+    .stock-row {
+        grid-template-columns: 1fr 50px;
+        gap: 4px;
+        padding: 6px;
+        font-size: 10px;
+    }
+
+    /* Add box */
+    .add-box {
+        padding: 10px;
+    }
+
+    /* View blocks */
+    .view-block {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    /* Calendar - show fewer days info */
+    .calendar-header > div {
+        padding: 6px 2px;
+        font-size: 9px;
+    }
+
+    .calendar-day {
+        min-height: 50px;
+    }
+
+    .calendar-day-number {
+        font-size: 11px;
+    }
+
+    .calendar-event {
+        display: none;
+    }
+
+    .calendar-event:first-child {
+        display: block;
+    }
+
+    .calendar-event-more {
+        font-size: 8px;
+    }
+
+    /* Quill editor */
+    .ql-editor {
+        min-height: 80px;
+        font-size: 14px;
+    }
+
+    /* News items */
+    .news-title {
+        font-size: 11px;
+    }
+
+    .news-meta {
+        font-size: 9px;
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 24px 12px;
+    }
+
+    .empty-state-icon {
+        font-size: 36px;
+    }
+
+    /* Stock analysis cards */
+    .stock-analysis-card {
+        padding: 10px;
+    }
+
+    .stock-symbol {
+        font-size: 14px;
+    }
+
+    .stock-return {
+        font-size: 13px;
+    }
+
+    /* Indicator toggles */
+    .indicator-toggle {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    /* Crosshair - hide on very small screens */
+    .crosshair-info {
+        display: none;
+    }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .tab {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Remove hover effects that don't work well on touch */
+    .news-item:hover {
+        opacity: 1;
+    }
+
+    .indicator-toggle:hover {
+        background: transparent;
+    }
+
+    /* Active states for touch feedback */
+    .btn:active {
+        background: var(--text);
+        color: var(--bg);
+    }
+
+    .tab:active {
+        background: var(--text);
+        color: var(--bg);
+    }
+}
+
+/* =========================
+   INLINE STYLE OVERRIDES
+   Override inline grid-template-columns on mobile
+   ========================= */
+
+@media (max-width: 768px) {
+    /* Override all inline 2-column grids */
+    [style*="grid-template-columns:1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Override 4-column grids */
+    [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Single column for 4-column grids on small mobile */
+    [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Reduce fixed heights on charts for mobile */
+    [style*="height:400px"],
+    [style*="height: 400px"] {
+        height: 250px !important;
+    }
+
+    [style*="height:250px"],
+    [style*="height: 250px"] {
+        height: 200px !important;
+    }
+
+    [style*="height:200px"],
+    [style*="height: 200px"] {
+        height: 180px !important;
+    }
+}
+
+/* =========================
+   MEMO LAYOUT MOBILE
+   ========================= */
+
+@media (max-width: 768px) {
+    .memo-layout {
+        grid-template-columns: 1fr !important;
+    }
+
+    .memo-layout > div:first-child {
+        order: 2; /* Move add form below list on mobile */
+    }
+
+    .memo-layout > div:last-child {
+        order: 1;
+    }
+}
+
+/* =========================
+   UTILITY CLASSES FOR MOBILE
+   ========================= */
+
+.mobile-full-width {
+    width: 100% !important;
+}
+
+.mobile-stack {
+    flex-direction: column !important;
+}
+
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* =========================
+   SAFE AREA INSETS (notch support)
+   ========================= */
+
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    .modal {
+        padding-bottom: max(18px, env(safe-area-inset-bottom));
+    }
+}
+
+/* =========================
+   LANDSCAPE MOBILE
+   ========================= */
+
+@media (max-width: 896px) and (orientation: landscape) {
+    .modal {
+        max-height: 85vh;
+    }
+
+    .calendar-day {
+        min-height: 40px;
+    }
+
+    /* Keep 2 columns in landscape */
+    .stats-grid,
+    .stock-metrics,
+    .portfolio-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    [style*="grid-template-columns:1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr 1fr !important;
+    }
 }
 
 .stock-symbol-bar {
@@ -1153,4 +1604,108 @@ textarea:focus,
 
 .anomaly-card strong {
     color: #f90;
+}
+
+/* =========================
+   BUTTON & CONTROL GROUPS MOBILE
+   ========================= */
+
+@media (max-width: 480px) {
+    /* Make button groups stack on small mobile */
+    [style*="display:flex"][style*="gap:8px"],
+    [style*="display: flex"][style*="gap: 8px"] {
+        flex-direction: column;
+    }
+
+    /* Keep small gap flex inline */
+    [style*="gap:4px"],
+    [style*="gap: 4px"] {
+        flex-direction: row !important;
+    }
+
+    /* Full width buttons in stacked layouts */
+    [style*="display:flex"][style*="gap:8px"] > .btn,
+    [style*="display: flex"][style*="gap: 8px"] > .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* =========================
+   FORM LAYOUT MOBILE
+   ========================= */
+
+@media (max-width: 768px) {
+    /* Form elements in flex containers */
+    [style*="display:flex"][style*="align-items:center"] {
+        flex-wrap: wrap;
+    }
+
+    /* Date/time pickers */
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"] {
+        min-height: 44px;
+    }
+}
+
+/* =========================
+   TABLE-LIKE LAYOUTS MOBILE
+   ========================= */
+
+@media (max-width: 480px) {
+    /* Budget plan inputs - keep 2 columns but smaller */
+    .add-box [style*="grid-template-columns:1fr 1fr"][style*="gap:4px"] {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .add-box [style*="grid-template-columns:1fr 1fr"][style*="gap:4px"] input {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+/* =========================
+   SCROLL CONTAINERS
+   ========================= */
+
+.scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    /* Horizontal scroll for tables on mobile */
+    .stock-row:not(.stock-header) {
+        position: relative;
+    }
+
+    /* Scrollable news */
+    .news-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+}
+
+/* =========================
+   PRINT STYLES
+   ========================= */
+
+@media print {
+    .tabs,
+    #modeToggle,
+    .btn,
+    .toast-container,
+    .loading-overlay {
+        display: none !important;
+    }
+
+    .tab-content {
+        display: block !important;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
 }
