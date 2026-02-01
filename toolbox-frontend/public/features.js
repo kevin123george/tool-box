@@ -1195,9 +1195,15 @@ function renderCalendar() {
                 <div class="calendar-day-number">${day}</div>
                 <div class="calendar-events">
                     ${dayEvents.slice(0, 3).map(e => {
-                        const color = getEventColor(e.type);
-                        return `<div class="calendar-event" style="background:${color};" title="${e.title}: €${e.amount.toFixed(2)}">
-                            ${e.title.substring(0, 10)}
+                        const color = getEventColor(e.type, e.completed);
+                        const titleText = e.type === 'WORKOUT'
+                            ? `${e.title}${e.completed ? ' ✓' : ''} (${e.amount} min)`
+                            : `${e.title}: €${e.amount.toFixed(2)}`;
+                        const displayText = e.type === 'WORKOUT'
+                            ? `${e.completed ? '✓' : '○'} ${e.title.substring(0, 8)}`
+                            : e.title.substring(0, 10);
+                        return `<div class="calendar-event" style="background:${color};" title="${titleText}">
+                            ${displayText}
                         </div>`;
                     }).join('')}
                     ${dayEvents.length > 3 ? `<div class="calendar-event-more">+${dayEvents.length - 3} more</div>` : ''}
@@ -1210,12 +1216,13 @@ function renderCalendar() {
     container.innerHTML = html;
 }
 
-function getEventColor(type) {
+function getEventColor(type, completed) {
     switch (type) {
         case 'INCOME': return '#0f0';
         case 'EXPENSE': return '#f33';
         case 'SUBSCRIPTION': return '#f90';
         case 'DIVIDEND': return '#39f';
+        case 'WORKOUT': return completed ? '#0f0' : '#f90';
         default: return '#888';
     }
 }

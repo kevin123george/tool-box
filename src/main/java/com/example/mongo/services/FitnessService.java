@@ -2,14 +2,25 @@ package com.example.mongo.services;
 
 import com.example.mongo.models.WeightEntry;
 import com.example.mongo.models.WorkoutLog;
+import com.example.mongo.models.WorkoutPlan;
+import com.example.mongo.models.WorkoutTemplate;
+import com.example.mongo.models.dto.FitnessAnalyticsDTO;
 import com.example.mongo.models.dto.FitnessStats;
 import com.example.mongo.repos.WeightEntryRepository;
 import com.example.mongo.repos.WorkoutLogRepository;
+import com.example.mongo.repos.WorkoutPlanRepository;
+import com.example.mongo.repos.WorkoutTemplateRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,6 +33,8 @@ public class FitnessService {
 
   @Autowired private WorkoutLogRepository workoutLogRepository;
   @Autowired private WeightEntryRepository weightEntryRepository;
+  @Autowired private WorkoutTemplateRepository workoutTemplateRepository;
+  @Autowired private WorkoutPlanRepository workoutPlanRepository;
 
   // ===== WORKOUT METHODS =====
 
@@ -216,5 +229,197 @@ public class FitnessService {
     }
 
     return Math.max(longestStreak, currentStreak);
+  }
+
+  // ===== TEMPLATE METHODS =====
+
+  public WorkoutTemplate createTemplate(WorkoutTemplate template) {
+    return workoutTemplateRepository.save(template);
+  }
+
+  public List<WorkoutTemplate> getAllTemplates() {
+    return workoutTemplateRepository.findAllByOrderByNameAsc();
+  }
+
+  public Optional<WorkoutTemplate> getTemplateById(String id) {
+    return workoutTemplateRepository.findById(id);
+  }
+
+  public WorkoutTemplate updateTemplate(String id, WorkoutTemplate templateDetails) {
+    return workoutTemplateRepository
+        .findById(id)
+        .map(
+            template -> {
+              template.setName(templateDetails.getName());
+              template.setExerciseType(templateDetails.getExerciseType());
+              template.setExercises(templateDetails.getExercises());
+              template.setEstimatedDuration(templateDetails.getEstimatedDuration());
+              template.setNotes(templateDetails.getNotes());
+              return workoutTemplateRepository.save(template);
+            })
+        .orElse(null);
+  }
+
+  public void deleteTemplate(String id) {
+    workoutTemplateRepository.deleteById(id);
+  }
+
+  // ===== PLAN METHODS =====
+
+  public WorkoutPlan createPlan(WorkoutPlan plan) {
+    // If this plan is set to active, deactivate others
+    if (plan.isActive()) {
+      deactivateAllPlans();
+    }
+    return workoutPlanRepository.save(plan);
+  }
+
+  public List<WorkoutPlan> getAllPlans() {
+    return workoutPlanRepository.findAllByOrderByNameAsc();
+  }
+
+  public Optional<WorkoutPlan> getPlanById(String id) {
+    return workoutPlanRepository.findById(id);
+  }
+
+  public Optional<WorkoutPlan> getActivePlan() {
+    return workoutPlanRepository.findByActiveTrue();
+  }
+
+  public WorkoutPlan updatePlan(String id, WorkoutPlan planDetails) {
+    return workoutPlanRepository
+        .findById(id)
+        .map(
+            plan -> {
+              plan.setName(planDetails.getName());
+              plan.setSchedule(planDetails.getSchedule());
+              plan.setNotes(planDetails.getNotes());
+              // Handle active state change
+              if (planDetails.isActive() && !plan.isActive()) {
+                deactivateAllPlans();
+              }
+              plan.setActive(planDetails.isActive());
+              return workoutPlanRepository.save(plan);
+            })
+        .orElse(null);
+  }
+
+  public void setActivePlan(String planId) {
+    deactivateAllPlans();
+    workoutPlanRepository
+        .findById(planId)
+        .ifPresent(
+            plan -> {
+              plan.setActive(true);
+              workoutPlanRepository.save(plan);
+            });
+  }
+
+  public void deletePlan(String id) {
+    workoutPlanRepository.deleteById(id);
+  }
+
+  private void deactivateAllPlans() {
+    List<WorkoutPlan> allPlans = workoutPlanRepository.findAll();
+    for (WorkoutPlan plan : allPlans) {
+      if (plan.isActive()) {
+        plan.setActive(false);
+        workoutPlanRepository.save(plan);
+      }
+    }
+  }
+
+  // ===== QUICK LOG FROM TEMPLATE =====
+
+  public WorkoutLog logFromTemplate(String templateId, LocalDate date) {
+    Optional<WorkoutTemplate> templateOpt = workoutTemplateRepository.findById(templateId);
+    if (templateOpt.isEmpty()) {
+      return null;
+    }
+
+    WorkoutTemplate template = templateOpt.get();
+    WorkoutLog workout = new WorkoutLog();
+    workout.setWorkoutDate(date);
+    workout.setDayOfWeek(date.getDayOfWeek());
+    workout.setExerciseType(template.getExerciseType());
+    workout.setDurationMinutes(template.getEstimatedDuration());
+    workout.setExercises(new ArrayList<>(template.getExercises()));
+    workout.setNotes("From template: " + template.getName());
+    workout.setCompleted(false);
+
+    return workoutLogRepository.save(workout);
+  }
+
+  // ===== ANALYTICS METHODS =====
+
+  public FitnessAnalyticsDTO getAnalytics(int weeks) {
+    FitnessAnalyticsDTO analytics = new FitnessAnalyticsDTO();
+
+    LocalDate endDate = LocalDate.now();
+    LocalDate startDate = endDate.minusWeeks(weeks);
+    List<WorkoutLog> workouts =
+        workoutLogRepository.findByWorkoutDateBetween(startDate, endDate);
+
+    // Workouts by type
+    Map<String, Integer> byType = new HashMap<>();
+    for (WorkoutLog w : workouts) {
+      if (w.getExerciseType() != null && w.isCompleted()) {
+        String type = w.getExerciseType().name();
+        byType.put(type, byType.getOrDefault(type, 0) + 1);
+      }
+    }
+    analytics.setWorkoutsByType(byType);
+
+    // Weekly volume
+    Map<String, FitnessAnalyticsDTO.WeeklyVolume> weeklyMap = new LinkedHashMap<>();
+    WeekFields weekFields = WeekFields.of(Locale.getDefault());
+
+    for (int i = weeks - 1; i >= 0; i--) {
+      LocalDate weekDate = endDate.minusWeeks(i);
+      int year = weekDate.getYear();
+      int week = weekDate.get(weekFields.weekOfWeekBasedYear());
+      String label = String.format("%d-W%02d", year, week);
+      weeklyMap.put(label, new FitnessAnalyticsDTO.WeeklyVolume(label, 0, 0));
+    }
+
+    for (WorkoutLog w : workouts) {
+      if (w.getWorkoutDate() != null && w.isCompleted()) {
+        int year = w.getWorkoutDate().getYear();
+        int week = w.getWorkoutDate().get(weekFields.weekOfWeekBasedYear());
+        String label = String.format("%d-W%02d", year, week);
+        FitnessAnalyticsDTO.WeeklyVolume vol = weeklyMap.get(label);
+        if (vol != null) {
+          vol.setWorkoutCount(vol.getWorkoutCount() + 1);
+          vol.setTotalMinutes(
+              vol.getTotalMinutes() + (w.getDurationMinutes() != null ? w.getDurationMinutes() : 0));
+        }
+      }
+    }
+    analytics.setWeeklyVolume(new ArrayList<>(weeklyMap.values()));
+
+    // Average workouts per week
+    long completedCount = workouts.stream().filter(WorkoutLog::isCompleted).count();
+    double avgPerWeek = weeks > 0 ? (double) completedCount / weeks : 0;
+    analytics.setAverageWorkoutsPerWeek(Math.round(avgPerWeek * 10) / 10.0);
+
+    // Consistency score (percentage of weeks with at least 3 workouts)
+    long goodWeeks =
+        weeklyMap.values().stream().filter(v -> v.getWorkoutCount() >= 3).count();
+    int consistency = weeks > 0 ? (int) ((goodWeeks * 100) / weeks) : 0;
+    analytics.setConsistencyScore(consistency);
+
+    return analytics;
+  }
+
+  public Map<String, Integer> getWorkoutsByType() {
+    List<WorkoutLog> workouts = workoutLogRepository.findByCompletedTrueOrderByWorkoutDateDesc();
+    Map<String, Integer> byType = new HashMap<>();
+    for (WorkoutLog w : workouts) {
+      if (w.getExerciseType() != null) {
+        String type = w.getExerciseType().name();
+        byType.put(type, byType.getOrDefault(type, 0) + 1);
+      }
+    }
+    return byType;
   }
 }

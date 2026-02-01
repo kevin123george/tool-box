@@ -3,7 +3,9 @@ package com.example.mongo.services;
 import com.example.mongo.models.DividendRecord;
 import com.example.mongo.models.RecurringTransaction;
 import com.example.mongo.models.Subscription;
+import com.example.mongo.models.WorkoutLog;
 import com.example.mongo.models.dto.CalendarEventDTO;
+import com.example.mongo.repos.WorkoutLogRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,8 @@ public class FinancialCalendarService {
   @Autowired private SubscriptionService subscriptionService;
 
   @Autowired private DividendService dividendService;
+
+  @Autowired private WorkoutLogRepository workoutLogRepository;
 
   public List<CalendarEventDTO> getEventsForMonth(int year, int month) {
     List<CalendarEventDTO> events = new ArrayList<>();
@@ -72,6 +76,28 @@ public class FinancialCalendarService {
                 div.getAmount(),
                 "DIVIDEND",
                 "Dividend"));
+      }
+    }
+
+    // Add workouts
+    List<WorkoutLog> workouts = workoutLogRepository.findByWorkoutDateBetween(start, end);
+    for (WorkoutLog workout : workouts) {
+      if (workout.getWorkoutDate() != null) {
+        String exerciseType =
+            workout.getExerciseType() != null
+                ? workout.getExerciseType().name().replace("_", " ")
+                : "Workout";
+        CalendarEventDTO event =
+            new CalendarEventDTO(
+                workout.getWorkoutDate().getDayOfMonth(),
+                exerciseType,
+                workout.getDurationMinutes() != null ? workout.getDurationMinutes() : 0,
+                "WORKOUT",
+                "Fitness");
+        event.setSubType(
+            workout.getExerciseType() != null ? workout.getExerciseType().name() : null);
+        event.setCompleted(workout.isCompleted());
+        events.add(event);
       }
     }
 

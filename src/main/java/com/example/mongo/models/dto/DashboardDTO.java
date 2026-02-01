@@ -27,4 +27,10 @@ public class DashboardDTO {
   private double goalTarget;
   private double goalProgress;
   private Integer goalFireAge;
+
+  // Fitness
+  private int fitnessCurrentStreak;
+  private int fitnessThisWeek;
+  private Double currentWeight;
+  private Double weightChange;
 }

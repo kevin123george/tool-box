@@ -209,6 +209,29 @@ async function loadDashboardFallback() {
             document.getElementById('dashGoalBar').style.width = Math.min(progress, 100) + '%';
             document.getElementById('dashGoalPercent').textContent = progress.toFixed(1) + '%';
         }
+
+        // Fitness data
+        try {
+            const fitnessRes = await fetch(`${API}/api/fitness/stats`);
+            if (fitnessRes.ok) {
+                const fitnessData = await fitnessRes.json();
+                document.getElementById('dashFitnessStreak').textContent = (fitnessData.currentStreak || 0) + ' days';
+                document.getElementById('dashFitnessWeek').textContent = (fitnessData.thisWeekWorkouts || 0) + ' workouts';
+
+                const weightChangeEl = document.getElementById('dashWeightChange');
+                if (fitnessData.weightChange != null) {
+                    const change = fitnessData.weightChange;
+                    weightChangeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(1) + ' kg';
+                    weightChangeEl.className = 'stat-value ' + (change <= 0 ? 'positive' : 'negative');
+                }
+            }
+
+            const weightRes = await fetch(`${API}/api/fitness/weight/latest`);
+            if (weightRes.ok) {
+                const weightData = await weightRes.json();
+                document.getElementById('dashCurrentWeight').textContent = weightData.weight.toFixed(1) + ' kg';
+            }
+        } catch (e) { console.error('Fitness fetch error:', e); }
     } catch (e) {
         console.error("Failed to load dashboard fallback:", e);
         showToast("Failed to load dashboard data", "error");
@@ -246,6 +269,21 @@ function renderDashboard(data) {
     const progress = data.goalProgress || 0;
     document.getElementById('dashGoalBar').style.width = Math.min(progress, 100) + '%';
     document.getElementById('dashGoalPercent').textContent = progress.toFixed(1) + '%';
+
+    // Fitness
+    document.getElementById('dashFitnessStreak').textContent = (data.fitnessCurrentStreak || 0) + ' days';
+    document.getElementById('dashFitnessWeek').textContent = (data.fitnessThisWeek || 0) + ' workouts';
+    document.getElementById('dashCurrentWeight').textContent = data.currentWeight ? data.currentWeight.toFixed(1) + ' kg' : '-- kg';
+
+    const weightChangeEl = document.getElementById('dashWeightChange');
+    if (data.weightChange != null) {
+        const change = data.weightChange;
+        weightChangeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(1) + ' kg';
+        weightChangeEl.className = 'stat-value ' + (change <= 0 ? 'positive' : 'negative');
+    } else {
+        weightChangeEl.textContent = '-- kg';
+        weightChangeEl.className = 'stat-value';
+    }
 }
 
 /* ===========================================================
@@ -2940,8 +2978,13 @@ async function loadFitnessTab() {
         loadFitnessStats(),
         loadWeeklyWorkouts(),
         loadWeightData(),
-        loadWorkoutHistory()
+        loadWorkoutHistory(),
+        loadTemplates(),
+        loadFitnessAnalytics()
     ]);
+
+    // Load plans after templates (needs template cache)
+    await loadPlans();
 }
 
 async function loadFitnessStats() {
@@ -3315,4 +3358,476 @@ async function deleteWorkout(id) {
         console.error('Failed to delete workout:', e);
         showToast('Failed to delete workout', 'error');
     }
+}
+
+/* ===========================================================
+   FITNESS TEMPLATES
+=============================================================*/
+
+let templatesCache = [];
+
+async function loadTemplates() {
+    try {
+        const res = await fetch(`${API}/api/fitness/templates`);
+        if (!res.ok) throw new Error('Failed to load templates');
+        templatesCache = await res.json();
+
+        const container = document.getElementById('templatesList');
+        if (!templatesCache.length) {
+            container.innerHTML = '<div style="opacity:0.5; padding:12px;">No templates yet. Create one to get started.</div>';
+            return;
+        }
+
+        container.innerHTML = templatesCache.map(t => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px;">
+                <div>
+                    <div style="font-weight:bold;">${t.name}</div>
+                    <div style="font-size:12px; opacity:0.7;">
+                        ${t.exerciseType ? t.exerciseType.replace('_', ' ') : 'Unknown'}
+                        ${t.estimatedDuration ? `• ${t.estimatedDuration} min` : ''}
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn" onclick="quickLogFromTemplate('${t.id}')" style="padding:4px 8px; font-size:11px;">LOG TODAY</button>
+                    <button class="btn" onclick="editTemplate('${t.id}')" style="padding:4px 8px; font-size:11px;">EDIT</button>
+                    <button class="btn" onclick="deleteTemplate('${t.id}')" style="padding:4px 8px; font-size:11px;">DEL</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Update plan dropdowns
+        updatePlanTemplateDropdowns();
+    } catch (e) {
+        console.error('Failed to load templates:', e);
+    }
+}
+
+function updatePlanTemplateDropdowns() {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    days.forEach(day => {
+        const select = document.getElementById(`plan${day}`);
+        if (select) {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Rest</option>' +
+                templatesCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            select.value = currentVal;
+        }
+    });
+}
+
+function showAddTemplateModal() {
+    document.getElementById('templateModalTitle').textContent = 'Add Template';
+    document.getElementById('editTemplateId').value = '';
+    document.getElementById('templateName').value = '';
+    document.getElementById('templateType').value = 'PUSH';
+    document.getElementById('templateDuration').value = '';
+    document.getElementById('templateNotes').value = '';
+    openModal('templateModal');
+}
+
+async function editTemplate(id) {
+    try {
+        const res = await fetch(`${API}/api/fitness/templates/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch template');
+        const template = await res.json();
+
+        document.getElementById('templateModalTitle').textContent = 'Edit Template';
+        document.getElementById('editTemplateId').value = template.id;
+        document.getElementById('templateName').value = template.name || '';
+        document.getElementById('templateType').value = template.exerciseType || 'PUSH';
+        document.getElementById('templateDuration').value = template.estimatedDuration || '';
+        document.getElementById('templateNotes').value = template.notes || '';
+
+        openModal('templateModal');
+    } catch (e) {
+        console.error('Failed to load template:', e);
+        showToast('Failed to load template', 'error');
+    }
+}
+
+async function saveTemplate() {
+    const id = document.getElementById('editTemplateId').value;
+    const name = document.getElementById('templateName').value;
+    const exerciseType = document.getElementById('templateType').value;
+    const duration = document.getElementById('templateDuration').value;
+    const notes = document.getElementById('templateNotes').value;
+
+    if (!name) {
+        showToast('Please enter a template name', 'error');
+        return;
+    }
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API}/api/fitness/templates/${id}` : `${API}/api/fitness/templates`;
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                exerciseType,
+                estimatedDuration: duration ? parseInt(duration) : null,
+                notes: notes || null
+            })
+        });
+
+        if (!res.ok) throw new Error('Failed to save template');
+
+        closeModal('templateModal');
+        showToast(id ? 'Template updated' : 'Template created', 'success');
+        await loadTemplates();
+    } catch (e) {
+        console.error('Failed to save template:', e);
+        showToast('Failed to save template', 'error');
+    }
+}
+
+async function deleteTemplate(id) {
+    if (!confirm('Delete this template?')) return;
+
+    try {
+        const res = await fetch(`${API}/api/fitness/templates/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete template');
+
+        showToast('Template deleted', 'success');
+        await loadTemplates();
+    } catch (e) {
+        console.error('Failed to delete template:', e);
+        showToast('Failed to delete template', 'error');
+    }
+}
+
+async function quickLogFromTemplate(templateId) {
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts/from-template/${templateId}`, {
+            method: 'POST'
+        });
+
+        if (!res.ok) throw new Error('Failed to log workout');
+
+        showToast('Workout logged from template', 'success');
+
+        await Promise.all([
+            loadFitnessStats(),
+            loadWeeklyWorkouts(),
+            loadWorkoutHistory()
+        ]);
+    } catch (e) {
+        console.error('Failed to log from template:', e);
+        showToast('Failed to log workout', 'error');
+    }
+}
+
+/* ===========================================================
+   FITNESS PLANS
+=============================================================*/
+
+async function loadPlans() {
+    try {
+        const res = await fetch(`${API}/api/fitness/plans`);
+        if (!res.ok) throw new Error('Failed to load plans');
+        const plans = await res.json();
+
+        // Show active plan
+        const activeDisplay = document.getElementById('activePlanDisplay');
+        const activePlan = plans.find(p => p.active);
+        if (activePlan) {
+            const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+            const schedule = days.map(day => {
+                const templateId = activePlan.schedule[day];
+                const template = templatesCache.find(t => t.id === templateId);
+                return template ? template.name : 'Rest';
+            });
+            activeDisplay.innerHTML = `
+                <div style="border:1px solid #0f0; padding:12px; background:rgba(0,255,0,0.05);">
+                    <div style="font-weight:bold; color:#0f0; margin-bottom:8px;">Active: ${activePlan.name}</div>
+                    <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; font-size:11px; text-align:center;">
+                        ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) =>
+                            `<div><div style="opacity:0.7;">${d}</div><div>${schedule[i]}</div></div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            activeDisplay.innerHTML = '<div style="opacity:0.5; font-size:12px;">No active plan. Create and activate a plan.</div>';
+        }
+
+        // Show all plans
+        const container = document.getElementById('plansList');
+        if (!plans.length) {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = plans.map(p => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px;">
+                <div>
+                    <div style="font-weight:bold;">${p.name} ${p.active ? '<span style="color:#0f0;">(Active)</span>' : ''}</div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    ${!p.active ? `<button class="btn" onclick="activatePlan('${p.id}')" style="padding:4px 8px; font-size:11px;">ACTIVATE</button>` : ''}
+                    <button class="btn" onclick="editPlan('${p.id}')" style="padding:4px 8px; font-size:11px;">EDIT</button>
+                    <button class="btn" onclick="deletePlan('${p.id}')" style="padding:4px 8px; font-size:11px;">DEL</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Failed to load plans:', e);
+    }
+}
+
+function showAddPlanModal() {
+    document.getElementById('planModalTitle').textContent = 'Add Plan';
+    document.getElementById('editPlanId').value = '';
+    document.getElementById('planName').value = '';
+    document.getElementById('planActive').checked = false;
+    document.getElementById('planNotes').value = '';
+
+    // Reset dropdowns
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    days.forEach(day => {
+        const select = document.getElementById(`plan${day}`);
+        if (select) select.value = '';
+    });
+
+    updatePlanTemplateDropdowns();
+    openModal('planModal');
+}
+
+async function editPlan(id) {
+    try {
+        const res = await fetch(`${API}/api/fitness/plans/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch plan');
+        const plan = await res.json();
+
+        document.getElementById('planModalTitle').textContent = 'Edit Plan';
+        document.getElementById('editPlanId').value = plan.id;
+        document.getElementById('planName').value = plan.name || '';
+        document.getElementById('planActive').checked = plan.active;
+        document.getElementById('planNotes').value = plan.notes || '';
+
+        updatePlanTemplateDropdowns();
+
+        // Set schedule
+        const dayMap = {
+            'MONDAY': 'Monday', 'TUESDAY': 'Tuesday', 'WEDNESDAY': 'Wednesday',
+            'THURSDAY': 'Thursday', 'FRIDAY': 'Friday', 'SATURDAY': 'Saturday', 'SUNDAY': 'Sunday'
+        };
+        Object.entries(plan.schedule || {}).forEach(([day, templateId]) => {
+            const select = document.getElementById(`plan${dayMap[day]}`);
+            if (select) select.value = templateId || '';
+        });
+
+        openModal('planModal');
+    } catch (e) {
+        console.error('Failed to load plan:', e);
+        showToast('Failed to load plan', 'error');
+    }
+}
+
+async function savePlan() {
+    const id = document.getElementById('editPlanId').value;
+    const name = document.getElementById('planName').value;
+    const active = document.getElementById('planActive').checked;
+    const notes = document.getElementById('planNotes').value;
+
+    if (!name) {
+        showToast('Please enter a plan name', 'error');
+        return;
+    }
+
+    // Build schedule
+    const schedule = {};
+    const dayMap = {
+        'Monday': 'MONDAY', 'Tuesday': 'TUESDAY', 'Wednesday': 'WEDNESDAY',
+        'Thursday': 'THURSDAY', 'Friday': 'FRIDAY', 'Saturday': 'SATURDAY', 'Sunday': 'SUNDAY'
+    };
+    Object.entries(dayMap).forEach(([jsDay, javaDay]) => {
+        const select = document.getElementById(`plan${jsDay}`);
+        if (select && select.value) {
+            schedule[javaDay] = select.value;
+        }
+    });
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API}/api/fitness/plans/${id}` : `${API}/api/fitness/plans`;
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, schedule, active, notes: notes || null })
+        });
+
+        if (!res.ok) throw new Error('Failed to save plan');
+
+        closeModal('planModal');
+        showToast(id ? 'Plan updated' : 'Plan created', 'success');
+        await loadPlans();
+    } catch (e) {
+        console.error('Failed to save plan:', e);
+        showToast('Failed to save plan', 'error');
+    }
+}
+
+async function activatePlan(id) {
+    try {
+        const res = await fetch(`${API}/api/fitness/plans/${id}/activate`, { method: 'PUT' });
+        if (!res.ok) throw new Error('Failed to activate plan');
+
+        showToast('Plan activated', 'success');
+        await loadPlans();
+    } catch (e) {
+        console.error('Failed to activate plan:', e);
+        showToast('Failed to activate plan', 'error');
+    }
+}
+
+async function deletePlan(id) {
+    if (!confirm('Delete this plan?')) return;
+
+    try {
+        const res = await fetch(`${API}/api/fitness/plans/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete plan');
+
+        showToast('Plan deleted', 'success');
+        await loadPlans();
+    } catch (e) {
+        console.error('Failed to delete plan:', e);
+        showToast('Failed to delete plan', 'error');
+    }
+}
+
+/* ===========================================================
+   FITNESS ANALYTICS
+=============================================================*/
+
+let workoutTypeChart = null;
+let weeklyVolumeChart = null;
+
+async function loadFitnessAnalytics() {
+    try {
+        const res = await fetch(`${API}/api/fitness/analytics?weeks=12`);
+        if (!res.ok) throw new Error('Failed to load analytics');
+        const analytics = await res.json();
+
+        // Update consistency score
+        document.getElementById('consistencyScore').textContent = analytics.consistencyScore + '%';
+        document.getElementById('avgWorkoutsPerWeek').textContent = analytics.averageWorkoutsPerWeek.toFixed(1);
+
+        // Render charts
+        renderWorkoutTypeChart(analytics.workoutsByType);
+        renderWeeklyVolumeChart(analytics.weeklyVolume);
+    } catch (e) {
+        console.error('Failed to load fitness analytics:', e);
+    }
+}
+
+function renderWorkoutTypeChart(data) {
+    const ctx = document.getElementById('workoutTypeChart')?.getContext('2d');
+    if (!ctx) return;
+
+    const labels = Object.keys(data).map(k => k.replace('_', ' '));
+    const values = Object.values(data);
+    const colors = ['#0f0', '#39f', '#f90', '#f33', '#90f', '#0ff', '#ff0'];
+
+    if (workoutTypeChart) {
+        workoutTypeChart.destroy();
+    }
+
+    workoutTypeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors.slice(0, labels.length),
+                borderColor: '#000',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#fff',
+                        font: { size: 10 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderWeeklyVolumeChart(data) {
+    const ctx = document.getElementById('weeklyVolumeChart')?.getContext('2d');
+    if (!ctx) return;
+
+    const labels = data.map(d => d.weekLabel.split('-W')[1] ? 'W' + d.weekLabel.split('-W')[1] : d.weekLabel);
+    const workouts = data.map(d => d.workoutCount);
+    const minutes = data.map(d => d.totalMinutes);
+
+    if (weeklyVolumeChart) {
+        weeklyVolumeChart.destroy();
+    }
+
+    weeklyVolumeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Workouts',
+                data: workouts,
+                backgroundColor: '#0f0',
+                borderColor: '#0f0',
+                borderWidth: 1,
+                yAxisID: 'y'
+            }, {
+                label: 'Minutes',
+                data: minutes,
+                backgroundColor: 'rgba(57, 159, 255, 0.5)',
+                borderColor: '#39f',
+                borderWidth: 1,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#fff',
+                        font: { size: 10 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.1)' },
+                    ticks: { color: '#aaa', font: { size: 9 } }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    grid: { color: 'rgba(255,255,255,0.1)' },
+                    ticks: { color: '#0f0', stepSize: 1 },
+                    title: { display: true, text: 'Workouts', color: '#0f0' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#39f' },
+                    title: { display: true, text: 'Minutes', color: '#39f' }
+                }
+            }
+        }
+    });
 }

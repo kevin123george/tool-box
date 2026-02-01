@@ -2,10 +2,14 @@ package com.example.mongo.controller;
 
 import com.example.mongo.models.WeightEntry;
 import com.example.mongo.models.WorkoutLog;
+import com.example.mongo.models.WorkoutPlan;
+import com.example.mongo.models.WorkoutTemplate;
+import com.example.mongo.models.dto.FitnessAnalyticsDTO;
 import com.example.mongo.models.dto.FitnessStats;
 import com.example.mongo.services.FitnessService;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -108,5 +112,118 @@ public class FitnessController {
   @GetMapping("/stats")
   public FitnessStats getStats() {
     return fitnessService.calculateStats();
+  }
+
+  // ===== TEMPLATE ENDPOINTS =====
+
+  @GetMapping("/templates")
+  public List<WorkoutTemplate> getTemplates() {
+    return fitnessService.getAllTemplates();
+  }
+
+  @GetMapping("/templates/{id}")
+  public ResponseEntity<WorkoutTemplate> getTemplate(@PathVariable String id) {
+    return fitnessService
+        .getTemplateById(id)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PostMapping("/templates")
+  public WorkoutTemplate createTemplate(@RequestBody WorkoutTemplate template) {
+    return fitnessService.createTemplate(template);
+  }
+
+  @PutMapping("/templates/{id}")
+  public ResponseEntity<WorkoutTemplate> updateTemplate(
+      @PathVariable String id, @RequestBody WorkoutTemplate template) {
+    WorkoutTemplate updated = fitnessService.updateTemplate(id, template);
+    if (updated != null) {
+      return ResponseEntity.ok(updated);
+    }
+    return ResponseEntity.notFound().build();
+  }
+
+  @DeleteMapping("/templates/{id}")
+  public ResponseEntity<Void> deleteTemplate(@PathVariable String id) {
+    fitnessService.deleteTemplate(id);
+    return ResponseEntity.ok().build();
+  }
+
+  // ===== PLAN ENDPOINTS =====
+
+  @GetMapping("/plans")
+  public List<WorkoutPlan> getPlans() {
+    return fitnessService.getAllPlans();
+  }
+
+  @GetMapping("/plans/active")
+  public ResponseEntity<WorkoutPlan> getActivePlan() {
+    return fitnessService
+        .getActivePlan()
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
+
+  @GetMapping("/plans/{id}")
+  public ResponseEntity<WorkoutPlan> getPlan(@PathVariable String id) {
+    return fitnessService
+        .getPlanById(id)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PostMapping("/plans")
+  public WorkoutPlan createPlan(@RequestBody WorkoutPlan plan) {
+    return fitnessService.createPlan(plan);
+  }
+
+  @PutMapping("/plans/{id}")
+  public ResponseEntity<WorkoutPlan> updatePlan(
+      @PathVariable String id, @RequestBody WorkoutPlan plan) {
+    WorkoutPlan updated = fitnessService.updatePlan(id, plan);
+    if (updated != null) {
+      return ResponseEntity.ok(updated);
+    }
+    return ResponseEntity.notFound().build();
+  }
+
+  @PutMapping("/plans/{id}/activate")
+  public ResponseEntity<Void> activatePlan(@PathVariable String id) {
+    fitnessService.setActivePlan(id);
+    return ResponseEntity.ok().build();
+  }
+
+  @DeleteMapping("/plans/{id}")
+  public ResponseEntity<Void> deletePlan(@PathVariable String id) {
+    fitnessService.deletePlan(id);
+    return ResponseEntity.ok().build();
+  }
+
+  // ===== QUICK LOG FROM TEMPLATE =====
+
+  @PostMapping("/workouts/from-template/{templateId}")
+  public ResponseEntity<WorkoutLog> logFromTemplate(
+      @PathVariable String templateId,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date) {
+    LocalDate targetDate = date != null ? date : LocalDate.now();
+    WorkoutLog workout = fitnessService.logFromTemplate(templateId, targetDate);
+    if (workout != null) {
+      return ResponseEntity.ok(workout);
+    }
+    return ResponseEntity.notFound().build();
+  }
+
+  // ===== ANALYTICS ENDPOINTS =====
+
+  @GetMapping("/analytics")
+  public FitnessAnalyticsDTO getAnalytics(@RequestParam(defaultValue = "12") int weeks) {
+    return fitnessService.getAnalytics(weeks);
+  }
+
+  @GetMapping("/analytics/workouts-by-type")
+  public Map<String, Integer> getWorkoutsByType() {
+    return fitnessService.getWorkoutsByType();
   }
 }

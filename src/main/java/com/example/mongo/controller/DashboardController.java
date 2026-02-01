@@ -4,9 +4,11 @@ import com.example.mongo.models.FinancialGoal;
 import com.example.mongo.models.MonthlyBudget;
 import com.example.mongo.models.dto.DashboardDTO;
 import com.example.mongo.models.dto.FinanceSummaryDTO;
+import com.example.mongo.models.dto.FitnessStats;
 import com.example.mongo.models.dto.PortfolioStats;
 import com.example.mongo.repos.FinancialGoalRepository;
 import com.example.mongo.services.BankAccountService;
+import com.example.mongo.services.FitnessService;
 import com.example.mongo.services.MonthlyBudgetService;
 import com.example.mongo.services.StockService;
 import java.time.YearMonth;
@@ -26,16 +28,19 @@ public class DashboardController {
   private final StockService stockService;
   private final MonthlyBudgetService budgetService;
   private final FinancialGoalRepository goalRepository;
+  private final FitnessService fitnessService;
 
   public DashboardController(
       BankAccountService bankAccountService,
       StockService stockService,
       MonthlyBudgetService budgetService,
-      FinancialGoalRepository goalRepository) {
+      FinancialGoalRepository goalRepository,
+      FitnessService fitnessService) {
     this.bankAccountService = bankAccountService;
     this.stockService = stockService;
     this.budgetService = budgetService;
     this.goalRepository = goalRepository;
+    this.fitnessService = fitnessService;
   }
 
   @GetMapping
@@ -79,6 +84,11 @@ public class DashboardController {
     // Calculate net worth
     double netWorth = totalCash + portfolioValue;
 
+    // Get fitness stats
+    FitnessStats fitnessStats = fitnessService.calculateStats();
+    Double currentWeight =
+        fitnessService.getLatestWeight().map(w -> w.getWeight()).orElse(null);
+
     DashboardDTO dashboard =
         DashboardDTO.builder()
             .totalCash(totalCash)
@@ -94,6 +104,10 @@ public class DashboardController {
             .goalTarget(goalTarget)
             .goalProgress(goalProgress)
             .goalFireAge(goalFireAge)
+            .fitnessCurrentStreak(fitnessStats.getCurrentStreak())
+            .fitnessThisWeek(fitnessStats.getThisWeekWorkouts())
+            .currentWeight(currentWeight)
+            .weightChange(fitnessStats.getWeightChange())
             .build();
 
     return ResponseEntity.ok(dashboard);
