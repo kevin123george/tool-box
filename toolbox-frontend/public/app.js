@@ -640,30 +640,52 @@ function updateMobileTabIndicators(tabName) {
     const tabOrder = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness'];
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
 
-    const mainContent = document.getElementById('main-content');
-    if (!mainContent) return;
+    // Use document body for swipe detection
+    document.body.addEventListener('touchstart', (e) => {
+        // Don't track swipe if touching scrollable elements
+        const target = e.target;
+        if (target.closest('.tabs') ||
+            target.closest('#weeklySchedule') ||
+            target.closest('.modal') ||
+            target.closest('.mobile-nav-overlay') ||
+            target.closest('input') ||
+            target.closest('textarea') ||
+            target.closest('select')) {
+            isSwiping = false;
+            return;
+        }
 
-    mainContent.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isSwiping = true;
     }, { passive: true });
 
-    mainContent.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
-        handleSwipe();
-    }, { passive: true });
+    document.body.addEventListener('touchend', (e) => {
+        if (!isSwiping) return;
 
-    function handleSwipe() {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+
         const diffX = touchStartX - touchEndX;
         const diffY = touchStartY - touchEndY;
-        const minSwipeDistance = 80;
+        const timeDiff = touchEndTime - touchStartTime;
 
-        // Only trigger if horizontal swipe is greater than vertical (not scrolling)
-        if (Math.abs(diffX) < minSwipeDistance || Math.abs(diffX) < Math.abs(diffY)) {
+        const minSwipeDistance = 100;
+        const maxSwipeTime = 500; // Must be a quick swipe
+
+        // Only trigger if:
+        // 1. Horizontal swipe is greater than vertical (not scrolling)
+        // 2. Swipe distance is sufficient
+        // 3. Swipe was quick enough
+        if (Math.abs(diffX) < minSwipeDistance ||
+            Math.abs(diffX) < Math.abs(diffY) * 1.5 ||
+            timeDiff > maxSwipeTime) {
+            isSwiping = false;
             return;
         }
 
@@ -679,7 +701,9 @@ function updateMobileTabIndicators(tabName) {
             const prevIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
             switchTab(tabOrder[prevIndex]);
         }
-    }
+
+        isSwiping = false;
+    }, { passive: true });
 })();
 
 /* =========================

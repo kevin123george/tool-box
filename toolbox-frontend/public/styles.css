@@ -1,6 +1,10 @@
 :root { --bg:#000; --text:#fff; --border:#fff; }
 .light { --bg:#fff; --text:#000; --border:#000; }
 
+html {
+    overflow-x: hidden;
+}
+
 body {
     background: var(--bg);
     color: var(--text);
@@ -8,6 +12,8 @@ body {
     padding: 20px;
     font-size: 14px;
     transition: background .2s, color .2s;
+    overflow-x: hidden;
+    min-height: 100vh;
 }
 
 /* =========================
@@ -118,8 +124,17 @@ input, textarea, select {
     color: var(--bg);
 }
 
-.tab-content { margin-top:10px; }
+.tab-content {
+    margin-top:10px;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
 .hidden { display:none; }
+
+#main-content {
+    overflow-x: hidden;
+    position: relative;
+}
 
 /* =========================
    QUILL EDITOR
@@ -234,10 +249,17 @@ input, textarea, select {
 .portfolio-summary {
     display:grid;
     gap:10px;
+    width: 100%;
+    max-width: 100%;
 }
 
 .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+}
+
+.stat-card {
+    min-width: 0; /* Prevent overflow */
+    overflow: hidden;
 }
 
 .stock-metrics {
@@ -1786,26 +1808,29 @@ textarea:focus,
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 56px;
-    height: 56px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: var(--text);
     color: var(--bg);
     border: 2px solid var(--border);
     font-size: 24px;
-    z-index: 1000;
+    z-index: 1003;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: transform 0.2s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    transition: transform 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.mobile-menu-toggle:hover {
-    transform: scale(1.1);
+.mobile-menu-toggle:hover,
+.mobile-menu-toggle:active {
+    transform: scale(1.05);
 }
 
 .mobile-menu-toggle.open {
     background: var(--bg);
     color: var(--text);
+    box-shadow: 0 4px 16px rgba(255,255,255,0.2);
 }
 
 /* Mobile navigation overlay */
@@ -1816,14 +1841,18 @@ textarea:focus,
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 999;
-    padding: 60px 20px 80px;
+    background: var(--bg);
+    z-index: 1001;
+    padding: 20px;
+    padding-top: 60px;
+    padding-bottom: 100px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .mobile-nav-overlay.show {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 .mobile-nav-overlay .mobile-nav-grid {
@@ -1832,6 +1861,8 @@ textarea:focus,
     gap: 12px;
     max-width: 400px;
     margin: 0 auto;
+    width: 100%;
+    padding-bottom: 20px;
 }
 
 .mobile-nav-overlay .mobile-nav-item {
@@ -1842,21 +1873,34 @@ textarea:focus,
     text-transform: uppercase;
     cursor: pointer;
     transition: all 0.2s;
+    background: var(--bg);
+    color: var(--text);
 }
 
 .mobile-nav-overlay .mobile-nav-item:hover,
+.mobile-nav-overlay .mobile-nav-item:active,
 .mobile-nav-overlay .mobile-nav-item.active {
     background: var(--text);
     color: var(--bg);
 }
 
 .mobile-nav-overlay .mobile-nav-close {
-    position: absolute;
+    position: fixed;
     top: 16px;
     right: 16px;
     font-size: 32px;
     cursor: pointer;
     padding: 8px;
+    z-index: 1002;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
 }
 
 @media (max-width: 768px) {
@@ -2138,16 +2182,30 @@ textarea:focus,
 
 @media (max-width: 768px) {
     body {
-        padding-bottom: 80px; /* Space for mobile menu button */
+        padding-bottom: 100px; /* Space for mobile menu button */
     }
 
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .mobile-menu-toggle {
+        bottom: 24px;
+    }
+
+    .mobile-nav-overlay {
+        padding-bottom: 120px;
+    }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
         body {
-            padding-bottom: calc(80px + env(safe-area-inset-bottom));
+            padding-bottom: calc(100px + env(safe-area-inset-bottom));
         }
 
         .mobile-menu-toggle {
-            bottom: calc(20px + env(safe-area-inset-bottom));
+            bottom: calc(24px + env(safe-area-inset-bottom));
+        }
+
+        .mobile-nav-overlay {
+            padding-bottom: calc(120px + env(safe-area-inset-bottom));
         }
     }
 }
