@@ -426,6 +426,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* Tabs */
 function switchTab(which) {
+    // Save current tab to localStorage for persistence across refreshes
+    localStorage.setItem('toolbox_active_tab', which);
+
     // Clean up system stats interval when leaving the tab
     if (document.getElementById("tabSystemStats")?.classList.contains("active")) {
         cleanupSystemStats();
@@ -476,6 +479,8 @@ function switchTab(which) {
 
     if (which === "dashboard") {
         loadDashboard();
+    } else if (which === "memo") {
+        loadMemos();
     } else if (which === "finance") {
         loadFinance();
         loadGoalList();
@@ -494,6 +499,12 @@ function switchTab(which) {
         // Disable auto-refresh for advanced charts (user controls refresh)
     } else if (which === "budget") {
         goToCurrentMonth();
+    } else if (which === "subscriptions") {
+        if (typeof loadSubscriptions === 'function') loadSubscriptions();
+    } else if (which === "calendar") {
+        if (typeof loadCalendar === 'function') loadCalendar();
+    } else if (which === "analytics") {
+        if (typeof loadAnalytics === 'function') loadAnalytics();
     } else if (which === "systemstats") {
         initSystemStatsTab();
     } else if (which === "research") {
@@ -2960,7 +2971,18 @@ function attachShowMoreListeners() {
 }
 
 
-loadMemos();
+// Initialize app with saved tab state
+(function initializeApp() {
+    const savedTab = localStorage.getItem('toolbox_active_tab');
+    const validTabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness'];
+
+    if (savedTab && validTabs.includes(savedTab)) {
+        switchTab(savedTab);
+    } else {
+        // Default to memo tab
+        switchTab('memo');
+    }
+})();
 
 /* ===========================================================
    FITNESS TRACKER
