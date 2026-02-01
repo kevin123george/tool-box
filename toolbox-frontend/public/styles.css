@@ -96,6 +96,135 @@ input, textarea, select {
     position:fixed;
     top:12px;
     right:12px;
+    z-index: 100;
+}
+
+/* =========================
+   MOBILE NAVIGATION
+   ========================= */
+
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 101;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 20px;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.mobile-nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    padding: 60px 20px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-nav-overlay.show,
+.mobile-nav-overlay.active {
+    display: block;
+}
+
+.mobile-nav-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 28px;
+    cursor: pointer;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.mobile-nav-item {
+    border: 1px solid var(--border);
+    padding: 16px 12px;
+    text-align: center;
+    font-size: 12px;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.mobile-nav-item:active,
+.mobile-nav-item.active {
+    background: var(--text);
+    color: var(--bg);
+}
+
+.current-tab-name {
+    display: none;
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.tab-dots {
+    display: none;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    opacity: 0.3;
+}
+
+.tab-dot.active {
+    opacity: 1;
+    background: var(--text);
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .current-tab-name {
+        display: block;
+    }
+
+    .tab-dots {
+        display: flex;
+    }
+
+    /* Hide desktop tabs on mobile */
+    .tabs {
+        display: none;
+    }
+
+    /* Adjust h1 for mobile menu button */
+    h1 {
+        text-align: center;
+        padding-left: 50px;
+        padding-right: 50px;
+    }
 }
 
 /* =========================
@@ -782,6 +911,27 @@ input, textarea, select {
     [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
         grid-template-columns: 1fr 1fr !important;
     }
+
+    /* Override 1fr 2fr grids (weight tracker) */
+    [style*="grid-template-columns:1fr 2fr"],
+    [style*="grid-template-columns: 1fr 2fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Override 7-column grids (weekly schedule) */
+    [style*="grid-template-columns:repeat(7"],
+    [style*="grid-template-columns: repeat(7"] {
+        display: flex !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 6px !important;
+    }
+
+    [style*="grid-template-columns:repeat(7"] > div,
+    [style*="grid-template-columns: repeat(7"] > div {
+        flex: 0 0 auto !important;
+        min-width: 40px !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -794,17 +944,40 @@ input, textarea, select {
     /* Reduce fixed heights on charts for mobile */
     [style*="height:400px"],
     [style*="height: 400px"] {
-        height: 250px !important;
+        height: 220px !important;
+    }
+
+    [style*="height:300px"],
+    [style*="height: 300px"] {
+        height: 200px !important;
     }
 
     [style*="height:250px"],
     [style*="height: 250px"] {
-        height: 200px !important;
+        height: 180px !important;
     }
 
     [style*="height:200px"],
     [style*="height: 200px"] {
-        height: 180px !important;
+        height: 160px !important;
+    }
+
+    /* Ensure canvas charts are responsive */
+    canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Chart container minimum height */
+    .add-box [style*="height"] {
+        min-height: 150px;
+    }
+
+    /* Weekly schedule flex items */
+    [style*="grid-template-columns:repeat(7"] > div,
+    [style*="grid-template-columns: repeat(7"] > div {
+        min-width: 38px !important;
+        padding: 8px 4px !important;
     }
 }
 
@@ -1557,6 +1730,8 @@ textarea:focus,
 
 .calendar-grid {
     border: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .calendar-header {
@@ -1566,6 +1741,7 @@ textarea:focus,
     color: var(--bg);
     font-size: 11px;
     text-transform: uppercase;
+    min-width: 500px; /* Ensure all days visible with scroll */
 }
 
 .calendar-header > div {
@@ -1581,6 +1757,7 @@ textarea:focus,
 .calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
+    min-width: 500px; /* Match header */
 }
 
 .calendar-day {
@@ -1628,6 +1805,55 @@ textarea:focus,
 .calendar-event-more {
     font-size: 9px;
     opacity: 0.7;
+}
+
+/* =========================
+   WEEKLY SCHEDULE (FITNESS)
+   ========================= */
+
+[id="weeklySchedule"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0;
+}
+
+/* Make weekly schedule scrollable container */
+.weekly-schedule-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -12px;
+    padding: 0 12px;
+}
+
+/* Swipe hint indicator */
+.swipe-hint {
+    position: relative;
+}
+
+.swipe-hint::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+@media (max-width: 480px) {
+    .swipe-hint::after {
+        opacity: 1;
+    }
+
+    /* Weekly schedule day boxes smaller */
+    [id="weeklySchedule"] > div {
+        min-width: 36px;
+        padding: 6px 4px !important;
+        font-size: 10px !important;
+    }
 }
 
 /* =========================
