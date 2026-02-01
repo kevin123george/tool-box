@@ -620,22 +620,16 @@ function updateMobileTabIndicators(tabName) {
     document.querySelectorAll('.tab-dot').forEach(dot => {
         dot.classList.toggle('active', dot.dataset.tab === tabName);
     });
-
-    // Show brief indicator on swipe
-    if (isMobile()) {
-        const indicator = document.getElementById('tabSwipeIndicator');
-        if (indicator) {
-            indicator.textContent = tabNames[tabName] || tabName;
-            indicator.classList.add('show');
-            setTimeout(() => indicator.classList.remove('show'), 600);
-        }
-    }
 }
 
 /* =========================
-   SWIPE GESTURES FOR TABS
+   SWIPE GESTURES FOR TABS (DISABLED)
    ========================= */
 
+// Swipe navigation disabled - was interfering with normal scrolling
+// To re-enable, uncomment the code below
+
+/*
 (function initSwipeNavigation() {
     const tabOrder = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness'];
     let touchStartX = 0;
@@ -643,9 +637,7 @@ function updateMobileTabIndicators(tabName) {
     let touchStartTime = 0;
     let isSwiping = false;
 
-    // Use document body for swipe detection
     document.body.addEventListener('touchstart', (e) => {
-        // Don't track swipe if touching scrollable elements
         const target = e.target;
         if (target.closest('.tabs') ||
             target.closest('#weeklySchedule') ||
@@ -676,12 +668,8 @@ function updateMobileTabIndicators(tabName) {
         const timeDiff = touchEndTime - touchStartTime;
 
         const minSwipeDistance = 100;
-        const maxSwipeTime = 500; // Must be a quick swipe
+        const maxSwipeTime = 500;
 
-        // Only trigger if:
-        // 1. Horizontal swipe is greater than vertical (not scrolling)
-        // 2. Swipe distance is sufficient
-        // 3. Swipe was quick enough
         if (Math.abs(diffX) < minSwipeDistance ||
             Math.abs(diffX) < Math.abs(diffY) * 1.5 ||
             timeDiff > maxSwipeTime) {
@@ -693,11 +681,9 @@ function updateMobileTabIndicators(tabName) {
         const currentIndex = tabOrder.indexOf(currentTab);
 
         if (diffX > 0) {
-            // Swipe left - next tab
             const nextIndex = (currentIndex + 1) % tabOrder.length;
             switchTab(tabOrder[nextIndex]);
         } else {
-            // Swipe right - previous tab
             const prevIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
             switchTab(tabOrder[prevIndex]);
         }
@@ -705,6 +691,7 @@ function updateMobileTabIndicators(tabName) {
         isSwiping = false;
     }, { passive: true });
 })();
+*/
 
 /* =========================
    RESPONSIVE HELPERS
