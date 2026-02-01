@@ -1709,3 +1709,44 @@ textarea:focus,
         color: black;
     }
 }
+
+/* =========================
+   FITNESS TRACKER
+   ========================= */
+
+.day-card {
+    border: 1px solid var(--border);
+    padding: 12px 8px;
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.day-card .day-name {
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 8px;
+}
+
+.day-card .day-type {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.day-card .day-status {
+    font-size: 16px;
+    margin-top: 8px;
+}
+
+.day-card .day-status.completed {
+    color: #0f0;
+}
+
+.day-card .day-status.pending {
+    color: #f90;
+}

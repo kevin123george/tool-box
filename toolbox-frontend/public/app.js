@@ -400,7 +400,7 @@ function switchTab(which) {
     }
 
     // Update tab states and aria-selected
-    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats'];
+    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness'];
     tabs.forEach(tab => {
         const tabEl = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1).replace('history', 'History').replace('stats', 'Stats')}`);
         if (tabEl) {
@@ -421,6 +421,7 @@ function switchTab(which) {
     document.getElementById("tabAnalytics")?.classList.toggle("active", which === "analytics");
     document.getElementById("tabSystemStats")?.classList.toggle("active", which === "systemstats");
     document.getElementById("tabResearch")?.classList.toggle("active", which === "research");
+    document.getElementById("tabFitness")?.classList.toggle("active", which === "fitness");
 
     dashboardTabContent?.classList.toggle("hidden", which !== "dashboard");
     memoTabContent.classList.toggle("hidden", which !== "memo");
@@ -433,6 +434,7 @@ function switchTab(which) {
     document.getElementById("analyticsTabContent")?.classList.toggle("hidden", which !== "analytics");
     systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
     researchTabContent.classList.toggle("hidden", which !== "research");
+    document.getElementById("fitnessTabContent")?.classList.toggle("hidden", which !== "fitness");
 
     if (which === "dashboard") {
         loadDashboard();
@@ -458,6 +460,8 @@ function switchTab(which) {
         initSystemStatsTab();
     } else if (which === "research") {
         loadLatestResearch();
+    } else if (which === "fitness") {
+        loadFitnessTab();
     } else {
         if (stocksRefreshInterval) {
             clearInterval(stocksRefreshInterval);
@@ -2919,3 +2923,396 @@ function attachShowMoreListeners() {
 
 
 loadMemos();
+
+/* ===========================================================
+   FITNESS TRACKER
+=============================================================*/
+
+let weightChart = null;
+
+async function loadFitnessTab() {
+    // Set default dates
+    document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+
+    // Load all data in parallel
+    await Promise.all([
+        loadFitnessStats(),
+        loadWeeklyWorkouts(),
+        loadWeightData(),
+        loadWorkoutHistory()
+    ]);
+}
+
+async function loadFitnessStats() {
+    try {
+        const res = await fetch(`${API}/api/fitness/stats`);
+        if (!res.ok) throw new Error('Failed to load fitness stats');
+        const stats = await res.json();
+
+        document.getElementById('fitnessCurrentStreak').textContent = `${stats.currentStreak} days`;
+        document.getElementById('fitnessLongestStreak').textContent = `${stats.longestStreak} days`;
+        document.getElementById('fitnessThisWeek').textContent = `${stats.thisWeekWorkouts} workouts`;
+        document.getElementById('fitnessTotalWorkouts').textContent = stats.totalWorkouts;
+
+        // Update streak color based on value
+        const streakEl = document.getElementById('fitnessCurrentStreak');
+        if (stats.currentStreak >= 7) {
+            streakEl.classList.add('positive');
+        } else if (stats.currentStreak === 0) {
+            streakEl.classList.remove('positive');
+        }
+    } catch (e) {
+        console.error('Failed to load fitness stats:', e);
+    }
+}
+
+async function loadWeeklyWorkouts() {
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts/week`);
+        if (!res.ok) throw new Error('Failed to load weekly workouts');
+        const workouts = await res.json();
+
+        // Map workouts by day
+        const dayMap = {
+            'MONDAY': 'Mon',
+            'TUESDAY': 'Tue',
+            'WEDNESDAY': 'Wed',
+            'THURSDAY': 'Thu',
+            'FRIDAY': 'Fri'
+        };
+
+        // Reset all days
+        Object.keys(dayMap).forEach(day => {
+            const abbrev = dayMap[day];
+            document.getElementById(`day${abbrev}`).textContent = '-';
+            document.getElementById(`status${abbrev}`).textContent = '';
+            document.getElementById(`status${abbrev}`).className = 'day-status';
+        });
+
+        // Fill in workouts
+        workouts.forEach(w => {
+            const dayKey = w.dayOfWeek;
+            if (dayMap[dayKey]) {
+                const abbrev = dayMap[dayKey];
+                const typeDisplay = w.exerciseType ? w.exerciseType.replace('_', ' ') : '-';
+                document.getElementById(`day${abbrev}`).textContent = typeDisplay;
+
+                const statusEl = document.getElementById(`status${abbrev}`);
+                if (w.completed) {
+                    statusEl.textContent = '✓';
+                    statusEl.classList.add('completed');
+                } else {
+                    statusEl.textContent = '○';
+                    statusEl.classList.add('pending');
+                }
+            }
+        });
+    } catch (e) {
+        console.error('Failed to load weekly workouts:', e);
+    }
+}
+
+async function loadWeightData() {
+    try {
+        // Load latest weight
+        const latestRes = await fetch(`${API}/api/fitness/weight/latest`);
+        if (latestRes.ok) {
+            const latest = await latestRes.json();
+            document.getElementById('currentWeight').textContent = `${latest.weight} kg`;
+        }
+
+        // Load weight history for chart
+        const historyRes = await fetch(`${API}/api/fitness/weight?days=30`);
+        if (!historyRes.ok) throw new Error('Failed to load weight history');
+        const history = await historyRes.json();
+
+        renderWeightChart(history);
+
+        // Calculate weight change indicator
+        if (history.length >= 2) {
+            const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const first = sorted[0].weight;
+            const last = sorted[sorted.length - 1].weight;
+            const change = last - first;
+
+            const indicator = document.getElementById('weightChangeIndicator');
+            if (change < 0) {
+                indicator.textContent = `${change.toFixed(1)} kg (30 days)`;
+                indicator.style.color = '#0f0';
+            } else if (change > 0) {
+                indicator.textContent = `+${change.toFixed(1)} kg (30 days)`;
+                indicator.style.color = '#f90';
+            } else {
+                indicator.textContent = 'No change (30 days)';
+                indicator.style.color = 'inherit';
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load weight data:', e);
+    }
+}
+
+function renderWeightChart(data) {
+    const ctx = document.getElementById('weightChart')?.getContext('2d');
+    if (!ctx) return;
+
+    // Sort by date
+    const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const labels = sorted.map(d => d.date);
+    const weights = sorted.map(d => d.weight);
+
+    if (weightChart) {
+        weightChart.destroy();
+    }
+
+    weightChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Weight (kg)',
+                data: weights,
+                borderColor: '#0f0',
+                backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255,255,255,0.1)'
+                    },
+                    ticks: {
+                        color: '#aaa',
+                        maxTicksLimit: 7
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255,255,255,0.1)'
+                    },
+                    ticks: {
+                        color: '#aaa'
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadWorkoutHistory() {
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts/recent`);
+        if (!res.ok) throw new Error('Failed to load workout history');
+        const workouts = await res.json();
+
+        const container = document.getElementById('workoutHistoryList');
+        if (!workouts.length) {
+            container.innerHTML = '<div style="opacity:0.5; padding:12px;">No workouts logged yet</div>';
+            return;
+        }
+
+        container.innerHTML = workouts.map(w => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px;">
+                <div>
+                    <div style="font-weight:bold;">${w.workoutDate || 'No date'}</div>
+                    <div style="font-size:12px; opacity:0.7;">
+                        ${w.exerciseType ? w.exerciseType.replace('_', ' ') : 'Unknown'}
+                        ${w.durationMinutes ? `• ${w.durationMinutes} min` : ''}
+                        ${w.caloriesBurned ? `• ${w.caloriesBurned} cal` : ''}
+                    </div>
+                    ${w.notes ? `<div style="font-size:11px; opacity:0.5; margin-top:4px;">${w.notes}</div>` : ''}
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span style="color:${w.completed ? '#0f0' : '#f90'};">${w.completed ? '✓' : '○'}</span>
+                    <button class="btn" onclick="editWorkout('${w.id}')" style="padding:4px 8px; font-size:11px;">EDIT</button>
+                    <button class="btn" onclick="deleteWorkout('${w.id}')" style="padding:4px 8px; font-size:11px;">DEL</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Failed to load workout history:', e);
+    }
+}
+
+async function logWorkout() {
+    const date = document.getElementById('workoutDate').value;
+    const type = document.getElementById('workoutType').value;
+    const duration = document.getElementById('workoutDuration').value;
+    const calories = document.getElementById('workoutCalories').value;
+    const notes = document.getElementById('workoutNotes').value;
+    const completed = document.getElementById('workoutCompleted').checked;
+
+    if (!date || !type) {
+        showToast('Please select a date and workout type', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                workoutDate: date,
+                exerciseType: type,
+                durationMinutes: duration ? parseInt(duration) : null,
+                caloriesBurned: calories ? parseInt(calories) : null,
+                notes: notes || null,
+                completed: completed
+            })
+        });
+
+        if (!res.ok) throw new Error('Failed to log workout');
+
+        showToast('Workout logged successfully', 'success');
+
+        // Clear form
+        document.getElementById('workoutDuration').value = '';
+        document.getElementById('workoutCalories').value = '';
+        document.getElementById('workoutNotes').value = '';
+        document.getElementById('workoutCompleted').checked = true;
+
+        // Reload data
+        await Promise.all([
+            loadFitnessStats(),
+            loadWeeklyWorkouts(),
+            loadWorkoutHistory()
+        ]);
+    } catch (e) {
+        console.error('Failed to log workout:', e);
+        showToast('Failed to log workout', 'error');
+    }
+}
+
+async function logWeight() {
+    const date = document.getElementById('weightDate').value;
+    const weight = document.getElementById('weightValue').value;
+    const notes = document.getElementById('weightNotes').value;
+
+    if (!date || !weight) {
+        showToast('Please enter date and weight', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/api/fitness/weight`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                date: date,
+                weight: parseFloat(weight),
+                notes: notes || null
+            })
+        });
+
+        if (!res.ok) throw new Error('Failed to log weight');
+
+        showToast('Weight logged successfully', 'success');
+
+        // Clear form
+        document.getElementById('weightValue').value = '';
+        document.getElementById('weightNotes').value = '';
+
+        // Reload weight data
+        await loadWeightData();
+    } catch (e) {
+        console.error('Failed to log weight:', e);
+        showToast('Failed to log weight', 'error');
+    }
+}
+
+async function editWorkout(id) {
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch workout');
+        const workout = await res.json();
+
+        document.getElementById('editWorkoutId').value = workout.id;
+        document.getElementById('editWorkoutDate').value = workout.workoutDate || '';
+        document.getElementById('editWorkoutType').value = workout.exerciseType || 'PUSH';
+        document.getElementById('editWorkoutDuration').value = workout.durationMinutes || '';
+        document.getElementById('editWorkoutCalories').value = workout.caloriesBurned || '';
+        document.getElementById('editWorkoutNotes').value = workout.notes || '';
+        document.getElementById('editWorkoutCompleted').checked = workout.completed;
+
+        openModal('workoutEditModal');
+    } catch (e) {
+        console.error('Failed to load workout for edit:', e);
+        showToast('Failed to load workout', 'error');
+    }
+}
+
+async function saveWorkoutEdit() {
+    const id = document.getElementById('editWorkoutId').value;
+    const date = document.getElementById('editWorkoutDate').value;
+    const type = document.getElementById('editWorkoutType').value;
+    const duration = document.getElementById('editWorkoutDuration').value;
+    const calories = document.getElementById('editWorkoutCalories').value;
+    const notes = document.getElementById('editWorkoutNotes').value;
+    const completed = document.getElementById('editWorkoutCompleted').checked;
+
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                workoutDate: date,
+                exerciseType: type,
+                durationMinutes: duration ? parseInt(duration) : null,
+                caloriesBurned: calories ? parseInt(calories) : null,
+                notes: notes || null,
+                completed: completed
+            })
+        });
+
+        if (!res.ok) throw new Error('Failed to update workout');
+
+        closeModal('workoutEditModal');
+        showToast('Workout updated successfully', 'success');
+
+        await Promise.all([
+            loadFitnessStats(),
+            loadWeeklyWorkouts(),
+            loadWorkoutHistory()
+        ]);
+    } catch (e) {
+        console.error('Failed to update workout:', e);
+        showToast('Failed to update workout', 'error');
+    }
+}
+
+async function deleteWorkout(id) {
+    if (!confirm('Delete this workout?')) return;
+
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!res.ok) throw new Error('Failed to delete workout');
+
+        showToast('Workout deleted', 'success');
+
+        await Promise.all([
+            loadFitnessStats(),
+            loadWeeklyWorkouts(),
+            loadWorkoutHistory()
+        ]);
+    } catch (e) {
+        console.error('Failed to delete workout:', e);
+        showToast('Failed to delete workout', 'error');
+    }
+}
