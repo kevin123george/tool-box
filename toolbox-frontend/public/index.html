@@ -1328,7 +1328,7 @@
 
     <!-- Today's Workout Banner -->
     <div id="todaysWorkoutBanner" class="add-box" style="margin-bottom:20px; border-color:#0f0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
             <div>
                 <div style="font-size:11px; opacity:0.7;">TODAY'S WORKOUT</div>
                 <div style="font-size:20px; font-weight:bold;" id="todaysWorkoutType">Loading...</div>
@@ -1338,7 +1338,8 @@
                 <button class="btn" onclick="showTodaysWorkoutModal()" style="background:#0f0; color:#000; font-weight:bold;">START WORKOUT</button>
             </div>
         </div>
-        <div id="todaysWorkoutStatus" style="font-size:12px;"></div>
+        <div id="todaysWorkoutStatus" style="font-size:12px; margin-bottom:8px;"></div>
+        <div id="todaysExercisePreview" style="font-size:11px; opacity:0.8;"></div>
     </div>
 
     <!-- Stats Cards -->
@@ -1365,33 +1366,31 @@
     <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
         <!-- Weekly Schedule View -->
         <div class="add-box">
-            <h3 style="margin-top:0;">Weekly Schedule</h3>
-            <div id="weeklySchedule" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;">
-                <div class="day-card" data-day="MONDAY">
-                    <div class="day-name">Mon</div>
-                    <div class="day-type" id="dayMon">-</div>
-                    <div class="day-status" id="statusMon"></div>
+            <h3 style="margin-top:0;">This Week <span style="font-size:11px; opacity:0.5; font-weight:normal;">(click a day to see exercises)</span></h3>
+            <div id="weeklySchedule" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px;">
+                <!-- Will be populated by JS -->
+            </div>
+            <div style="margin-top:12px; font-size:11px; opacity:0.7; display:flex; gap:16px;">
+                <span><span style="color:#0f0;">■</span> Completed</span>
+                <span><span style="color:#f90;">■</span> Planned</span>
+                <span><span style="color:#888;">■</span> Rest</span>
+            </div>
+        </div>
+
+        <!-- Day Details Panel (shows exercises for selected day) -->
+        <div id="dayDetailsPanel" class="add-box" style="display:none; margin-top:16px; border-color:#39f;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                    <h3 style="margin:0;" id="dayDetailsTitle">Monday - Push Day</h3>
+                    <div style="font-size:12px; opacity:0.7;" id="dayDetailsSubtitle">Chest, Shoulders, Triceps</div>
                 </div>
-                <div class="day-card" data-day="TUESDAY">
-                    <div class="day-name">Tue</div>
-                    <div class="day-type" id="dayTue">-</div>
-                    <div class="day-status" id="statusTue"></div>
-                </div>
-                <div class="day-card" data-day="WEDNESDAY">
-                    <div class="day-name">Wed</div>
-                    <div class="day-type" id="dayWed">-</div>
-                    <div class="day-status" id="statusWed"></div>
-                </div>
-                <div class="day-card" data-day="THURSDAY">
-                    <div class="day-name">Thu</div>
-                    <div class="day-type" id="dayThu">-</div>
-                    <div class="day-status" id="statusThu"></div>
-                </div>
-                <div class="day-card" data-day="FRIDAY">
-                    <div class="day-name">Fri</div>
-                    <div class="day-type" id="dayFri">-</div>
-                    <div class="day-status" id="statusFri"></div>
-                </div>
+                <button class="btn" onclick="hideDayDetails()">CLOSE</button>
+            </div>
+            <div id="dayDetailsExercises">
+                <!-- Exercises will be listed here -->
+            </div>
+            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                <button class="btn" id="dayDetailsStartBtn" onclick="startDayWorkout()" style="background:#0f0; color:#000;">START THIS WORKOUT</button>
             </div>
         </div>
 

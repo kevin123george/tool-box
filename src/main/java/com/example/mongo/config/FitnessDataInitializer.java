@@ -28,18 +28,12 @@ public class FitnessDataInitializer implements CommandLineRunner {
       return;
     }
 
-    // Create default templates
-    WorkoutTemplate pushDay = createPushTemplate();
-    WorkoutTemplate pullDay = createPullTemplate();
-    WorkoutTemplate legsDay = createLegsTemplate();
-    WorkoutTemplate cardioDay = createCardioTemplate();
-    WorkoutTemplate restDay = createRestTemplate();
-
-    templateRepository.save(pushDay);
-    templateRepository.save(pullDay);
-    templateRepository.save(legsDay);
-    templateRepository.save(cardioDay);
-    templateRepository.save(restDay);
+    // Create default templates and save to get IDs
+    WorkoutTemplate pushDay = templateRepository.save(createPushTemplate());
+    WorkoutTemplate pullDay = templateRepository.save(createPullTemplate());
+    WorkoutTemplate legsDay = templateRepository.save(createLegsTemplate());
+    WorkoutTemplate cardioDay = templateRepository.save(createCardioTemplate());
+    WorkoutTemplate restDay = templateRepository.save(createRestTemplate());
 
     // Create default PPL plan
     WorkoutPlan pplPlan = new WorkoutPlan();
@@ -57,6 +51,8 @@ public class FitnessDataInitializer implements CommandLineRunner {
     pplPlan.setSchedule(schedule);
 
     planRepository.save(pplPlan);
+
+    System.out.println("Fitness data initialized: 5 templates + PPL plan created");
   }
 
   private WorkoutTemplate createPushTemplate() {

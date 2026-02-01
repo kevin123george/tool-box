@@ -2973,21 +2973,201 @@ async function loadFitnessTab() {
     document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
 
-    // Load today's workout first (most important)
-    await loadTodaysWorkout();
+    // Load templates first (needed by other functions)
+    await loadTemplates();
 
-    // Load all data in parallel
+    // Load today's workout and plans
+    await Promise.all([
+        loadTodaysWorkout(),
+        loadPlans()
+    ]);
+
+    // Load remaining data in parallel
     await Promise.all([
         loadFitnessStats(),
         loadWeeklyWorkouts(),
         loadWeightData(),
         loadWorkoutHistory(),
-        loadTemplates(),
         loadFitnessAnalytics()
     ]);
+}
 
-    // Load plans after templates (needs template cache)
-    await loadPlans();
+/* ===========================================================
+   DAY DETAILS PANEL
+=============================================================*/
+
+let selectedDayData = null;
+
+function showDayDetails(dayKey, templateId, dateStr) {
+    const panel = document.getElementById('dayDetailsPanel');
+    const title = document.getElementById('dayDetailsTitle');
+    const subtitle = document.getElementById('dayDetailsSubtitle');
+    const exercisesDiv = document.getElementById('dayDetailsExercises');
+    const startBtn = document.getElementById('dayDetailsStartBtn');
+
+    const dayNames = {
+        'MONDAY': 'Monday', 'TUESDAY': 'Tuesday', 'WEDNESDAY': 'Wednesday',
+        'THURSDAY': 'Thursday', 'FRIDAY': 'Friday', 'SATURDAY': 'Saturday', 'SUNDAY': 'Sunday'
+    };
+
+    if (!templateId) {
+        // Rest day
+        title.textContent = `${dayNames[dayKey]} - Rest Day`;
+        subtitle.textContent = 'Take it easy! Recovery is important.';
+        exercisesDiv.innerHTML = `
+            <div style="padding:20px; text-align:center; opacity:0.7;">
+                <div style="font-size:32px; margin-bottom:12px;">😴</div>
+                <div>No workout scheduled.</div>
+                <div style="margin-top:8px;">Rest days help your muscles recover and grow stronger!</div>
+            </div>
+        `;
+        startBtn.style.display = 'none';
+        selectedDayData = null;
+    } else {
+        // Find template
+        const template = templatesCache.find(t => t.id === templateId);
+        if (!template) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        selectedDayData = { template, dateStr, dayKey };
+
+        title.textContent = `${dayNames[dayKey]} - ${template.name}`;
+        subtitle.textContent = template.notes || `${template.estimatedDuration || 60} minutes`;
+
+        if (template.exercises && template.exercises.length > 0) {
+            exercisesDiv.innerHTML = `
+                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border); text-align:left;">
+                            <th style="padding:8px 4px;">#</th>
+                            <th style="padding:8px 4px;">Exercise</th>
+                            <th style="padding:8px 4px;">Sets</th>
+                            <th style="padding:8px 4px;">Reps</th>
+                            <th style="padding:8px 4px;">Weight</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${template.exercises.map((ex, idx) => `
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                                <td style="padding:8px 4px; opacity:0.5;">${idx + 1}</td>
+                                <td style="padding:8px 4px; font-weight:bold;">${ex.name}</td>
+                                <td style="padding:8px 4px;">${ex.sets || '-'}</td>
+                                <td style="padding:8px 4px;">${ex.reps || (ex.durationSeconds ? Math.round(ex.durationSeconds/60) + ' min' : '-')}</td>
+                                <td style="padding:8px 4px;">${ex.weight ? ex.weight + ' kg' : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top:12px; padding:12px; background:rgba(255,255,255,0.05); font-size:11px;">
+                    <strong>Tips:</strong>
+                    <ul style="margin:8px 0 0 16px; padding:0;">
+                        ${getExerciseTips(template.exerciseType)}
+                    </ul>
+                </div>
+            `;
+        } else {
+            exercisesDiv.innerHTML = '<div style="opacity:0.5; padding:12px;">No exercises defined yet. Edit the template to add exercises.</div>';
+        }
+
+        startBtn.style.display = 'inline-block';
+        startBtn.textContent = dateStr === new Date().toISOString().split('T')[0] ? 'START THIS WORKOUT' : 'LOG THIS WORKOUT';
+    }
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function getExerciseTips(exerciseType) {
+    const tips = {
+        'PUSH': [
+            '<li>Warm up with light sets before heavy lifts</li>',
+            '<li>Keep your core tight during pressing movements</li>',
+            '<li>Control the weight - don\'t bounce off your chest</li>',
+            '<li>Rest 2-3 minutes between heavy compound sets</li>'
+        ],
+        'PULL': [
+            '<li>Squeeze your back muscles at the top of each rep</li>',
+            '<li>Use straps if grip is limiting your deadlifts</li>',
+            '<li>Keep your elbows close during curls for better bicep activation</li>',
+            '<li>Pull with your elbows, not your hands</li>'
+        ],
+        'LEGS': [
+            '<li>Warm up thoroughly - legs have big muscle groups</li>',
+            '<li>Go deep on squats for full muscle activation</li>',
+            '<li>Keep your knees tracking over your toes</li>',
+            '<li>Don\'t skip calves!</li>'
+        ],
+        'CARDIO': [
+            '<li>Start slow and gradually increase intensity</li>',
+            '<li>Stay hydrated throughout</li>',
+            '<li>Focus on breathing rhythm</li>',
+            '<li>Cool down with stretching after</li>'
+        ],
+        'FULL_BODY': [
+            '<li>Start with compound movements when fresh</li>',
+            '<li>Alternate upper and lower body exercises</li>',
+            '<li>Keep rest periods shorter (60-90 seconds)</li>',
+            '<li>Focus on form over weight</li>'
+        ],
+        'CORE': [
+            '<li>Engage your core before each movement</li>',
+            '<li>Breathe out during the contraction</li>',
+            '<li>Quality over quantity - slow controlled reps</li>',
+            '<li>Don\'t pull on your neck during crunches</li>'
+        ]
+    };
+    return tips[exerciseType]?.join('') || '<li>Focus on proper form</li><li>Stay hydrated</li>';
+}
+
+function hideDayDetails() {
+    document.getElementById('dayDetailsPanel').style.display = 'none';
+    selectedDayData = null;
+}
+
+function startDayWorkout() {
+    if (!selectedDayData) return;
+
+    // If it's today, use the today's workout modal
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDayData.dateStr === today) {
+        hideDayDetails();
+        showTodaysWorkoutModal();
+    } else {
+        // Log for a different day
+        logWorkoutForDate(selectedDayData.template, selectedDayData.dateStr);
+    }
+}
+
+async function logWorkoutForDate(template, dateStr) {
+    try {
+        const res = await fetch(`${API}/api/fitness/workouts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                workoutDate: dateStr,
+                exerciseType: template.exerciseType,
+                durationMinutes: template.estimatedDuration,
+                notes: `Logged: ${template.name}`,
+                completed: true
+            })
+        });
+
+        if (!res.ok) throw new Error('Failed to log workout');
+
+        hideDayDetails();
+        showToast('Workout logged!', 'success');
+
+        await Promise.all([
+            loadFitnessStats(),
+            loadWeeklyWorkouts(),
+            loadWorkoutHistory()
+        ]);
+    } catch (e) {
+        console.error('Failed to log workout:', e);
+        showToast('Failed to log workout', 'error');
+    }
 }
 
 /* ===========================================================
@@ -3007,6 +3187,7 @@ async function loadTodaysWorkout() {
         const planEl = document.getElementById('todaysWorkoutPlan');
         const statusEl = document.getElementById('todaysWorkoutStatus');
         const actionsEl = document.getElementById('todaysWorkoutActions');
+        const previewEl = document.getElementById('todaysExercisePreview');
 
         if (todaysWorkoutData.todaysWorkout && todaysWorkoutData.todaysWorkout.completed) {
             // Already completed today
@@ -3014,8 +3195,9 @@ async function loadTodaysWorkout() {
             typeEl.textContent = todaysWorkoutData.scheduledTemplate?.name || 'Workout';
             typeEl.style.color = '#0f0';
             planEl.textContent = todaysWorkoutData.planName ? `From: ${todaysWorkoutData.planName}` : '';
-            statusEl.innerHTML = '<span style="color:#0f0;">✓ Completed today!</span>';
+            statusEl.innerHTML = '<span style="color:#0f0;">✓ Completed today! Great job!</span>';
             actionsEl.innerHTML = '<button class="btn" onclick="showTodaysWorkoutModal()">VIEW DETAILS</button>';
+            previewEl.innerHTML = '';
         } else if (todaysWorkoutData.scheduledTemplate) {
             // Has scheduled workout
             const template = todaysWorkoutData.scheduledTemplate;
@@ -3028,19 +3210,30 @@ async function loadTodaysWorkout() {
             const duration = template.estimatedDuration || 0;
             statusEl.innerHTML = `<span style="opacity:0.7;">${exerciseCount} exercises • ~${duration} min</span>`;
             actionsEl.innerHTML = '<button class="btn" onclick="showTodaysWorkoutModal()" style="background:#0f0; color:#000; font-weight:bold;">START WORKOUT</button>';
+
+            // Show exercise preview
+            if (template.exercises && template.exercises.length > 0) {
+                const exerciseList = template.exercises.map(ex => {
+                    const info = ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : '';
+                    return `<span style="margin-right:12px;">• ${ex.name} ${info}</span>`;
+                }).join('');
+                previewEl.innerHTML = `<div style="margin-top:8px; padding:8px; background:rgba(255,255,255,0.05); border-radius:4px;">${exerciseList}</div>`;
+            }
         } else {
             // Rest day
             banner.style.borderColor = '#888';
-            typeEl.textContent = 'Rest Day';
+            typeEl.textContent = 'Rest Day 😴';
             typeEl.style.color = '#888';
             planEl.textContent = todaysWorkoutData.planName ? `From: ${todaysWorkoutData.planName}` : 'No active plan';
-            statusEl.innerHTML = '<span style="opacity:0.7;">Take it easy today!</span>';
+            statusEl.innerHTML = '<span style="opacity:0.7;">Recovery day - your muscles grow while you rest!</span>';
             actionsEl.innerHTML = '<button class="btn" onclick="showTodaysWorkoutModal()">LOG ANYWAY</button>';
+            previewEl.innerHTML = '';
         }
     } catch (e) {
         console.error('Failed to load today\'s workout:', e);
         document.getElementById('todaysWorkoutType').textContent = 'No plan active';
         document.getElementById('todaysWorkoutStatus').textContent = 'Create a plan to get started';
+        document.getElementById('todaysExercisePreview').innerHTML = '';
     }
 }
 
@@ -3200,45 +3393,102 @@ async function loadFitnessStats() {
 
 async function loadWeeklyWorkouts() {
     try {
-        const res = await fetch(`${API}/api/fitness/workouts/week`);
-        if (!res.ok) throw new Error('Failed to load weekly workouts');
-        const workouts = await res.json();
+        // Fetch both workouts and active plan
+        const [workoutsRes, planRes] = await Promise.all([
+            fetch(`${API}/api/fitness/workouts/week`),
+            fetch(`${API}/api/fitness/plans/active`)
+        ]);
 
-        // Map workouts by day
-        const dayMap = {
-            'MONDAY': 'Mon',
-            'TUESDAY': 'Tue',
-            'WEDNESDAY': 'Wed',
-            'THURSDAY': 'Thu',
-            'FRIDAY': 'Fri'
-        };
+        const workouts = workoutsRes.ok ? await workoutsRes.json() : [];
+        const activePlan = planRes.ok ? await planRes.json() : null;
 
-        // Reset all days
-        Object.keys(dayMap).forEach(day => {
-            const abbrev = dayMap[day];
-            document.getElementById(`day${abbrev}`).textContent = '-';
-            document.getElementById(`status${abbrev}`).textContent = '';
-            document.getElementById(`status${abbrev}`).className = 'day-status';
-        });
+        // Get week dates
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0 = Sunday
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-        // Fill in workouts
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const dayKeys = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+        // Map workouts by date string
+        const workoutsByDate = {};
         workouts.forEach(w => {
-            const dayKey = w.dayOfWeek;
-            if (dayMap[dayKey]) {
-                const abbrev = dayMap[dayKey];
-                const typeDisplay = w.exerciseType ? w.exerciseType.replace('_', ' ') : '-';
-                document.getElementById(`day${abbrev}`).textContent = typeDisplay;
-
-                const statusEl = document.getElementById(`status${abbrev}`);
-                if (w.completed) {
-                    statusEl.textContent = '✓';
-                    statusEl.classList.add('completed');
-                } else {
-                    statusEl.textContent = '○';
-                    statusEl.classList.add('pending');
-                }
+            if (w.workoutDate) {
+                workoutsByDate[w.workoutDate] = w;
             }
         });
+
+        // Build schedule HTML
+        const container = document.getElementById('weeklySchedule');
+        let html = '';
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            const dateStr = date.toISOString().split('T')[0];
+            const isToday = dateStr === today.toISOString().split('T')[0];
+            const isPast = date < new Date(today.toISOString().split('T')[0]);
+
+            // Get planned workout from active plan
+            let planned = null;
+            if (activePlan && activePlan.schedule) {
+                const templateId = activePlan.schedule[dayKeys[i]];
+                if (templateId) {
+                    const template = templatesCache.find(t => t.id === templateId);
+                    planned = template ? template.name : 'Workout';
+                }
+            }
+
+            // Get actual workout
+            const actual = workoutsByDate[dateStr];
+
+            // Determine status
+            let borderColor = '#888';
+            let statusIcon = '';
+            let statusClass = '';
+
+            if (actual && actual.completed) {
+                borderColor = '#0f0';
+                statusIcon = '✓';
+                statusClass = 'completed';
+            } else if (actual && !actual.completed) {
+                borderColor = '#f90';
+                statusIcon = '○';
+                statusClass = 'pending';
+            } else if (planned && !isPast) {
+                borderColor = '#f90';
+                statusIcon = '○';
+                statusClass = 'pending';
+            } else if (!planned) {
+                borderColor = '#888';
+            }
+
+            const actualType = actual?.exerciseType?.replace('_', ' ') || null;
+            const plannedDisplay = planned?.replace(' Day', '') || 'Rest';
+
+            // Find template ID for this day
+            const templateId = activePlan?.schedule?.[dayKeys[i]] || null;
+
+            html += `
+                <div class="day-card" style="border-color:${borderColor}; ${isToday ? 'background:rgba(255,255,255,0.05);' : ''} cursor:pointer;"
+                     onclick="showDayDetails('${dayKeys[i]}', '${templateId || ''}', '${dateStr}')">
+                    <div class="day-name" style="${isToday ? 'color:#0f0;' : ''}">${days[i]}${isToday ? ' ◀' : ''}</div>
+                    <div style="font-size:9px; opacity:0.5; margin-bottom:4px;">${date.getDate()}/${date.getMonth() + 1}</div>
+                    <div class="day-plan" style="font-size:9px; opacity:0.7; margin-bottom:2px;">Plan: ${plannedDisplay}</div>
+                    ${actual ? `
+                        <div class="day-actual" style="font-size:10px; color:${actual.completed ? '#0f0' : '#f90'};">
+                            Did: ${actualType || 'Workout'}
+                        </div>
+                    ` : (isPast && planned ? `
+                        <div class="day-actual" style="font-size:10px; color:#f33;">Missed</div>
+                    ` : '')}
+                    <div class="day-status ${statusClass}" style="margin-top:4px;">${statusIcon}</div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
     } catch (e) {
         console.error('Failed to load weekly workouts:', e);
     }
