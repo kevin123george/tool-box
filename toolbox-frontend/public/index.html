@@ -26,6 +26,9 @@
 <!-- Toast Container -->
 <div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
 
+<!-- Tab Swipe Indicator (mobile) -->
+<div id="tabSwipeIndicator" class="tab-swipe-indicator"></div>
+
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
     <div class="loading-spinner">
@@ -36,7 +39,47 @@
 
 <button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
 
+<!-- Mobile Navigation -->
+<button id="mobileMenuToggle" class="mobile-menu-toggle" onclick="toggleMobileNav()" aria-label="Open navigation menu">☰</button>
+
+<div id="mobileNavOverlay" class="mobile-nav-overlay">
+    <span class="mobile-nav-close" onclick="toggleMobileNav()">×</span>
+    <div class="mobile-nav-grid">
+        <div class="mobile-nav-item" onclick="mobileNavTo('dashboard')">Dashboard</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('memo')">Memos</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('finance')">Finance</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('stocks')">Stocks</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('stockhistory')">Stock History</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('research')">Research</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('budget')">Budget</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('subscriptions')">Subscriptions</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('calendar')">Calendar</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('analytics')">Analytics</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('systemstats')">System Stats</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('fitness')">Fitness</div>
+    </div>
+</div>
+
 <h1>Hey Kevin!!!</h1>
+
+<!-- Current tab indicator for mobile -->
+<div id="currentTabName" class="current-tab-name">Dashboard</div>
+
+<!-- Tab dots for mobile navigation indicator -->
+<div class="tab-dots" id="tabDots">
+    <div class="tab-dot active" data-tab="dashboard"></div>
+    <div class="tab-dot" data-tab="memo"></div>
+    <div class="tab-dot" data-tab="finance"></div>
+    <div class="tab-dot" data-tab="stocks"></div>
+    <div class="tab-dot" data-tab="stockhistory"></div>
+    <div class="tab-dot" data-tab="research"></div>
+    <div class="tab-dot" data-tab="budget"></div>
+    <div class="tab-dot" data-tab="subscriptions"></div>
+    <div class="tab-dot" data-tab="calendar"></div>
+    <div class="tab-dot" data-tab="analytics"></div>
+    <div class="tab-dot" data-tab="systemstats"></div>
+    <div class="tab-dot" data-tab="fitness"></div>
+</div>
 
 <div class="tabs" role="tablist" aria-label="Main navigation">
     <div id="tabDashboard" class="tab" onclick="switchTab('dashboard')" role="tab" aria-selected="false" aria-controls="dashboardTabContent" tabindex="0">Dashboard</div>
@@ -1366,11 +1409,11 @@
     <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
         <!-- Weekly Schedule View -->
         <div class="add-box">
-            <h3 style="margin-top:0;">This Week <span style="font-size:11px; opacity:0.5; font-weight:normal;">(click a day to see exercises)</span></h3>
-            <div id="weeklySchedule" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px;">
+            <h3 style="margin-top:0;">This Week <span style="font-size:11px; opacity:0.5; font-weight:normal;" class="desktop-only">(click a day to see exercises)</span><span class="mobile-only" style="font-size:11px; opacity:0.5; font-weight:normal;">(tap a day)</span></h3>
+            <div id="weeklySchedule" class="swipe-hint" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px;">
                 <!-- Will be populated by JS -->
             </div>
-            <div style="margin-top:12px; font-size:11px; opacity:0.7; display:flex; gap:16px;">
+            <div style="margin-top:12px; font-size:11px; opacity:0.7; display:flex; gap:16px; flex-wrap:wrap;">
                 <span><span style="color:#0f0;">■</span> Completed</span>
                 <span><span style="color:#f90;">■</span> Planned</span>
                 <span><span style="color:#888;">■</span> Rest</span>
@@ -1380,11 +1423,11 @@
         <!-- Day Details Panel (shows exercises for selected day) -->
         <div id="dayDetailsPanel" class="add-box" style="display:none; margin-top:16px; border-color:#39f;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <div>
+                <div style="flex:1; min-width:0;">
                     <h3 style="margin:0;" id="dayDetailsTitle">Monday - Push Day</h3>
                     <div style="font-size:12px; opacity:0.7;" id="dayDetailsSubtitle">Chest, Shoulders, Triceps</div>
                 </div>
-                <button class="btn" onclick="hideDayDetails()">CLOSE</button>
+                <button class="btn" onclick="hideDayDetails()" style="min-width:44px; min-height:44px;">✕ <span class="desktop-only">CLOSE</span></button>
             </div>
             <div id="dayDetailsExercises">
                 <!-- Exercises will be listed here -->
@@ -1549,30 +1592,33 @@
 <!-- Today's Workout Modal -->
 <div id="todaysWorkoutModal" class="modal-overlay">
     <div class="modal" style="max-width:500px;">
-        <h3 id="todaysWorkoutModalTitle">Today's Workout</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 id="todaysWorkoutModalTitle" style="margin:0;">Today's Workout</h3>
+            <button class="btn" onclick="closeModal('todaysWorkoutModal')" style="min-width:44px; min-height:44px; padding:8px;">✕</button>
+        </div>
         <div id="todaysWorkoutModalPlan" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
 
-        <div id="todaysExerciseList" style="max-height:400px; overflow-y:auto;">
+        <div id="todaysExerciseList" style="max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
             <!-- Exercise checklist will be populated here -->
         </div>
 
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
                 <div>
-                    <label style="font-size:12px;">Duration (min):</label>
-                    <input type="number" id="todayWorkoutDuration" style="width:80px; margin-left:8px;" placeholder="60">
+                    <label style="font-size:12px; display:block; margin-bottom:4px;">Duration (min)</label>
+                    <input type="number" id="todayWorkoutDuration" placeholder="60" inputmode="numeric">
                 </div>
                 <div>
-                    <label style="font-size:12px;">Calories:</label>
-                    <input type="number" id="todayWorkoutCalories" style="width:80px; margin-left:8px;" placeholder="300">
+                    <label style="font-size:12px; display:block; margin-bottom:4px;">Calories</label>
+                    <input type="number" id="todayWorkoutCalories" placeholder="300" inputmode="numeric">
                 </div>
             </div>
             <textarea id="todayWorkoutNotes" placeholder="Notes (optional)" rows="2" style="margin-bottom:12px;"></textarea>
         </div>
 
-        <div style="display:flex; gap:8px;">
-            <button class="btn" onclick="completeTodaysWorkout()" style="background:#0f0; color:#000; flex:1;">COMPLETE WORKOUT</button>
-            <button class="btn" onclick="closeModal('todaysWorkoutModal')">CANCEL</button>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:8px;">
+            <button class="btn" onclick="completeTodaysWorkout()" style="background:#0f0; color:#000; font-weight:bold; min-height:48px;">✓ COMPLETE WORKOUT</button>
+            <button class="btn" onclick="closeModal('todaysWorkoutModal')" style="min-height:48px;">CANCEL</button>
         </div>
     </div>
 </div>

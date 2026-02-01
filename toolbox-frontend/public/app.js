@@ -522,6 +522,203 @@ function switchTab(which) {
 function stripHtml(h){ let d=document.createElement("div"); d.innerHTML=h; return d.innerText; }
 function truncate(s,n){ return !s?"" : s.length>n ? s.slice(0,n-3)+"..." : s; }
 
+// Format date as YYYY-MM-DD in local timezone (not UTC)
+function formatLocalDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/* =========================
+   MOBILE NAVIGATION
+   ========================= */
+
+function toggleMobileNav() {
+    const overlay = document.getElementById('mobileNavOverlay');
+    const toggle = document.getElementById('mobileMenuToggle');
+
+    if (overlay.classList.contains('show')) {
+        overlay.classList.remove('show');
+        toggle.classList.remove('open');
+        toggle.innerHTML = '☰';
+        document.body.style.overflow = '';
+    } else {
+        overlay.classList.add('show');
+        toggle.classList.add('open');
+        toggle.innerHTML = '×';
+        document.body.style.overflow = 'hidden';
+        updateMobileNavActive();
+    }
+}
+
+function mobileNavTo(tab) {
+    toggleMobileNav();
+    switchTab(tab);
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateMobileNavActive() {
+    const savedTab = localStorage.getItem('toolbox_active_tab') || 'dashboard';
+    document.querySelectorAll('.mobile-nav-item').forEach(item => {
+        const tabName = item.getAttribute('onclick').match(/mobileNavTo\('(\w+)'\)/)?.[1];
+        item.classList.toggle('active', tabName === savedTab);
+    });
+}
+
+// Close mobile nav on escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const overlay = document.getElementById('mobileNavOverlay');
+        if (overlay?.classList.contains('show')) {
+            toggleMobileNav();
+        }
+    }
+});
+
+// Scroll active tab into view on mobile
+function scrollActiveTabIntoView() {
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab && window.innerWidth <= 768) {
+        activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+}
+
+// Call after tab switch
+const originalSwitchTab = switchTab;
+switchTab = function(which) {
+    originalSwitchTab(which);
+    setTimeout(scrollActiveTabIntoView, 100);
+    updateMobileTabIndicators(which);
+};
+
+// Update mobile tab indicators (dots and current tab name)
+function updateMobileTabIndicators(tabName) {
+    const tabNames = {
+        'dashboard': 'Dashboard',
+        'memo': 'Memos',
+        'finance': 'Finance',
+        'stocks': 'Stocks',
+        'stockhistory': 'Stock History',
+        'research': 'Research',
+        'budget': 'Budget',
+        'subscriptions': 'Subscriptions',
+        'calendar': 'Calendar',
+        'analytics': 'Analytics',
+        'systemstats': 'System Stats',
+        'fitness': 'Fitness'
+    };
+
+    // Update current tab name
+    const currentTabEl = document.getElementById('currentTabName');
+    if (currentTabEl) {
+        currentTabEl.textContent = tabNames[tabName] || tabName;
+    }
+
+    // Update tab dots
+    document.querySelectorAll('.tab-dot').forEach(dot => {
+        dot.classList.toggle('active', dot.dataset.tab === tabName);
+    });
+
+    // Show brief indicator on swipe
+    if (isMobile()) {
+        const indicator = document.getElementById('tabSwipeIndicator');
+        if (indicator) {
+            indicator.textContent = tabNames[tabName] || tabName;
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 600);
+        }
+    }
+}
+
+/* =========================
+   SWIPE GESTURES FOR TABS
+   ========================= */
+
+(function initSwipeNavigation() {
+    const tabOrder = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness'];
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    const mainContent = document.getElementById('main-content');
+    if (!mainContent) return;
+
+    mainContent.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    mainContent.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const diffX = touchStartX - touchEndX;
+        const diffY = touchStartY - touchEndY;
+        const minSwipeDistance = 80;
+
+        // Only trigger if horizontal swipe is greater than vertical (not scrolling)
+        if (Math.abs(diffX) < minSwipeDistance || Math.abs(diffX) < Math.abs(diffY)) {
+            return;
+        }
+
+        const currentTab = localStorage.getItem('toolbox_active_tab') || 'dashboard';
+        const currentIndex = tabOrder.indexOf(currentTab);
+
+        if (diffX > 0) {
+            // Swipe left - next tab
+            const nextIndex = (currentIndex + 1) % tabOrder.length;
+            switchTab(tabOrder[nextIndex]);
+        } else {
+            // Swipe right - previous tab
+            const prevIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
+            switchTab(tabOrder[prevIndex]);
+        }
+    }
+})();
+
+/* =========================
+   RESPONSIVE HELPERS
+   ========================= */
+
+// Check if mobile device
+function isMobile() {
+    return window.innerWidth <= 768 || 'ontouchstart' in window;
+}
+
+// Hide mobile nav when resizing to desktop
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+        const overlay = document.getElementById('mobileNavOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+        if (overlay?.classList.contains('show')) {
+            overlay.classList.remove('show');
+            toggle?.classList.remove('open');
+            if (toggle) toggle.innerHTML = '☰';
+            document.body.style.overflow = '';
+        }
+    }
+});
+
+// Add click handlers to tab dots
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const tab = dot.dataset.tab;
+            if (tab) switchTab(tab);
+        });
+    });
+
+    // Initialize mobile indicators on load
+    const savedTab = localStorage.getItem('toolbox_active_tab') || 'dashboard';
+    updateMobileTabIndicators(savedTab);
+});
+
 /* Modal Utils */
 function openModal(id){ document.getElementById(id).style.display="flex"; }
 function closeModal(id){ document.getElementById(id).style.display="none"; }
@@ -2979,8 +3176,8 @@ function attachShowMoreListeners() {
     if (savedTab && validTabs.includes(savedTab)) {
         switchTab(savedTab);
     } else {
-        // Default to memo tab
-        switchTab('memo');
+        // Default to dashboard tab
+        switchTab('dashboard');
     }
 })();
 
@@ -2991,9 +3188,10 @@ function attachShowMoreListeners() {
 let weightChart = null;
 
 async function loadFitnessTab() {
-    // Set default dates
-    document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+    // Set default dates (using local timezone)
+    const todayStr = formatLocalDate(new Date());
+    document.getElementById('workoutDate').value = todayStr;
+    document.getElementById('weightDate').value = todayStr;
 
     // Load templates first (needed by other functions)
     await loadTemplates();
@@ -3094,7 +3292,7 @@ function showDayDetails(dayKey, templateId, dateStr) {
         }
 
         startBtn.style.display = 'inline-block';
-        startBtn.textContent = dateStr === new Date().toISOString().split('T')[0] ? 'START THIS WORKOUT' : 'LOG THIS WORKOUT';
+        startBtn.textContent = dateStr === formatLocalDate(new Date()) ? 'START THIS WORKOUT' : 'LOG THIS WORKOUT';
     }
 
     panel.style.display = 'block';
@@ -3152,7 +3350,7 @@ function startDayWorkout() {
     if (!selectedDayData) return;
 
     // If it's today, use the today's workout modal
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate(new Date());
     if (selectedDayData.dateStr === today) {
         hideDayDetails();
         showTodaysWorkoutModal();
@@ -3352,7 +3550,7 @@ async function completeTodaysWorkout() {
         let url = `${API}/api/fitness/workouts`;
 
         const workoutData = {
-            workoutDate: new Date().toISOString().split('T')[0],
+            workoutDate: formatLocalDate(new Date()),
             exerciseType: exerciseType,
             durationMinutes: duration ? parseInt(duration) : null,
             caloriesBurned: calories ? parseInt(calories) : null,
@@ -3415,9 +3613,12 @@ async function loadFitnessStats() {
 
 async function loadWeeklyWorkouts() {
     try {
+        // Pass local date to ensure correct week calculation regardless of server timezone
+        const localToday = formatLocalDate(new Date());
+
         // Fetch both workouts and active plan
         const [workoutsRes, planRes] = await Promise.all([
-            fetch(`${API}/api/fitness/workouts/week`),
+            fetch(`${API}/api/fitness/workouts/week?date=${localToday}`),
             fetch(`${API}/api/fitness/plans/active`)
         ]);
 
@@ -3433,11 +3634,13 @@ async function loadWeeklyWorkouts() {
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const dayKeys = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-        // Map workouts by date string
+        // Map workouts by date string (normalize to YYYY-MM-DD format)
         const workoutsByDate = {};
         workouts.forEach(w => {
             if (w.workoutDate) {
-                workoutsByDate[w.workoutDate] = w;
+                // Normalize date format - handle both "2026-02-02" and "2026-02-02T00:00:00" formats
+                const normalizedDate = w.workoutDate.split('T')[0];
+                workoutsByDate[normalizedDate] = w;
             }
         });
 
@@ -3445,12 +3648,14 @@ async function loadWeeklyWorkouts() {
         const container = document.getElementById('weeklySchedule');
         let html = '';
 
+        const todayStr = formatLocalDate(today);
+
         for (let i = 0; i < 7; i++) {
             const date = new Date(monday);
             date.setDate(monday.getDate() + i);
-            const dateStr = date.toISOString().split('T')[0];
-            const isToday = dateStr === today.toISOString().split('T')[0];
-            const isPast = date < new Date(today.toISOString().split('T')[0]);
+            const dateStr = formatLocalDate(date);
+            const isToday = dateStr === todayStr;
+            const isPast = dateStr < todayStr;
 
             // Get planned workout from active plan
             let planned = null;
