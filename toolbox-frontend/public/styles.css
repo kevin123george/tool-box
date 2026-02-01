@@ -108,7 +108,7 @@ input, textarea, select {
     position: fixed;
     top: 12px;
     left: 12px;
-    z-index: 101;
+    z-index: 1001; /* Above overlay */
     background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
@@ -134,19 +134,6 @@ input, textarea, select {
 .mobile-nav-overlay.show,
 .mobile-nav-overlay.active {
     display: block;
-}
-
-.mobile-nav-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    font-size: 28px;
-    cursor: pointer;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .mobile-nav-grid {
