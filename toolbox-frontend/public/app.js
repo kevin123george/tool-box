@@ -3282,37 +3282,37 @@ function showDayDetails(dayKey, templateId, dateStr) {
 
         if (template.exercises && template.exercises.length > 0) {
             exercisesDiv.innerHTML = `
-                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                <table class="exercise-table">
                     <thead>
-                        <tr style="border-bottom:1px solid var(--border); text-align:left;">
-                            <th style="padding:8px 4px;">#</th>
-                            <th style="padding:8px 4px;">Exercise</th>
-                            <th style="padding:8px 4px;">Sets</th>
-                            <th style="padding:8px 4px;">Reps</th>
-                            <th style="padding:8px 4px;">Weight</th>
+                        <tr>
+                            <th>#</th>
+                            <th>Exercise</th>
+                            <th>Sets</th>
+                            <th>Reps</th>
+                            <th>Weight</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${template.exercises.map((ex, idx) => `
-                            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                                <td style="padding:8px 4px; opacity:0.5;">${idx + 1}</td>
-                                <td style="padding:8px 4px; font-weight:bold;">${ex.name}</td>
-                                <td style="padding:8px 4px;">${ex.sets || '-'}</td>
-                                <td style="padding:8px 4px;">${ex.reps || (ex.durationSeconds ? Math.round(ex.durationSeconds/60) + ' min' : '-')}</td>
-                                <td style="padding:8px 4px;">${ex.weight ? ex.weight + ' kg' : '-'}</td>
+                            <tr>
+                                <td class="row-num">${idx + 1}</td>
+                                <td class="exercise-name">${ex.name}</td>
+                                <td>${ex.sets || '-'}</td>
+                                <td>${ex.reps || (ex.durationSeconds ? Math.round(ex.durationSeconds/60) + ' min' : '-')}</td>
+                                <td>${ex.weight ? ex.weight + ' kg' : '-'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
-                <div style="margin-top:12px; padding:12px; background:rgba(255,255,255,0.05); font-size:11px;">
-                    <strong>Tips:</strong>
-                    <ul style="margin:8px 0 0 16px; padding:0;">
+                <div class="exercise-tips">
+                    <strong>💡 Tips:</strong>
+                    <ul>
                         ${getExerciseTips(template.exerciseType)}
                     </ul>
                 </div>
             `;
         } else {
-            exercisesDiv.innerHTML = '<div style="opacity:0.5; padding:12px;">No exercises defined yet. Edit the template to add exercises.</div>';
+            exercisesDiv.innerHTML = '<div class="no-exercises">No exercises defined yet. Edit the template to add exercises.</div>';
         }
 
         startBtn.style.display = 'inline-block';
