@@ -1326,6 +1326,21 @@
 <div id="fitnessTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabFitness">
     <h2>Fitness Tracker</h2>
 
+    <!-- Today's Workout Banner -->
+    <div id="todaysWorkoutBanner" class="add-box" style="margin-bottom:20px; border-color:#0f0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+                <div style="font-size:11px; opacity:0.7;">TODAY'S WORKOUT</div>
+                <div style="font-size:20px; font-weight:bold;" id="todaysWorkoutType">Loading...</div>
+                <div style="font-size:12px; opacity:0.7;" id="todaysWorkoutPlan"></div>
+            </div>
+            <div id="todaysWorkoutActions">
+                <button class="btn" onclick="showTodaysWorkoutModal()" style="background:#0f0; color:#000; font-weight:bold;">START WORKOUT</button>
+            </div>
+        </div>
+        <div id="todaysWorkoutStatus" style="font-size:12px;"></div>
+    </div>
+
     <!-- Stats Cards -->
     <div class="stats-grid" style="margin-bottom:20px;">
         <div class="stat-card">
@@ -1529,6 +1544,37 @@
         <textarea id="planNotes" placeholder="Notes" rows="2" style="margin-bottom:8px;"></textarea>
         <button class="btn" onclick="savePlan()">SAVE</button>
         <button class="btn" onclick="closeModal('planModal')">CANCEL</button>
+    </div>
+</div>
+
+<!-- Today's Workout Modal -->
+<div id="todaysWorkoutModal" class="modal-overlay">
+    <div class="modal" style="max-width:500px;">
+        <h3 id="todaysWorkoutModalTitle">Today's Workout</h3>
+        <div id="todaysWorkoutModalPlan" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
+
+        <div id="todaysExerciseList" style="max-height:400px; overflow-y:auto;">
+            <!-- Exercise checklist will be populated here -->
+        </div>
+
+        <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                    <label style="font-size:12px;">Duration (min):</label>
+                    <input type="number" id="todayWorkoutDuration" style="width:80px; margin-left:8px;" placeholder="60">
+                </div>
+                <div>
+                    <label style="font-size:12px;">Calories:</label>
+                    <input type="number" id="todayWorkoutCalories" style="width:80px; margin-left:8px;" placeholder="300">
+                </div>
+            </div>
+            <textarea id="todayWorkoutNotes" placeholder="Notes (optional)" rows="2" style="margin-bottom:12px;"></textarea>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="completeTodaysWorkout()" style="background:#0f0; color:#000; flex:1;">COMPLETE WORKOUT</button>
+            <button class="btn" onclick="closeModal('todaysWorkoutModal')">CANCEL</button>
+        </div>
     </div>
 </div>
 

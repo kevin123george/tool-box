@@ -1750,3 +1750,17 @@ textarea:focus,
 .day-card .day-status.pending {
     color: #f90;
 }
+
+/* Exercise Checklist */
+.exercise-checklist-item {
+    transition: background 0.2s;
+}
+
+.exercise-checklist-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.exercise-checklist-item input[type="checkbox"]:checked + div {
+    opacity: 0.5;
+    text-decoration: line-through;
+}

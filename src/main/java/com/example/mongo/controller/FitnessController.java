@@ -200,6 +200,26 @@ public class FitnessController {
     return ResponseEntity.ok().build();
   }
 
+  // ===== TODAY'S WORKOUT =====
+
+  @GetMapping("/today")
+  public ResponseEntity<Map<String, Object>> getTodaysWorkout() {
+    Map<String, Object> result = new java.util.HashMap<>();
+
+    // Get scheduled template for today
+    WorkoutTemplate scheduled = fitnessService.getTodaysScheduledWorkout();
+    result.put("scheduledTemplate", scheduled);
+
+    // Get today's logged workout if exists
+    WorkoutLog todaysLog = fitnessService.getTodaysWorkout();
+    result.put("todaysWorkout", todaysLog);
+
+    // Get active plan name
+    fitnessService.getActivePlan().ifPresent(plan -> result.put("planName", plan.getName()));
+
+    return ResponseEntity.ok(result);
+  }
+
   // ===== QUICK LOG FROM TEMPLATE =====
 
   @PostMapping("/workouts/from-template/{templateId}")

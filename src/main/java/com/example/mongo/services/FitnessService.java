@@ -350,6 +350,30 @@ public class FitnessService {
     return workoutLogRepository.save(workout);
   }
 
+  // ===== TODAY'S WORKOUT =====
+
+  public WorkoutTemplate getTodaysScheduledWorkout() {
+    Optional<WorkoutPlan> activePlanOpt = workoutPlanRepository.findByActiveTrue();
+    if (activePlanOpt.isEmpty()) {
+      return null;
+    }
+
+    WorkoutPlan activePlan = activePlanOpt.get();
+    DayOfWeek today = LocalDate.now().getDayOfWeek();
+    String templateId = activePlan.getSchedule().get(today);
+
+    if (templateId == null || templateId.isEmpty()) {
+      return null; // Rest day
+    }
+
+    return workoutTemplateRepository.findById(templateId).orElse(null);
+  }
+
+  public WorkoutLog getTodaysWorkout() {
+    LocalDate today = LocalDate.now();
+    return workoutLogRepository.findByWorkoutDate(today).orElse(null);
+  }
+
   // ===== ANALYTICS METHODS =====
 
   public FitnessAnalyticsDTO getAnalytics(int weeks) {

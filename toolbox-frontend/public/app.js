@@ -2973,6 +2973,9 @@ async function loadFitnessTab() {
     document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
 
+    // Load today's workout first (most important)
+    await loadTodaysWorkout();
+
     // Load all data in parallel
     await Promise.all([
         loadFitnessStats(),
@@ -2985,6 +2988,191 @@ async function loadFitnessTab() {
 
     // Load plans after templates (needs template cache)
     await loadPlans();
+}
+
+/* ===========================================================
+   TODAY'S WORKOUT
+=============================================================*/
+
+let todaysWorkoutData = null;
+
+async function loadTodaysWorkout() {
+    try {
+        const res = await fetch(`${API}/api/fitness/today`);
+        if (!res.ok) throw new Error('Failed to load today\'s workout');
+        todaysWorkoutData = await res.json();
+
+        const banner = document.getElementById('todaysWorkoutBanner');
+        const typeEl = document.getElementById('todaysWorkoutType');
+        const planEl = document.getElementById('todaysWorkoutPlan');
+        const statusEl = document.getElementById('todaysWorkoutStatus');
+        const actionsEl = document.getElementById('todaysWorkoutActions');
+
+        if (todaysWorkoutData.todaysWorkout && todaysWorkoutData.todaysWorkout.completed) {
+            // Already completed today
+            banner.style.borderColor = '#0f0';
+            typeEl.textContent = todaysWorkoutData.scheduledTemplate?.name || 'Workout';
+            typeEl.style.color = '#0f0';
+            planEl.textContent = todaysWorkoutData.planName ? `From: ${todaysWorkoutData.planName}` : '';
+            statusEl.innerHTML = '<span style="color:#0f0;">✓ Completed today!</span>';
+            actionsEl.innerHTML = '<button class="btn" onclick="showTodaysWorkoutModal()">VIEW DETAILS</button>';
+        } else if (todaysWorkoutData.scheduledTemplate) {
+            // Has scheduled workout
+            const template = todaysWorkoutData.scheduledTemplate;
+            banner.style.borderColor = '#f90';
+            typeEl.textContent = template.name;
+            typeEl.style.color = '#f90';
+            planEl.textContent = todaysWorkoutData.planName ? `From: ${todaysWorkoutData.planName}` : '';
+
+            const exerciseCount = template.exercises?.length || 0;
+            const duration = template.estimatedDuration || 0;
+            statusEl.innerHTML = `<span style="opacity:0.7;">${exerciseCount} exercises • ~${duration} min</span>`;
+            actionsEl.innerHTML = '<button class="btn" onclick="showTodaysWorkoutModal()" style="background:#0f0; color:#000; font-weight:bold;">START WORKOUT</button>';
+        } else {
+            // Rest day
+            banner.style.borderColor = '#888';
+            typeEl.textContent = 'Rest Day';
+            typeEl.style.color = '#888';
+            planEl.textContent = todaysWorkoutData.planName ? `From: ${todaysWorkoutData.planName}` : 'No active plan';
+            statusEl.innerHTML = '<span style="opacity:0.7;">Take it easy today!</span>';
+            actionsEl.innerHTML = '<button class="btn" onclick="showTodaysWorkoutModal()">LOG ANYWAY</button>';
+        }
+    } catch (e) {
+        console.error('Failed to load today\'s workout:', e);
+        document.getElementById('todaysWorkoutType').textContent = 'No plan active';
+        document.getElementById('todaysWorkoutStatus').textContent = 'Create a plan to get started';
+    }
+}
+
+function showTodaysWorkoutModal() {
+    const modal = document.getElementById('todaysWorkoutModal');
+    const title = document.getElementById('todaysWorkoutModalTitle');
+    const planInfo = document.getElementById('todaysWorkoutModalPlan');
+    const exerciseList = document.getElementById('todaysExerciseList');
+
+    if (!todaysWorkoutData) {
+        showToast('No workout data available', 'error');
+        return;
+    }
+
+    const template = todaysWorkoutData.scheduledTemplate;
+    const existingWorkout = todaysWorkoutData.todaysWorkout;
+
+    if (template) {
+        title.textContent = template.name;
+        planInfo.textContent = template.notes || '';
+
+        // Build exercise checklist
+        if (template.exercises && template.exercises.length > 0) {
+            exerciseList.innerHTML = template.exercises.map((ex, idx) => {
+                const isChecked = existingWorkout?.completed ? 'checked disabled' : '';
+                const weightInfo = ex.weight ? `@ ${ex.weight}kg` : '';
+                const setsReps = ex.sets && ex.reps ? `${ex.sets} x ${ex.reps} ${weightInfo}` : '';
+                const duration = ex.durationSeconds ? `${Math.round(ex.durationSeconds / 60)} min` : '';
+
+                return `
+                    <div class="exercise-checklist-item" style="display:flex; align-items:center; padding:12px; border:1px solid var(--border); margin-bottom:8px;">
+                        <input type="checkbox" id="exercise_${idx}" ${isChecked} style="width:20px; height:20px; margin-right:12px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:bold;">${ex.name}</div>
+                            <div style="font-size:12px; opacity:0.7;">${setsReps || duration || ''}</div>
+                            ${ex.notes ? `<div style="font-size:11px; opacity:0.5;">${ex.notes}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            exerciseList.innerHTML = '<div style="opacity:0.5; padding:12px;">No exercises defined for this template</div>';
+        }
+
+        // Pre-fill duration
+        document.getElementById('todayWorkoutDuration').value = template.estimatedDuration || '';
+    } else {
+        title.textContent = 'Rest Day';
+        planInfo.textContent = 'No workout scheduled, but you can log one anyway';
+        exerciseList.innerHTML = `
+            <div style="padding:12px;">
+                <label>Workout Type:</label>
+                <select id="restDayWorkoutType" style="margin-top:8px;">
+                    <option value="CARDIO">Cardio</option>
+                    <option value="FULL_BODY">Full Body</option>
+                    <option value="CORE">Core</option>
+                    <option value="REST">Rest (just tracking)</option>
+                </select>
+            </div>
+        `;
+    }
+
+    // Pre-fill notes if existing workout
+    if (existingWorkout) {
+        document.getElementById('todayWorkoutDuration').value = existingWorkout.durationMinutes || '';
+        document.getElementById('todayWorkoutCalories').value = existingWorkout.caloriesBurned || '';
+        document.getElementById('todayWorkoutNotes').value = existingWorkout.notes || '';
+    } else {
+        document.getElementById('todayWorkoutCalories').value = '';
+        document.getElementById('todayWorkoutNotes').value = '';
+    }
+
+    openModal('todaysWorkoutModal');
+}
+
+async function completeTodaysWorkout() {
+    const duration = document.getElementById('todayWorkoutDuration').value;
+    const calories = document.getElementById('todayWorkoutCalories').value;
+    const notes = document.getElementById('todayWorkoutNotes').value;
+
+    const template = todaysWorkoutData?.scheduledTemplate;
+    const existingWorkout = todaysWorkoutData?.todaysWorkout;
+
+    let exerciseType = template?.exerciseType || 'FULL_BODY';
+
+    // If rest day, get selected type
+    const restDaySelect = document.getElementById('restDayWorkoutType');
+    if (restDaySelect) {
+        exerciseType = restDaySelect.value;
+    }
+
+    try {
+        let method = 'POST';
+        let url = `${API}/api/fitness/workouts`;
+
+        const workoutData = {
+            workoutDate: new Date().toISOString().split('T')[0],
+            exerciseType: exerciseType,
+            durationMinutes: duration ? parseInt(duration) : null,
+            caloriesBurned: calories ? parseInt(calories) : null,
+            notes: notes || (template ? `Completed: ${template.name}` : null),
+            completed: true
+        };
+
+        // If already exists, update instead
+        if (existingWorkout) {
+            method = 'PUT';
+            url = `${API}/api/fitness/workouts/${existingWorkout.id}`;
+        }
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(workoutData)
+        });
+
+        if (!res.ok) throw new Error('Failed to save workout');
+
+        closeModal('todaysWorkoutModal');
+        showToast('Workout completed! Great job!', 'success');
+
+        // Refresh everything
+        await Promise.all([
+            loadTodaysWorkout(),
+            loadFitnessStats(),
+            loadWeeklyWorkouts(),
+            loadWorkoutHistory()
+        ]);
+    } catch (e) {
+        console.error('Failed to complete workout:', e);
+        showToast('Failed to save workout', 'error');
+    }
 }
 
 async function loadFitnessStats() {
