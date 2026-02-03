@@ -66,6 +66,7 @@ public class StockService {
         stockRepository.findById(id).orElseThrow(() -> new RuntimeException("Stock not found"));
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setQuantity(req.getQuantity());
+    stock.setBuyPrice(req.getBuyPrice());
     return stockRepository.save(stock);
   }
 
