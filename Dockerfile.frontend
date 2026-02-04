@@ -6,9 +6,8 @@ WORKDIR /app
 # Copy package.json
 COPY toolbox-frontend/package.json ./
 
-# Install dependencies - package.json has no dependencies, so this is a no-op
-# The || true is safe here as there are intentionally no dependencies to install
-RUN bun install || true
+# Install dependencies - package.json has no dependencies listed, so this is effectively a no-op
+RUN bun install
 
 # Copy source code
 COPY toolbox-frontend/src ./src

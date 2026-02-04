@@ -17,7 +17,7 @@ COPY gradle ./gradle
 RUN chmod +x gradlew
 
 # Download dependencies (this layer will be cached)
-RUN ./gradlew dependencies --no-daemon --refresh-dependencies || true
+RUN ./gradlew dependencies --no-daemon --refresh-dependencies
 
 # Copy source code
 COPY src ./src
