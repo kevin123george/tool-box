@@ -114,7 +114,7 @@ The backend depends on MongoDB being healthy. If it fails:
 
 ### Port conflicts
 
-If ports are already in use, you can modify them in `docker compose.yml`:
+If ports are already in use, you can modify them in `docker-compose.yml`:
 
 ```yaml
 ports:
