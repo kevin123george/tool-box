@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package.json
 COPY toolbox-frontend/package.json ./
 
-# Install dependencies - package.json has no dependencies listed, so this is effectively a no-op
+# Install dependencies (currently none, but keeping for future compatibility)
 RUN bun install
 
 # Copy source code
