@@ -22,7 +22,7 @@ This step is required for the simple `Dockerfile.backend`. If you prefer to buil
 ### Start all services
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This will start:
@@ -35,19 +35,19 @@ This will start:
 If you need the Python stock API service:
 
 ```bash
-docker-compose --profile with-stock-api up -d
+docker compose --profile with-stock-api up -d
 ```
 
 ### Stop all services
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Stop and remove volumes (clean slate)
 
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Service URLs
@@ -80,26 +80,26 @@ docker build -f Dockerfile.stockapi -t toolbox-stockapi .
 
 All services:
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 Specific service:
 ```bash
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f mongodb
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f mongodb
 ```
 
 ### Rebuild after code changes
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Rebuild specific service
 
 ```bash
-docker-compose up -d --build backend
+docker compose up -d --build backend
 ```
 
 ## Troubleshooting
@@ -108,13 +108,13 @@ docker-compose up -d --build backend
 
 The backend depends on MongoDB being healthy. If it fails:
 
-1. Check MongoDB logs: `docker-compose logs mongodb`
+1. Check MongoDB logs: `docker compose logs mongodb`
 2. Wait for MongoDB to be ready
-3. Restart backend: `docker-compose restart backend`
+3. Restart backend: `docker compose restart backend`
 
 ### Port conflicts
 
-If ports are already in use, you can modify them in `docker-compose.yml`:
+If ports are already in use, you can modify them in `docker compose.yml`:
 
 ```yaml
 ports:
@@ -126,8 +126,8 @@ ports:
 To start fresh with no data:
 
 ```bash
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 ```
 
 ## Production Deployment
@@ -182,7 +182,7 @@ If you prefer to build the JAR inside Docker (requires internet connectivity):
 docker build -f Dockerfile.backend.multistage -t toolbox-backend .
 ```
 
-2. Or modify `docker-compose.yml` to use:
+2. Or modify `docker compose.yml` to use:
 ```yaml
 backend:
   build:
@@ -202,5 +202,5 @@ To rebuild everything from scratch:
 ./gradlew build -x test
 
 # Rebuild all Docker images
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
