@@ -1,0 +1,28 @@
+# Multi-stage build for Spring Boot backend
+FROM gradle:8.5-jdk17 AS builder
+
+WORKDIR /app
+
+# Copy gradle files
+COPY build.gradle settings.gradle gradlew ./
+COPY gradle ./gradle
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN gradle build -x test --no-daemon
+
+# Runtime stage
+FROM eclipse-temurin:17-jre-jammy
+
+WORKDIR /app
+
+# Copy the built jar
+COPY --from=builder /app/build/libs/mongo-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose port
+EXPOSE 9099
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

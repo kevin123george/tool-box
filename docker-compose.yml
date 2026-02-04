@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: toolbox-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo:/docker-entrypoint-initdb.d
+    environment:
+      - MONGO_INITDB_DATABASE=mongo
+    networks:
+      - toolbox-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: toolbox-backend
+    ports:
+      - "9099:9099"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/mongo
+    networks:
+      - toolbox-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9099/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Bun Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: toolbox-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:9099
+    networks:
+      - toolbox-network
+    depends_on:
+      - backend
+
+  # Python Stock API (optional)
+  stock-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.stockapi
+    container_name: toolbox-stockapi
+    ports:
+      - "5000:5000"
+    networks:
+      - toolbox-network
+    profiles:
+      - with-stock-api
+
+networks:
+  toolbox-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

@@ -1,0 +1,20 @@
+# Frontend Dockerfile using Bun
+FROM oven/bun:1
+
+WORKDIR /app
+
+# Copy package.json
+COPY toolbox-frontend/package.json ./
+
+# Install dependencies (if any)
+RUN bun install || true
+
+# Copy source code
+COPY toolbox-frontend/src ./src
+COPY toolbox-frontend/public ./public
+
+# Expose port
+EXPOSE 3000
+
+# Run the server
+CMD ["bun", "run", "src/server.ts"]

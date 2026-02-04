@@ -1,0 +1,38 @@
+# Ignore git files
+.git
+.gitignore
+
+# Ignore build artifacts
+build/
+.gradle/
+node_modules/
+dist/
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.iml
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore test files
+src/test/
+
+# Ignore temporary files
+tmp/
+temp/
+*.tmp
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore documentation (except for specific needs)
+*.md
+!README.md
+
+# Environment files
+.env
+.env.*
