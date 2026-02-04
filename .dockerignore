@@ -2,11 +2,10 @@
 .git
 .gitignore
 
-# Ignore build artifacts
-build/
+# Ignore gradle build artifacts EXCEPT build/libs which we need
 .gradle/
-node_modules/
-dist/
+build/*
+!build/libs/
 
 # Ignore IDE files
 .idea/
@@ -36,3 +35,6 @@ Thumbs.db
 # Environment files
 .env
 .env.*
+
+# Node modules
+node_modules/

@@ -9,7 +9,6 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./mongo:/docker-entrypoint-initdb.d
     environment:
       - MONGO_INITDB_DATABASE=mongo
     networks:
@@ -36,7 +35,7 @@ services:
       mongodb:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9099/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9099/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

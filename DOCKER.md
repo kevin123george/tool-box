@@ -7,6 +7,16 @@ This guide explains how to run the Toolbox application using Docker.
 - Docker (version 20.10 or higher)
 - Docker Compose (version 2.0 or higher)
 
+## Building the Application
+
+Before running Docker Compose, you need to build the backend JAR file:
+
+```bash
+./gradlew build -x test
+```
+
+This step is required for the simple `Dockerfile.backend`. If you prefer to build everything inside Docker, see the "Advanced Build Options" section below.
+
 ## Quick Start
 
 ### Start all services
@@ -159,3 +169,38 @@ For production deployment:
 - MongoDB data persists in a Docker volume named `mongodb_data`
 - All services run in a shared network called `toolbox-network`
 - The Stock API is optional and can be enabled with the `with-stock-api` profile
+- The default `Dockerfile.backend` uses a pre-built JAR for faster builds
+
+## Advanced Build Options
+
+### Multi-stage Build
+
+If you prefer to build the JAR inside Docker (requires internet connectivity):
+
+1. Rename or use the multi-stage Dockerfile:
+```bash
+docker build -f Dockerfile.backend.multistage -t toolbox-backend .
+```
+
+2. Or modify `docker-compose.yml` to use:
+```yaml
+backend:
+  build:
+    context: .
+    dockerfile: Dockerfile.backend.multistage
+```
+
+### Building from Scratch
+
+To rebuild everything from scratch:
+
+```bash
+# Clean existing build artifacts
+./gradlew clean
+
+# Build the JAR
+./gradlew build -x test
+
+# Rebuild all Docker images
+docker-compose build --no-cache
+```
