@@ -28,9 +28,10 @@ temp/
 .DS_Store
 Thumbs.db
 
-# Ignore documentation (except for specific needs)
+# Ignore documentation (except for README and DOCKER.md)
 *.md
 !README.md
+!DOCKER.md
 
 # Environment files
 .env
