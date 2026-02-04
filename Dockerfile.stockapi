@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy requirements file
 COPY requirements.txt .
 
-# Install dependencies
+# Install dependencies (Flask is not in requirements.txt, so we install it separately)
 RUN pip install --no-cache-dir -r requirements.txt flask
 
 # Copy the application
