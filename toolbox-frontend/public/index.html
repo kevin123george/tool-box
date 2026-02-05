@@ -54,6 +54,9 @@
         <div class="mobile-nav-item" onclick="mobileNavTo('analytics')">Analytics</div>
         <div class="mobile-nav-item" onclick="mobileNavTo('systemstats')">System Stats</div>
         <div class="mobile-nav-item" onclick="mobileNavTo('fitness')">Fitness</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('fundamentals')">Fundamentals</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('dcf')">DCF</div>
+        <div class="mobile-nav-item" onclick="mobileNavTo('screener')">Screener</div>
     </div>
 </div>
 
@@ -76,6 +79,9 @@
     <div class="tab-dot" data-tab="analytics"></div>
     <div class="tab-dot" data-tab="systemstats"></div>
     <div class="tab-dot" data-tab="fitness"></div>
+    <div class="tab-dot" data-tab="fundamentals"></div>
+    <div class="tab-dot" data-tab="dcf"></div>
+    <div class="tab-dot" data-tab="screener"></div>
 </div>
 
 <div class="tabs" role="tablist" aria-label="Main navigation">
@@ -91,6 +97,9 @@
     <div id="tabAnalytics" class="tab" onclick="switchTab('analytics')" role="tab" aria-selected="false" aria-controls="analyticsTabContent" tabindex="0">Analytics</div>
     <div id="tabSystemStats" class="tab" onclick="switchTab('systemstats')" role="tab" aria-selected="false" aria-controls="systemStatsTabContent" tabindex="0">System Stats</div>
     <div id="tabFitness" class="tab" onclick="switchTab('fitness')" role="tab" aria-selected="false" aria-controls="fitnessTabContent" tabindex="0">Fitness</div>
+    <div id="tabFundamentals" class="tab" onclick="switchTab('fundamentals')" role="tab" aria-selected="false" aria-controls="fundamentalsTabContent" tabindex="0">Fundamentals</div>
+    <div id="tabDcf" class="tab" onclick="switchTab('dcf')" role="tab" aria-selected="false" aria-controls="dcfTabContent" tabindex="0">DCF</div>
+    <div id="tabScreener" class="tab" onclick="switchTab('screener')" role="tab" aria-selected="false" aria-controls="screenerTabContent" tabindex="0">Screener</div>
 </div>
 
 <main id="main-content">
@@ -1586,6 +1595,223 @@
     </div>
 </div>
 
+<!-- =================== FUNDAMENTALS TAB =================== -->
+<div id="fundamentalsTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabFundamentals">
+    <h2>Fundamental Analysis</h2>
+
+    <!-- Symbol Search -->
+    <div class="add-box" style="margin-bottom:16px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="fundamentalsSymbol" placeholder="Enter symbol (e.g. AAPL)" style="flex:1; text-transform:uppercase;">
+            <button class="btn" onclick="loadFundamentals()" style="white-space:nowrap;">ANALYZE</button>
+            <select id="fundamentalsPortfolio" onchange="loadFundamentalsFromPortfolio()" style="flex:1;">
+                <option value="">-- From Portfolio --</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div id="fundamentalsOverview" style="display:none;">
+        <div id="companyHeader" style="margin-bottom:16px;">
+            <h3 id="companyName" style="margin:0;"></h3>
+            <div id="companyMeta" style="font-size:12px; opacity:0.7;"></div>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:20px;" id="overviewCards"></div>
+
+        <!-- Key Ratios -->
+        <div class="add-box" style="margin-bottom:16px;">
+            <h3 style="margin-top:0;">Key Ratios</h3>
+            <div id="keyRatiosGrid" class="stats-grid"></div>
+        </div>
+
+        <!-- Charts -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="add-box">
+                <h3 style="margin-top:0;">Revenue History</h3>
+                <div style="height:280px; position:relative;"><canvas id="revenueChart"></canvas></div>
+            </div>
+            <div class="add-box">
+                <h3 style="margin-top:0;">EPS (Beat/Miss)</h3>
+                <div style="height:280px; position:relative;"><canvas id="epsChart"></canvas></div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="add-box">
+                <h3 style="margin-top:0;">Free Cash Flow</h3>
+                <div style="height:280px; position:relative;"><canvas id="fcfChart"></canvas></div>
+            </div>
+            <div class="add-box">
+                <h3 style="margin-top:0;">Margin Trends</h3>
+                <div style="height:280px; position:relative;"><canvas id="marginsChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="fundamentalsEmpty" class="add-box" style="text-align:center; padding:40px; opacity:0.5;">
+        Enter a stock symbol above to view fundamental analysis
+    </div>
+</div>
+
+<!-- =================== DCF TAB =================== -->
+<div id="dcfTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabDcf">
+    <h2>DCF Calculator</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 2fr; gap:16px;">
+        <!-- Input Panel -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Inputs</h3>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <input type="text" id="dcfSymbol" placeholder="Symbol" style="flex:1; text-transform:uppercase;">
+                <button class="btn" onclick="loadDCFDefaults()">LOAD DEFAULTS</button>
+            </div>
+            <div id="dcfCompanyName" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Initial FCF ($)</label>
+            <input type="number" id="dcfInitialFCF" placeholder="e.g. 100000000000" style="margin-bottom:8px;">
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Growth Rate (%)</label>
+            <input type="number" id="dcfGrowthRate" placeholder="10" step="0.5" style="margin-bottom:8px;">
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Discount Rate / WACC (%)</label>
+            <input type="number" id="dcfDiscountRate" placeholder="10" step="0.5" style="margin-bottom:8px;">
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Terminal Growth Rate (%)</label>
+            <input type="number" id="dcfTerminalGrowth" placeholder="3" step="0.5" style="margin-bottom:8px;">
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Projection Years</label>
+            <input type="number" id="dcfYears" placeholder="10" style="margin-bottom:8px;">
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Shares Outstanding</label>
+            <input type="number" id="dcfShares" placeholder="e.g. 15000000000" style="margin-bottom:8px;">
+
+            <label style="font-size:11px; display:block; margin-bottom:4px;">Current Price ($)</label>
+            <input type="number" id="dcfCurrentPrice" placeholder="e.g. 175.50" step="0.01" style="margin-bottom:12px;">
+
+            <button class="btn" onclick="calculateDCF()" style="width:100%; background:#39f; color:#000; font-weight:bold;">CALCULATE DCF</button>
+        </div>
+
+        <!-- Results Panel -->
+        <div>
+            <div id="dcfResults" style="display:none;">
+                <div class="add-box" style="margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h3 style="margin:0;">DCF Result</h3>
+                        <div id="dcfVerdict" style="padding:6px 16px; font-weight:bold; font-size:14px;"></div>
+                    </div>
+                    <div class="stats-grid" id="dcfResultCards"></div>
+                </div>
+
+                <div class="add-box" style="margin-bottom:16px;">
+                    <h3 style="margin-top:0;">Projected Cash Flows</h3>
+                    <div style="height:300px; position:relative;"><canvas id="dcfProjectionChart"></canvas></div>
+                </div>
+
+                <div class="add-box">
+                    <h3 style="margin-top:0;">Sensitivity Analysis</h3>
+                    <div id="dcfSensitivityTable" style="overflow-x:auto;"></div>
+                </div>
+            </div>
+
+            <div id="dcfEmpty" class="add-box" style="text-align:center; padding:40px; opacity:0.5;">
+                Enter a symbol and click "Load Defaults" to pre-fill inputs, then calculate
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =================== SCREENER TAB =================== -->
+<div id="screenerTabContent" class="tab-content hidden" role="tabpanel" aria-labelledby="tabScreener">
+    <h2>Stock Screener</h2>
+
+    <!-- Add Symbol + Filters -->
+    <div class="add-box" style="margin-bottom:16px;">
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+            <input type="text" id="screenerAddSymbol" placeholder="Add symbol to screener" style="flex:1; text-transform:uppercase;">
+            <button class="btn" onclick="addScreenerSymbol()" style="background:#0f0; color:#000; font-weight:bold;">+ ADD</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Sector</label>
+                <select id="screenerSector" onchange="searchScreener()">
+                    <option value="">All Sectors</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Min P/E</label>
+                <input type="number" id="screenerMinPE" placeholder="0" onchange="searchScreener()">
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Max P/E</label>
+                <input type="number" id="screenerMaxPE" placeholder="100" onchange="searchScreener()">
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Min Market Cap</label>
+                <select id="screenerMinCap" onchange="searchScreener()">
+                    <option value="">Any</option>
+                    <option value="300000000">Small ($300M+)</option>
+                    <option value="2000000000">Mid ($2B+)</option>
+                    <option value="10000000000">Large ($10B+)</option>
+                    <option value="200000000000">Mega ($200B+)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:8px;">
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Min Div Yield (%)</label>
+                <input type="number" id="screenerMinDivYield" placeholder="0" step="0.1" onchange="searchScreener()">
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Min ROE (%)</label>
+                <input type="number" id="screenerMinROE" placeholder="0" step="1" onchange="searchScreener()">
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Max D/E Ratio</label>
+                <input type="number" id="screenerMaxDE" placeholder="" step="0.1" onchange="searchScreener()">
+            </div>
+            <div>
+                <label style="font-size:11px; display:block; margin-bottom:4px;">Sort By</label>
+                <select id="screenerSortBy" onchange="searchScreener()">
+                    <option value="marketCap">Market Cap</option>
+                    <option value="peRatio">P/E Ratio</option>
+                    <option value="dividendYield">Div Yield</option>
+                    <option value="roe">ROE</option>
+                    <option value="profitMargin">Profit Margin</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="add-box">
+        <div id="screenerResults">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;" id="screenerTable">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--border); text-align:left;">
+                        <th style="padding:8px 6px;">Symbol</th>
+                        <th style="padding:8px 6px;">Name</th>
+                        <th style="padding:8px 6px;">Sector</th>
+                        <th style="padding:8px 6px; text-align:right;">Mkt Cap</th>
+                        <th style="padding:8px 6px; text-align:right;">P/E</th>
+                        <th style="padding:8px 6px; text-align:right;">EPS</th>
+                        <th style="padding:8px 6px; text-align:right;">Div Yield</th>
+                        <th style="padding:8px 6px; text-align:right;">ROE</th>
+                        <th style="padding:8px 6px; text-align:right;">D/E</th>
+                        <th style="padding:8px 6px; text-align:right;">Margin</th>
+                    </tr>
+                </thead>
+                <tbody id="screenerTableBody">
+                    <tr><td colspan="10" style="text-align:center; padding:30px; opacity:0.5;">Add symbols to the screener to compare stocks</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="screenerPagination" style="display:flex; justify-content:center; gap:8px; margin-top:12px;"></div>
+    </div>
+</div>
+
 <!-- Today's Workout Modal -->
 <div id="todaysWorkoutModal" class="modal-overlay">
     <div class="modal" style="max-width:500px;">
@@ -1655,6 +1881,7 @@
 <script src="history-enhancements.js"></script>
 <script src="advanced-chart.js"></script>
 <script src="features.js"></script>
+<script src="fundamentals.js"></script>
 
 </body>
 </html>

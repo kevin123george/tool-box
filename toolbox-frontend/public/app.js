@@ -441,7 +441,7 @@ function switchTab(which) {
     }
 
     // Update tab states and aria-selected
-    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness'];
+    const tabs = ['dashboard', 'memo', 'finance', 'stocks', 'stockhistory', 'research', 'budget', 'subscriptions', 'calendar', 'analytics', 'systemstats', 'fitness', 'fundamentals', 'dcf', 'screener'];
     tabs.forEach(tab => {
         const tabEl = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1).replace('history', 'History').replace('stats', 'Stats')}`);
         if (tabEl) {
@@ -463,6 +463,9 @@ function switchTab(which) {
     document.getElementById("tabSystemStats")?.classList.toggle("active", which === "systemstats");
     document.getElementById("tabResearch")?.classList.toggle("active", which === "research");
     document.getElementById("tabFitness")?.classList.toggle("active", which === "fitness");
+    document.getElementById("tabFundamentals")?.classList.toggle("active", which === "fundamentals");
+    document.getElementById("tabDcf")?.classList.toggle("active", which === "dcf");
+    document.getElementById("tabScreener")?.classList.toggle("active", which === "screener");
 
     dashboardTabContent?.classList.toggle("hidden", which !== "dashboard");
     memoTabContent.classList.toggle("hidden", which !== "memo");
@@ -476,6 +479,9 @@ function switchTab(which) {
     systemStatsTabContent.classList.toggle("hidden", which !== "systemstats");
     researchTabContent.classList.toggle("hidden", which !== "research");
     document.getElementById("fitnessTabContent")?.classList.toggle("hidden", which !== "fitness");
+    document.getElementById("fundamentalsTabContent")?.classList.toggle("hidden", which !== "fundamentals");
+    document.getElementById("dcfTabContent")?.classList.toggle("hidden", which !== "dcf");
+    document.getElementById("screenerTabContent")?.classList.toggle("hidden", which !== "screener");
 
     if (which === "dashboard") {
         loadDashboard();
@@ -511,6 +517,12 @@ function switchTab(which) {
         loadLatestResearch();
     } else if (which === "fitness") {
         loadFitnessTab();
+    } else if (which === "fundamentals") {
+        if (typeof onFundamentalsTabShown === 'function') onFundamentalsTabShown();
+    } else if (which === "dcf") {
+        if (typeof onDCFTabShown === 'function') onDCFTabShown();
+    } else if (which === "screener") {
+        if (typeof onScreenerTabShown === 'function') onScreenerTabShown();
     } else {
         if (stocksRefreshInterval) {
             clearInterval(stocksRefreshInterval);

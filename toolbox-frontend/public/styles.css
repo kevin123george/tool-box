@@ -2762,3 +2762,39 @@ textarea:focus,
         display: none;
     }
 }
+
+/* =========================
+   FUNDAMENTALS / DCF / SCREENER
+   ========================= */
+
+#fundamentalsTabContent .stats-grid,
+#dcfTabContent .stats-grid,
+#screenerTabContent .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+#keyRatiosGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+#screenerTable tr:hover {
+    background: rgba(51, 153, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    #fundamentalsTabContent .add-box canvas {
+        min-height: 200px;
+    }
+
+    #dcfTabContent > div {
+        grid-template-columns: 1fr !important;
+    }
+
+    #screenerTabContent .add-box > div {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
