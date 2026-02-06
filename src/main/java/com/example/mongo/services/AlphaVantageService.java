@@ -25,10 +25,30 @@ public class AlphaVantageService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  private String findPythonExecutable() {
-    String venvPython = "../venv/bin/python3";
-    if (new java.io.File(venvPython).exists()) {
-      return venvPython;
+  /**
+   * Find the project root directory. The script and venv live at the project root. When running via
+   * gradle bootRun, CWD is the project root. When running the JAR from build/libs/, we need to go
+   * up two levels.
+   */
+  private java.io.File findProjectRoot() {
+    // Check current dir first
+    java.io.File cwd = new java.io.File(".");
+    if (new java.io.File(cwd, "fundamentals_fetcher.py").exists()) {
+      return cwd;
+    }
+    // When running from build/libs/
+    java.io.File upTwo = new java.io.File("../..");
+    if (new java.io.File(upTwo, "fundamentals_fetcher.py").exists()) {
+      return upTwo;
+    }
+    // Fallback
+    return cwd;
+  }
+
+  private String findPythonExecutable(java.io.File projectRoot) {
+    java.io.File venvPython = new java.io.File(projectRoot, "venv/bin/python3");
+    if (venvPython.exists()) {
+      return venvPython.getAbsolutePath();
     }
     return "python3";
   }
@@ -36,9 +56,12 @@ public class AlphaVantageService {
   @SuppressWarnings("unchecked")
   private Map<String, Object> callPython(String symbol, String command) {
     try {
-      String pythonExecutable = findPythonExecutable();
-      ProcessBuilder pb =
-          new ProcessBuilder(pythonExecutable, "fundamentals_fetcher.py", symbol, command);
+      java.io.File projectRoot = findProjectRoot();
+      String pythonExecutable = findPythonExecutable(projectRoot);
+      String scriptPath =
+          new java.io.File(projectRoot, "fundamentals_fetcher.py").getAbsolutePath();
+      ProcessBuilder pb = new ProcessBuilder(pythonExecutable, scriptPath, symbol, command);
+      pb.directory(projectRoot);
       pb.redirectErrorStream(true);
 
       Process process = pb.start();
