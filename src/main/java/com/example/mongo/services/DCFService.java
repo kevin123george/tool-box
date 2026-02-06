@@ -57,7 +57,7 @@ public class DCFService {
     defaults.put("projectionYears", 10);
     defaults.put(
         "sharesOutstanding", overview != null ? overview.getSharesOutstanding() : null);
-    defaults.put("currentPrice", overview != null ? overview.getWeekHigh52() : null);
+    defaults.put("currentPrice", overview != null ? overview.getCurrentPrice() : null);
     defaults.put("name", overview != null ? overview.getName() : null);
 
     return defaults;

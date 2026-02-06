@@ -147,14 +147,14 @@ function renderOverview(o) {
 
     const cards = document.getElementById('overviewCards');
     cards.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Market Cap</div><div class="stat-value">$${fmtNum(o.marketCap)}</div></div>
+        <div class="stat-card"><div class="stat-label">Market Cap</div><div class="stat-value">\u20AC${fmtNum(o.marketCap)}</div></div>
         <div class="stat-card"><div class="stat-label">P/E Ratio</div><div class="stat-value">${fmtRatio(o.peRatio)}</div></div>
-        <div class="stat-card"><div class="stat-label">EPS</div><div class="stat-value">$${fmtRatio(o.eps)}</div></div>
+        <div class="stat-card"><div class="stat-label">EPS</div><div class="stat-value">\u20AC${fmtRatio(o.eps)}</div></div>
         <div class="stat-card"><div class="stat-label">Dividend Yield</div><div class="stat-value">${o.dividendYield != null ? (o.dividendYield * 100).toFixed(2) + '%' : 'N/A'}</div></div>
-        <div class="stat-card"><div class="stat-label">52W High</div><div class="stat-value">$${fmtRatio(o.weekHigh52)}</div></div>
-        <div class="stat-card"><div class="stat-label">52W Low</div><div class="stat-value">$${fmtRatio(o.weekLow52)}</div></div>
+        <div class="stat-card"><div class="stat-label">52W High</div><div class="stat-value">\u20AC${fmtRatio(o.weekHigh52)}</div></div>
+        <div class="stat-card"><div class="stat-label">52W Low</div><div class="stat-value">\u20AC${fmtRatio(o.weekLow52)}</div></div>
         <div class="stat-card"><div class="stat-label">Beta</div><div class="stat-value">${fmtRatio(o.beta)}</div></div>
-        <div class="stat-card"><div class="stat-label">Analyst Target</div><div class="stat-value">$${fmtRatio(o.analystTargetPrice)}</div></div>
+        <div class="stat-card"><div class="stat-label">Analyst Target</div><div class="stat-value">\u20AC${fmtRatio(o.analystTargetPrice)}</div></div>
     `;
 }
 
@@ -195,7 +195,7 @@ function renderRevenueChart(data) {
             ...chartDefaults(),
             scales: {
                 ...chartDefaults().scales,
-                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '$' + fmtNum(v) } }
+                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '\u20AC' + fmtNum(v) } }
             }
         }
     });
@@ -224,7 +224,7 @@ function renderEPSChart(data) {
             ...chartDefaults(),
             scales: {
                 ...chartDefaults().scales,
-                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '$' + v.toFixed(2) } }
+                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '\u20AC' + v.toFixed(2) } }
             }
         }
     });
@@ -249,7 +249,7 @@ function renderFCFChart(data) {
             ...chartDefaults(),
             scales: {
                 ...chartDefaults().scales,
-                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '$' + fmtNum(v) } }
+                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '\u20AC' + fmtNum(v) } }
             }
         }
     });
@@ -364,12 +364,12 @@ function renderDCFResult(r) {
     // Result cards
     const cards = document.getElementById('dcfResultCards');
     cards.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Intrinsic Value</div><div class="stat-value" style="color:#39f;">$${fmtRatio(r.intrinsicValue)}</div></div>
-        <div class="stat-card"><div class="stat-label">Current Price</div><div class="stat-value">$${fmtRatio(r.currentPrice)}</div></div>
+        <div class="stat-card"><div class="stat-label">Intrinsic Value</div><div class="stat-value" style="color:#39f;">\u20AC${fmtRatio(r.intrinsicValue)}</div></div>
+        <div class="stat-card"><div class="stat-label">Current Price</div><div class="stat-value">\u20AC${fmtRatio(r.currentPrice)}</div></div>
         <div class="stat-card"><div class="stat-label">Margin of Safety</div><div class="stat-value" style="color:${r.marginOfSafety > 0 ? '#0f0' : '#f33'};">${r.marginOfSafety != null ? r.marginOfSafety.toFixed(1) + '%' : 'N/A'}</div></div>
-        <div class="stat-card"><div class="stat-label">Enterprise Value</div><div class="stat-value">$${fmtNum(r.enterpriseValue)}</div></div>
-        <div class="stat-card"><div class="stat-label">PV of Cash Flows</div><div class="stat-value">$${fmtNum(r.totalPresentValue)}</div></div>
-        <div class="stat-card"><div class="stat-label">Terminal PV</div><div class="stat-value">$${fmtNum(r.terminalPresentValue)}</div></div>
+        <div class="stat-card"><div class="stat-label">Enterprise Value</div><div class="stat-value">\u20AC${fmtNum(r.enterpriseValue)}</div></div>
+        <div class="stat-card"><div class="stat-label">PV of Cash Flows</div><div class="stat-value">\u20AC${fmtNum(r.totalPresentValue)}</div></div>
+        <div class="stat-card"><div class="stat-label">Terminal PV</div><div class="stat-value">\u20AC${fmtNum(r.terminalPresentValue)}</div></div>
     `;
 
     // Projection chart
@@ -397,7 +397,7 @@ function renderDCFProjectionChart(cashFlows) {
             ...chartDefaults(),
             scales: {
                 ...chartDefaults().scales,
-                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '$' + fmtNum(v) } }
+                y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => '\u20AC' + fmtNum(v) } }
             }
         }
     });
@@ -438,7 +438,7 @@ function renderSensitivityTable(result) {
 
             const isBase = Math.abs(gr - baseGrowth) < 0.001 && Math.abs(dr - baseDiscount) < 0.001;
             const color = result.currentPrice ? (iv > result.currentPrice ? '#0f0' : '#f33') : getChartTextColor();
-            html += `<td style="padding:6px; border:1px solid var(--border); text-align:center; color:${color}; ${isBase ? 'font-weight:bold; text-decoration:underline;' : ''}">$${iv.toFixed(2)}</td>`;
+            html += `<td style="padding:6px; border:1px solid var(--border); text-align:center; color:${color}; ${isBase ? 'font-weight:bold; text-decoration:underline;' : ''}">\u20AC${iv.toFixed(2)}</td>`;
         });
         html += '</tr>';
     });
@@ -538,9 +538,9 @@ function renderScreenerTable(entries) {
             <td style="padding:8px 6px; font-weight:bold; color:#39f;">${e.symbol || ''}</td>
             <td style="padding:8px 6px;">${e.name ? e.name.substring(0, 25) : ''}</td>
             <td style="padding:8px 6px; font-size:11px;">${e.sector || ''}</td>
-            <td style="padding:8px 6px; text-align:right;">$${fmtNum(e.marketCap)}</td>
+            <td style="padding:8px 6px; text-align:right;">\u20AC${fmtNum(e.marketCap)}</td>
             <td style="padding:8px 6px; text-align:right;">${fmtRatio(e.peRatio)}</td>
-            <td style="padding:8px 6px; text-align:right;">$${fmtRatio(e.eps)}</td>
+            <td style="padding:8px 6px; text-align:right;">\u20AC${fmtRatio(e.eps)}</td>
             <td style="padding:8px 6px; text-align:right;">${e.dividendYield != null ? (e.dividendYield * 100).toFixed(2) + '%' : 'N/A'}</td>
             <td style="padding:8px 6px; text-align:right;">${e.roe != null ? (e.roe * 100).toFixed(1) + '%' : 'N/A'}</td>
             <td style="padding:8px 6px; text-align:right;">${fmtRatio(e.debtToEquity)}</td>

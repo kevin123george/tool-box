@@ -89,8 +89,9 @@ public class FundamentalService {
               entry.put("date", s.getFiscalDateEnding());
               Double operatingCF = parseNum(s.getData().get("operatingCashflow"));
               Double capex = parseNum(s.getData().get("capitalExpenditures"));
-              Double fcf = null;
-              if (operatingCF != null && capex != null) {
+              // Prefer direct FCF from yfinance, fall back to computed
+              Double fcf = parseNum(s.getData().get("freeCashFlow"));
+              if (fcf == null && operatingCF != null && capex != null) {
                 fcf = operatingCF - Math.abs(capex);
               }
               entry.put("operatingCashflow", operatingCF);

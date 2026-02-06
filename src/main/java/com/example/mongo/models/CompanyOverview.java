@@ -41,6 +41,7 @@ public class CompanyOverview {
   private Double currentRatio;
   private Double revenuePerShare;
   private Double bookValue;
+  private Double currentPrice;
 
   private LocalDateTime fetchedAt;
   private LocalDateTime expiresAt;

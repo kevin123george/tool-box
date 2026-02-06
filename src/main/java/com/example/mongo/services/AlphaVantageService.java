@@ -6,74 +6,65 @@ import com.example.mongo.models.FinancialStatement;
 import com.example.mongo.repos.CompanyOverviewRepository;
 import com.example.mongo.repos.EarningsDataRepository;
 import com.example.mongo.repos.FinancialStatementRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
 public class AlphaVantageService {
 
-  @Value("${alpha.vantage.api.key:}")
-  private String alphaVantageKey;
-
   @Autowired private CompanyOverviewRepository overviewRepo;
   @Autowired private FinancialStatementRepository statementRepo;
   @Autowired private EarningsDataRepository earningsRepo;
 
-  private final RestTemplate restTemplate = new RestTemplate();
-  private final Semaphore rateLimiter = new Semaphore(5);
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  private static final String BASE_URL = "https://www.alphavantage.co/query";
-
-  private void acquireRateLimit() {
-    try {
-      rateLimiter.acquire();
-      // Schedule release after 12 seconds (5 calls/min = 1 per 12s)
-      new Thread(
-              () -> {
-                try {
-                  TimeUnit.SECONDS.sleep(12);
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                } finally {
-                  rateLimiter.release();
-                }
-              })
-          .start();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+  private String findPythonExecutable() {
+    String venvPython = "../venv/bin/python3";
+    if (new java.io.File(venvPython).exists()) {
+      return venvPython;
     }
+    return "python3";
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, Object> callApi(String function, String symbol) {
-    if (alphaVantageKey == null || alphaVantageKey.isEmpty()) {
-      log.warn("[AlphaVantage] API key not configured");
-      return Collections.emptyMap();
-    }
-
-    acquireRateLimit();
-
-    String url =
-        String.format("%s?function=%s&symbol=%s&apikey=%s", BASE_URL, function, symbol, alphaVantageKey);
-    log.info("[AlphaVantage] Fetching {} for {}", function, symbol);
-
+  private Map<String, Object> callPython(String symbol, String command) {
     try {
-      Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-      if (response != null && response.containsKey("Information")) {
-        log.warn("[AlphaVantage] Rate limit message: {}", response.get("Information"));
+      String pythonExecutable = findPythonExecutable();
+      ProcessBuilder pb =
+          new ProcessBuilder(pythonExecutable, "fundamentals_fetcher.py", symbol, command);
+      pb.redirectErrorStream(true);
+
+      Process process = pb.start();
+      StringBuilder output = new StringBuilder();
+      try (BufferedReader reader =
+          new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          output.append(line);
+        }
+      }
+
+      int exitCode = process.waitFor();
+      if (exitCode != 0) {
+        log.error("[yfinance] Python script failed for {} {}: {}", symbol, command, output);
         return Collections.emptyMap();
       }
-      return response != null ? response : Collections.emptyMap();
+
+      Map<String, Object> result = objectMapper.readValue(output.toString(), Map.class);
+      if (result.containsKey("error")) {
+        log.error("[yfinance] Error for {} {}: {}", symbol, command, result.get("error"));
+        return Collections.emptyMap();
+      }
+      return result;
     } catch (Exception e) {
-      log.error("[AlphaVantage] Error fetching {} for {}: {}", function, symbol, e.getMessage());
+      log.error("[yfinance] Exception calling Python for {} {}: {}", symbol, command, e.getMessage());
       return Collections.emptyMap();
     }
   }
@@ -83,68 +74,68 @@ public class AlphaVantageService {
 
     // Check cache first
     Optional<CompanyOverview> cached = overviewRepo.findBySymbol(upper);
-    if (cached.isPresent() && cached.get().getExpiresAt() != null
+    if (cached.isPresent()
+        && cached.get().getExpiresAt() != null
         && cached.get().getExpiresAt().isAfter(LocalDateTime.now())) {
-      log.info("[AlphaVantage] Returning cached overview for {}", upper);
+      log.info("[yfinance] Returning cached overview for {}", upper);
       return cached.get();
     }
 
-    Map<String, Object> data = callApi("OVERVIEW", upper);
-    if (data.isEmpty() || !data.containsKey("Symbol")) {
+    log.info("[yfinance] Fetching overview for {}", upper);
+    Map<String, Object> data = callPython(upper, "overview");
+    if (data.isEmpty() || data.get("symbol") == null) {
       return cached.orElse(null);
     }
 
     CompanyOverview overview = cached.orElse(new CompanyOverview());
     overview.setSymbol(upper);
-    overview.setName(str(data.get("Name")));
-    overview.setSector(str(data.get("Sector")));
-    overview.setIndustry(str(data.get("Industry")));
-    overview.setExchange(str(data.get("Exchange")));
-    overview.setMarketCap(dbl(data.get("MarketCapitalization")));
-    overview.setPeRatio(dbl(data.get("PERatio")));
-    overview.setPegRatio(dbl(data.get("PEGRatio")));
-    overview.setPbRatio(dbl(data.get("PriceToBookRatio")));
-    overview.setPsRatio(dbl(data.get("PriceToSalesRatioTTM")));
-    overview.setEvToEbitda(dbl(data.get("EVToEBITDA")));
-    overview.setEps(dbl(data.get("EPS")));
-    overview.setRoe(dbl(data.get("ReturnOnEquityTTM")));
-    overview.setRoa(dbl(data.get("ReturnOnAssetsTTM")));
-    overview.setProfitMargin(dbl(data.get("ProfitMargin")));
-    overview.setOperatingMargin(dbl(data.get("OperatingMarginTTM")));
-    overview.setDividendYield(dbl(data.get("DividendYield")));
-    overview.setBeta(dbl(data.get("Beta")));
-    overview.setWeekHigh52(dbl(data.get("52WeekHigh")));
-    overview.setWeekLow52(dbl(data.get("52WeekLow")));
-    overview.setSharesOutstanding(lng(data.get("SharesOutstanding")));
-    overview.setAnalystTargetPrice(dbl(data.get("AnalystTargetPrice")));
-    overview.setDebtToEquity(dbl(data.get("DebtToEquity")));
-    overview.setCurrentRatio(dbl(data.get("CurrentRatio")));
-    overview.setRevenuePerShare(dbl(data.get("RevenuePerShareTTM")));
-    overview.setBookValue(dbl(data.get("BookValue")));
+    overview.setName(str(data.get("name")));
+    overview.setSector(str(data.get("sector")));
+    overview.setIndustry(str(data.get("industry")));
+    overview.setExchange(str(data.get("exchange")));
+    overview.setMarketCap(dbl(data.get("marketCap")));
+    overview.setPeRatio(dbl(data.get("peRatio")));
+    overview.setPegRatio(dbl(data.get("pegRatio")));
+    overview.setPbRatio(dbl(data.get("pbRatio")));
+    overview.setPsRatio(dbl(data.get("psRatio")));
+    overview.setEvToEbitda(dbl(data.get("evToEbitda")));
+    overview.setEps(dbl(data.get("eps")));
+    overview.setRoe(dbl(data.get("roe")));
+    overview.setRoa(dbl(data.get("roa")));
+    overview.setProfitMargin(dbl(data.get("profitMargin")));
+    overview.setOperatingMargin(dbl(data.get("operatingMargin")));
+    overview.setDividendYield(dbl(data.get("dividendYield")));
+    overview.setBeta(dbl(data.get("beta")));
+    overview.setWeekHigh52(dbl(data.get("weekHigh52")));
+    overview.setWeekLow52(dbl(data.get("weekLow52")));
+    overview.setSharesOutstanding(lng(data.get("sharesOutstanding")));
+    overview.setAnalystTargetPrice(dbl(data.get("analystTargetPrice")));
+    overview.setDebtToEquity(dbl(data.get("debtToEquity")));
+    overview.setCurrentRatio(dbl(data.get("currentRatio")));
+    overview.setRevenuePerShare(dbl(data.get("revenuePerShare")));
+    overview.setBookValue(dbl(data.get("bookValue")));
+    overview.setCurrentPrice(dbl(data.get("currentPrice")));
     overview.setFetchedAt(LocalDateTime.now());
     overview.setExpiresAt(LocalDateTime.now().plusHours(24));
 
     return overviewRepo.save(overview);
   }
 
-  @SuppressWarnings("unchecked")
   public List<FinancialStatement> fetchIncomeStatement(String symbol) {
-    return fetchFinancialStatement(symbol, "INCOME_STATEMENT", "INCOME");
+    return fetchFinancialStatement(symbol, "income", "INCOME");
   }
 
-  @SuppressWarnings("unchecked")
   public List<FinancialStatement> fetchBalanceSheet(String symbol) {
-    return fetchFinancialStatement(symbol, "BALANCE_SHEET", "BALANCE_SHEET");
+    return fetchFinancialStatement(symbol, "balance_sheet", "BALANCE_SHEET");
   }
 
-  @SuppressWarnings("unchecked")
   public List<FinancialStatement> fetchCashFlow(String symbol) {
-    return fetchFinancialStatement(symbol, "CASH_FLOW", "CASH_FLOW");
+    return fetchFinancialStatement(symbol, "cash_flow", "CASH_FLOW");
   }
 
   @SuppressWarnings("unchecked")
   private List<FinancialStatement> fetchFinancialStatement(
-      String symbol, String function, String statementType) {
+      String symbol, String command, String statementType) {
     String upper = symbol.toUpperCase();
 
     // Check cache
@@ -153,11 +144,12 @@ public class AlphaVantageService {
     if (!cached.isEmpty()
         && cached.get(0).getExpiresAt() != null
         && cached.get(0).getExpiresAt().isAfter(LocalDateTime.now())) {
-      log.info("[AlphaVantage] Returning cached {} for {}", statementType, upper);
+      log.info("[yfinance] Returning cached {} for {}", statementType, upper);
       return cached;
     }
 
-    Map<String, Object> data = callApi(function, upper);
+    log.info("[yfinance] Fetching {} for {}", command, upper);
+    Map<String, Object> data = callPython(upper, command);
     if (data.isEmpty()) {
       return cached;
     }
@@ -180,7 +172,7 @@ public class AlphaVantageService {
         stmt.setStatementType(statementType);
         stmt.setPeriod("annual");
         stmt.setFiscalDateEnding((String) report.get("fiscalDateEnding"));
-        stmt.setData(report);
+        stmt.setData(normalizeKeys(report));
         stmt.setFetchedAt(LocalDateTime.now());
         stmt.setExpiresAt(LocalDateTime.now().plusDays(7));
         results.add(stmt);
@@ -194,7 +186,7 @@ public class AlphaVantageService {
         stmt.setStatementType(statementType);
         stmt.setPeriod("quarterly");
         stmt.setFiscalDateEnding((String) report.get("fiscalDateEnding"));
-        stmt.setData(report);
+        stmt.setData(normalizeKeys(report));
         stmt.setFetchedAt(LocalDateTime.now());
         stmt.setExpiresAt(LocalDateTime.now().plusDays(7));
         results.add(stmt);
@@ -216,11 +208,12 @@ public class AlphaVantageService {
     if (!cached.isEmpty()
         && cached.get(0).getExpiresAt() != null
         && cached.get(0).getExpiresAt().isAfter(LocalDateTime.now())) {
-      log.info("[AlphaVantage] Returning cached earnings for {}", upper);
+      log.info("[yfinance] Returning cached earnings for {}", upper);
       return cached;
     }
 
-    Map<String, Object> data = callApi("EARNINGS", upper);
+    log.info("[yfinance] Fetching earnings for {}", upper);
+    Map<String, Object> data = callPython(upper, "earnings");
     if (data.isEmpty()) {
       return cached;
     }
@@ -271,6 +264,66 @@ public class AlphaVantageService {
     return results.stream().filter(e -> "quarterly".equals(e.getPeriod())).toList();
   }
 
+  /**
+   * Normalize yfinance field names (e.g. "Total Revenue") to camelCase keys (e.g. "totalRevenue")
+   * that the FundamentalService expects.
+   */
+  private Map<String, Object> normalizeKeys(Map<String, Object> data) {
+    Map<String, Object> normalized = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> entry : data.entrySet()) {
+      String key = entry.getKey();
+      // Map yfinance names to the keys FundamentalService uses
+      String mapped =
+          switch (key) {
+            case "Total Revenue" -> "totalRevenue";
+            case "Operating Revenue" -> "operatingRevenue";
+            case "Gross Profit" -> "grossProfit";
+            case "Operating Income" -> "operatingIncome";
+            case "Net Income" -> "netIncome";
+            case "Net Income Common Stockholders" -> "netIncomeCommonStockholders";
+            case "Cost Of Revenue" -> "costOfRevenue";
+            case "Operating Expense" -> "operatingExpense";
+            case "Diluted EPS" -> "dilutedEPS";
+            case "Basic EPS" -> "basicEPS";
+            case "EBITDA" -> "ebitda";
+            case "EBIT" -> "ebit";
+            case "Operating Cash Flow" -> "operatingCashflow";
+            case "Capital Expenditure" -> "capitalExpenditures";
+            case "Free Cash Flow" -> "freeCashFlow";
+            case "Cash Flow From Continuing Operating Activities" -> "operatingCashflow";
+            case "Total Assets" -> "totalAssets";
+            case "Total Liabilities Net Minority Interest" -> "totalLiabilities";
+            case "Total Debt" -> "totalDebt";
+            case "Stockholders Equity" -> "stockholdersEquity";
+            case "Cash And Cash Equivalents" -> "cashAndCashEquivalents";
+            case "Total Current Assets" -> "totalCurrentAssets";
+            case "Total Current Liabilities" -> "totalCurrentLiabilities";
+            case "Current Assets" -> "totalCurrentAssets";
+            case "Current Liabilities" -> "totalCurrentLiabilities";
+            case "Research And Development" -> "researchAndDevelopment";
+            case "Selling General And Administration" -> "sellingGeneralAndAdministration";
+            case "fiscalDateEnding" -> "fiscalDateEnding";
+            default -> toCamelCase(key);
+          };
+      normalized.put(mapped, entry.getValue());
+    }
+    return normalized;
+  }
+
+  private String toCamelCase(String name) {
+    if (name == null || name.isEmpty()) return name;
+    String[] parts = name.split(" ");
+    StringBuilder sb = new StringBuilder(parts[0].substring(0, 1).toLowerCase());
+    sb.append(parts[0].substring(1));
+    for (int i = 1; i < parts.length; i++) {
+      if (!parts[i].isEmpty()) {
+        sb.append(parts[i].substring(0, 1).toUpperCase());
+        sb.append(parts[i].substring(1));
+      }
+    }
+    return sb.toString();
+  }
+
   private String str(Object val) {
     return val != null ? val.toString() : null;
   }
@@ -289,7 +342,12 @@ public class AlphaVantageService {
     try {
       return Long.parseLong(val.toString());
     } catch (NumberFormatException e) {
-      return null;
+      // yfinance may return sharesOutstanding as a double like 1.4681E10
+      try {
+        return Math.round(Double.parseDouble(val.toString()));
+      } catch (NumberFormatException e2) {
+        return null;
+      }
     }
   }
 }
