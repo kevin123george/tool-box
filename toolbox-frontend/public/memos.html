@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox - Memos</title>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+    <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+        <div class="loading-spinner"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading...</div></div>
+    </div>
+    <button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
+    <div id="nav-placeholder" data-active="memos"></div>
+    <h1>Hey Kevin!!!</h1>
+
+    <!-- =================== MEMOS =================== -->
+    <div id="memoTabContent" class="tab-content">
+        <h2>Memos</h2>
+
+        <div class="finance-grid memo-layout" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+            <!-- LEFT: ADD MEMO FORM -->
+            <div class="add-box" style="position:sticky; top:20px;">
+                <h3 style="margin-top:0;">Add Memo</h3>
+                <input id="memoTitle" placeholder="Title">
+
+                <!-- Quill Editor -->
+                <div id="memoContent" style="height: 150px;"></div>
+
+                <select id="memoCategory">
+                    <option value="personal">personal</option>
+                    <option value="work">work</option>
+                    <option value="ideas">ideas</option>
+                    <option value="journal">journal</option>
+                </select>
+
+                <label><input type="checkbox" id="memoPinned"> Pin?</label>
+
+                <input type="file" id="memoFile" accept="image/*">
+
+                <button class="btn" onclick="addMemo()">ADD MEMO</button>
+            </div>
+
+            <!-- RIGHT: MEMO LIST -->
+            <div>
+                <!-- Pagination Controls -->
+                <div id="memoPagination" class="pagination">
+                    <div class="pagination-info" id="memoPageInfo"></div>
+                    <div class="pagination-controls">
+                        <button class="btn" id="memoFirstBtn" onclick="memoGoToPage(0)">FIRST</button>
+                        <button class="btn" id="memoPrevBtn" onclick="memoPrevPage()">PREV</button>
+                        <span style="font-size:12px;">Page</span>
+                        <input type="number" id="memoPageInput" min="1" value="1" onchange="memoGoToInput()">
+                        <span style="font-size:12px;" id="memoTotalPagesSpan"></span>
+                        <button class="btn" id="memoNextBtn" onclick="memoNextPage()">NEXT</button>
+                        <button class="btn" id="memoLastBtn" onclick="memoGoToLastPage()">LAST</button>
+                        <span style="font-size:12px; margin-left:8px;">Show</span>
+                        <select id="memoPageSize" onchange="memoChangePageSize()">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="40">40</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="memoList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============= MEMO VIEW MODAL ============= -->
+    <div id="memoViewModal" class="modal-overlay">
+        <div id="memoViewModalBox" class="modal">
+            <h3>Memo Details</h3>
+            <div class="view-label">Title</div>
+            <div id="viewMemoTitle" class="view-block"></div>
+
+            <div class="view-label">Content</div>
+            <div id="viewMemoContent" class="memo-content-view"></div>
+
+            <div class="view-label">Meta</div>
+            <div id="viewMemoMeta" class="view-block"></div>
+
+            <div id="viewMemoImageWrapper" style="display:none;">
+                <div class="view-label">Media</div>
+                <img id="viewMemoImage" style="max-width:100%; border:1px solid var(--border);">
+            </div>
+
+            <button class="btn" onclick="closeMemoViewModal()">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- ============= MEMO EDIT MODAL ============= -->
+    <div id="memoModal" class="modal-overlay">
+        <div id="memoModalBox" class="modal">
+            <h3>Edit Memo</h3>
+
+            <input id="editMemoTitle" placeholder="Title">
+
+            <!-- Quill Editor for Edit -->
+            <div id="editMemoContent" style="height: 200px;"></div>
+
+            <select id="editMemoCategory">
+                <option value="personal">personal</option>
+                <option value="work">work</option>
+                <option value="ideas">ideas</option>
+                <option value="journal">journal</option>
+            </select>
+
+            <label><input type="checkbox" id="editMemoPinned"> Pin?</label>
+
+            <input type="file" id="editMemoFile" accept="image/*">
+
+            <button class="btn" onclick="saveMemoEdit()">SAVE</button>
+            <button class="btn" onclick="closeMemoModal()">CANCEL</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script src="shared.js"></script>
+    <script src="nav.js"></script>
+    <script src="memos.js"></script>
+</body>
+</html>

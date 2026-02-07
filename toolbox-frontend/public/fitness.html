@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox - Fitness</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+    <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+        <div class="loading-spinner"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading...</div></div>
+    </div>
+    <button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
+    <div id="nav-placeholder" data-active="fitness"></div>
+    <h1>Hey Kevin!!!</h1>
+
+    <!-- =================== FITNESS TAB =================== -->
+    <div id="fitnessTabContent" class="tab-content" role="tabpanel" aria-labelledby="tabFitness">
+        <h2>Fitness Tracker</h2>
+
+        <!-- Today's Workout Banner -->
+        <div id="todaysWorkoutBanner" class="add-box" style="margin-bottom:20px; border-color:#0f0;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                <div>
+                    <div style="font-size:11px; opacity:0.7;">TODAY'S WORKOUT</div>
+                    <div style="font-size:20px; font-weight:bold;" id="todaysWorkoutType">Loading...</div>
+                    <div style="font-size:12px; opacity:0.7;" id="todaysWorkoutPlan"></div>
+                </div>
+                <div id="todaysWorkoutActions">
+                    <button class="btn" onclick="showTodaysWorkoutModal()" style="background:#0f0; color:#000; font-weight:bold;">START WORKOUT</button>
+                </div>
+            </div>
+            <div id="todaysWorkoutStatus" style="font-size:12px; margin-bottom:8px;"></div>
+            <div id="todaysExercisePreview" style="font-size:11px; opacity:0.8;"></div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card">
+                <div class="stat-label">Current Streak</div>
+                <div class="stat-value positive" id="fitnessCurrentStreak">0 days</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Longest Streak</div>
+                <div class="stat-value" id="fitnessLongestStreak">0 days</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">This Week</div>
+                <div class="stat-value" id="fitnessThisWeek">0 workouts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Workouts</div>
+                <div class="stat-value" id="fitnessTotalWorkouts">0</div>
+            </div>
+        </div>
+
+        <!-- Weekly Schedule + Quick Log -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <!-- Weekly Schedule View -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">This Week <span style="font-size:11px; opacity:0.5; font-weight:normal;" class="desktop-only">(click a day to see exercises)</span><span class="mobile-only" style="font-size:11px; opacity:0.5; font-weight:normal;">(tap a day)</span></h3>
+                <div id="weeklySchedule" class="swipe-hint" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px;">
+                    <!-- Will be populated by JS -->
+                </div>
+                <div style="margin-top:12px; font-size:11px; opacity:0.7; display:flex; gap:16px; flex-wrap:wrap;">
+                    <span><span style="color:#0f0;">■</span> Completed</span>
+                    <span><span style="color:#f90;">■</span> Planned</span>
+                    <span><span style="color:#888;">■</span> Rest</span>
+                </div>
+            </div>
+
+            <!-- Day Details Panel (shows exercises for selected day) -->
+            <div id="dayDetailsPanel" class="add-box" style="display:none; margin-top:16px; border-color:#39f;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="flex:1; min-width:0;">
+                        <h3 style="margin:0;" id="dayDetailsTitle">Monday - Push Day</h3>
+                        <div style="font-size:12px; opacity:0.7;" id="dayDetailsSubtitle">Chest, Shoulders, Triceps</div>
+                    </div>
+                    <button class="btn" onclick="hideDayDetails()" style="min-width:44px; min-height:44px;">✕ <span class="desktop-only">CLOSE</span></button>
+                </div>
+                <div id="dayDetailsExercises">
+                    <!-- Exercises will be listed here -->
+                </div>
+                <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                    <button class="btn" id="dayDetailsStartBtn" onclick="startDayWorkout()" style="background:#0f0; color:#000;">START THIS WORKOUT</button>
+                </div>
+            </div>
+
+            <!-- Quick Log Form -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Log Workout</h3>
+                <input type="date" id="workoutDate" style="margin-bottom:8px;">
+                <select id="workoutType" style="margin-bottom:8px;">
+                    <option value="PUSH">Push</option>
+                    <option value="PULL">Pull</option>
+                    <option value="LEGS">Legs</option>
+                    <option value="CARDIO">Cardio</option>
+                    <option value="FULL_BODY">Full Body</option>
+                    <option value="CORE">Core</option>
+                    <option value="REST">Rest Day</option>
+                </select>
+                <input type="number" id="workoutDuration" placeholder="Duration (minutes)" style="margin-bottom:8px;">
+                <input type="number" id="workoutCalories" placeholder="Calories burned (optional)" style="margin-bottom:8px;">
+                <textarea id="workoutNotes" placeholder="Notes (optional)" rows="2" style="margin-bottom:8px;"></textarea>
+                <label style="margin-bottom:8px; display:block;">
+                    <input type="checkbox" id="workoutCompleted" checked> Completed
+                </label>
+                <button class="btn" onclick="logWorkout()">LOG WORKOUT</button>
+            </div>
+        </div>
+
+        <!-- Weight Tracker + Chart -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 2fr; gap:16px; margin-bottom:16px;">
+            <!-- Weight Input -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Log Weight</h3>
+                <input type="date" id="weightDate" style="margin-bottom:8px;">
+                <input type="number" id="weightValue" placeholder="Weight (kg)" step="0.1" style="margin-bottom:8px;">
+                <input type="text" id="weightNotes" placeholder="Notes (optional)" style="margin-bottom:8px;">
+                <button class="btn" onclick="logWeight()">LOG WEIGHT</button>
+
+                <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+                    <div style="font-size:12px; opacity:0.7;">Current Weight</div>
+                    <div style="font-size:24px; font-weight:bold;" id="currentWeight">-- kg</div>
+                    <div style="font-size:12px;" id="weightChangeIndicator"></div>
+                </div>
+            </div>
+
+            <!-- Weight Chart -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Weight Progress</h3>
+                <div style="height:200px;">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout Templates -->
+        <div class="add-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Workout Templates</h3>
+                <button class="btn" onclick="showAddTemplateModal()">ADD TEMPLATE</button>
+            </div>
+            <div id="templatesList"></div>
+        </div>
+
+        <!-- Weekly Plan -->
+        <div class="add-box" style="margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Workout Plans</h3>
+                <button class="btn" onclick="showAddPlanModal()">ADD PLAN</button>
+            </div>
+            <div id="activePlanDisplay" style="margin-bottom:12px;"></div>
+            <div id="plansList"></div>
+        </div>
+
+        <!-- Fitness Analytics -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+            <div class="add-box">
+                <h3 style="margin-top:0;">Workouts by Type</h3>
+                <div style="height:200px;">
+                    <canvas id="workoutTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="add-box">
+                <h3 style="margin-top:0;">Weekly Volume</h3>
+                <div style="height:200px;">
+                    <canvas id="weeklyVolumeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consistency Score -->
+        <div class="add-box" style="margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:12px; opacity:0.7;">Consistency Score</div>
+                    <div style="font-size:24px; font-weight:bold;" id="consistencyScore">0%</div>
+                    <div style="font-size:11px; opacity:0.5;">Weeks with 3+ workouts (last 12 weeks)</div>
+                </div>
+                <div>
+                    <div style="font-size:12px; opacity:0.7;">Avg. Workouts/Week</div>
+                    <div style="font-size:24px; font-weight:bold;" id="avgWorkoutsPerWeek">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout History -->
+        <div class="add-box" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Recent Workouts</h3>
+            <div id="workoutHistoryList"></div>
+        </div>
+    </div>
+
+    <!-- Template Modal -->
+    <div id="templateModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="templateModalTitle">Add Template</h3>
+            <input type="hidden" id="editTemplateId">
+            <input id="templateName" placeholder="Template Name (e.g., Push Day A)" style="margin-bottom:8px;">
+            <select id="templateType" style="margin-bottom:8px;">
+                <option value="PUSH">Push</option>
+                <option value="PULL">Pull</option>
+                <option value="LEGS">Legs</option>
+                <option value="CARDIO">Cardio</option>
+                <option value="FULL_BODY">Full Body</option>
+                <option value="CORE">Core</option>
+            </select>
+            <input type="number" id="templateDuration" placeholder="Estimated Duration (minutes)" style="margin-bottom:8px;">
+            <textarea id="templateNotes" placeholder="Notes / Exercise list" rows="4" style="margin-bottom:8px;"></textarea>
+            <button class="btn" onclick="saveTemplate()">SAVE</button>
+            <button class="btn" onclick="closeModal('templateModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Plan Modal -->
+    <div id="planModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="planModalTitle">Add Plan</h3>
+            <input type="hidden" id="editPlanId">
+            <input id="planName" placeholder="Plan Name (e.g., PPL Split)" style="margin-bottom:8px;">
+            <div style="font-size:12px; opacity:0.7; margin-bottom:8px;">Assign templates to days:</div>
+            <div style="display:grid; grid-template-columns:auto 1fr; gap:8px; margin-bottom:12px;">
+                <label>Monday:</label><select id="planMonday"><option value="">Rest</option></select>
+                <label>Tuesday:</label><select id="planTuesday"><option value="">Rest</option></select>
+                <label>Wednesday:</label><select id="planWednesday"><option value="">Rest</option></select>
+                <label>Thursday:</label><select id="planThursday"><option value="">Rest</option></select>
+                <label>Friday:</label><select id="planFriday"><option value="">Rest</option></select>
+                <label>Saturday:</label><select id="planSaturday"><option value="">Rest</option></select>
+                <label>Sunday:</label><select id="planSunday"><option value="">Rest</option></select>
+            </div>
+            <label style="margin-bottom:8px; display:block;">
+                <input type="checkbox" id="planActive"> Set as Active Plan
+            </label>
+            <textarea id="planNotes" placeholder="Notes" rows="2" style="margin-bottom:8px;"></textarea>
+            <button class="btn" onclick="savePlan()">SAVE</button>
+            <button class="btn" onclick="closeModal('planModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Today's Workout Modal -->
+    <div id="todaysWorkoutModal" class="modal-overlay">
+        <div class="modal" style="max-width:500px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 id="todaysWorkoutModalTitle" style="margin:0;">Today's Workout</h3>
+                <button class="btn" onclick="closeModal('todaysWorkoutModal')" style="min-width:44px; min-height:44px; padding:8px;">✕</button>
+            </div>
+            <div id="todaysWorkoutModalPlan" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
+
+            <div id="todaysExerciseList" style="max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+                <!-- Exercise checklist will be populated here -->
+            </div>
+
+            <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:4px;">Duration (min)</label>
+                        <input type="number" id="todayWorkoutDuration" placeholder="60" inputmode="numeric">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:4px;">Calories</label>
+                        <input type="number" id="todayWorkoutCalories" placeholder="300" inputmode="numeric">
+                    </div>
+                </div>
+                <textarea id="todayWorkoutNotes" placeholder="Notes (optional)" rows="2" style="margin-bottom:12px;"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr auto; gap:8px;">
+                <button class="btn" onclick="completeTodaysWorkout()" style="background:#0f0; color:#000; font-weight:bold; min-height:48px;">✓ COMPLETE WORKOUT</button>
+                <button class="btn" onclick="closeModal('todaysWorkoutModal')" style="min-height:48px;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workout Edit Modal -->
+    <div id="workoutEditModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Edit Workout</h3>
+            <input type="hidden" id="editWorkoutId">
+            <input type="date" id="editWorkoutDate" style="margin-bottom:8px;">
+            <select id="editWorkoutType" style="margin-bottom:8px;">
+                <option value="PUSH">Push</option>
+                <option value="PULL">Pull</option>
+                <option value="LEGS">Legs</option>
+                <option value="CARDIO">Cardio</option>
+                <option value="FULL_BODY">Full Body</option>
+                <option value="CORE">Core</option>
+                <option value="REST">Rest Day</option>
+            </select>
+            <input type="number" id="editWorkoutDuration" placeholder="Duration (minutes)" style="margin-bottom:8px;">
+            <input type="number" id="editWorkoutCalories" placeholder="Calories burned" style="margin-bottom:8px;">
+            <textarea id="editWorkoutNotes" placeholder="Notes" rows="2" style="margin-bottom:8px;"></textarea>
+            <label style="margin-bottom:8px; display:block;">
+                <input type="checkbox" id="editWorkoutCompleted"> Completed
+            </label>
+            <button class="btn" onclick="saveWorkoutEdit()">SAVE</button>
+            <button class="btn" onclick="closeModal('workoutEditModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="nav.js"></script>
+    <script src="fitness.js"></script>
+</body>
+</html>

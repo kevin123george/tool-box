@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox - Finance</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+    <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+        <div class="loading-spinner"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading...</div></div>
+    </div>
+    <button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
+    <div id="nav-placeholder" data-active="finance"></div>
+    <h1>Hey Kevin!!!</h1>
+
+    <!-- Sub-Tab Navigation -->
+    <div class="sub-tabs" role="tablist">
+        <div class="sub-tab active" onclick="switchFinanceTab('accounts')">Accounts</div>
+        <div class="sub-tab" onclick="switchFinanceTab('budget')">Budget</div>
+        <div class="sub-tab" onclick="switchFinanceTab('subscriptions')">Subscriptions</div>
+        <div class="sub-tab" onclick="switchFinanceTab('calendar')">Calendar</div>
+        <div class="sub-tab" onclick="switchFinanceTab('analytics')">Analytics</div>
+    </div>
+
+    <!-- =================== ACCOUNTS SUB-TAB =================== -->
+    <div id="financeAccountsContent">
+        <h2>Finance Accounts</h2>
+
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="add-box">
+                <h3 style="margin-top:0;">Add Account</h3>
+                <select id="financeBank">
+                    <option value="N26">N26</option>
+                    <option value="Sparkasse">Sparkasse</option>
+                    <option value="Trade Republic">Trade Republic</option>
+                    <option value="Wise">Wise</option>
+                    <option value="Revolut">Revolut</option>
+                </select>
+
+                <select id="mode">
+                    <option value="Current">Current</option>
+                    <option value="Savings">Savings</option>
+                    <option value="Broker">Broker</option>
+                </select>
+
+                <input id="financeBalance" placeholder="Balance (&#8364;)" type="number" step="0.01">
+
+                <button onclick="addFinance()" class="btn">ADD / UPDATE</button>
+            </div>
+
+            <div class="add-box">
+                <h3 style="margin-top:0;">Summary</h3>
+
+                <div><b>Total Balance:</b> <span id="sumTotal"></span></div>
+
+                <div style="margin-top:10px;">
+                    <b>By Mode:</b>
+                    <ul id="sumByModeList" style="margin:4px 0; padding-left:20px;"></ul>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <b>By Bank:</b>
+                    <ul id="sumByBankList" style="margin:4px 0; padding-left:20px;"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="financePagination" class="pagination">
+            <div class="pagination-info" id="financePageInfo"></div>
+            <div class="pagination-controls">
+                <button class="btn" id="financeFirstBtn" onclick="financeGoToPage(0)">FIRST</button>
+                <button class="btn" id="financePrevBtn" onclick="financePrevPage()">PREV</button>
+                <span style="font-size:12px;">Page</span>
+                <input type="number" id="financePageInput" min="1" value="1" onchange="financeGoToInput()">
+                <span style="font-size:12px;" id="financeTotalPagesSpan"></span>
+                <button class="btn" id="financeNextBtn" onclick="financeNextPage()">NEXT</button>
+                <button class="btn" id="financeLastBtn" onclick="financeGoToLastPage()">LAST</button>
+                <span style="font-size:12px; margin-left:8px;">Show</span>
+                <select id="financePageSize" onchange="financeChangePageSize()">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="40">40</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="financeList"></div>
+
+        <br />
+        <!-- RETIREMENT GOALS GRID -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;">
+
+            <!-- GOAL SELECTOR & EDITOR -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Goal Editor</h3>
+
+                <label style="font-size:11px; opacity:0.7;">Select Goal:</label>
+                <select id="goalSelect" onchange="onGoalSelectChange()">
+                    <option value="">(Select a goal)</option>
+                </select>
+
+                <input id="goalTargetIncomeInput" type="number" step="0.01" placeholder="Target net yearly income (&#8364;)">
+                <input id="goalTaxRateInput" type="number" step="0.001" placeholder="Tax rate (e.g. 0.208)">
+                <input id="goalReturnRateInput" type="number" step="0.001" placeholder="Expected return (e.g. 0.065)">
+                <input id="goalContributionInput" type="number" step="0.01" placeholder="Yearly contribution (&#8364;)">
+                <input id="goalAgeInput" type="number" step="1" placeholder="Current age">
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                    <button class="btn" onclick="newGoalForm()">NEW</button>
+                    <button class="btn" onclick="saveGoalForm()">SAVE</button>
+                    <button class="btn" onclick="deleteGoal()">DELETE</button>
+                </div>
+                <div id="goalStatus" style="margin-top:6px; font-size:12px; opacity:.7;"></div>
+            </div>
+
+            <!-- GOAL SUMMARY + CHART -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Retirement Goal</h3>
+
+                <div style="font-size:11px;"><b>Target Yearly Income:</b> <span id="goalTargetIncome"></span></div>
+                <div style="font-size:11px;"><b>Required Corpus:</b> <span id="goalRequiredCorpus"></span></div>
+                <div style="font-size:11px;"><b>Current Corpus:</b> <span id="goalCurrentCorpus"></span></div>
+                <div style="font-size:11px;"><b>Goal Achieved:</b> <span id="goalAchieved"></span></div>
+                <div style="font-size:11px;"><b>FIRE Age:</b> <span id="goalFireAge"></span></div>
+
+                <div style="font-size:11px;"><b>Progress:</b> <span id="goalProgress"></span></div>
+                <div style="font-size:11px;"><b>Years to Goal:</b> <span id="goalYearsToGoal"></span></div>
+                <div style="font-size:11px;"><b>Goal Age:</b> <span id="goalAge"></span></div>
+                <div style="font-size:11px;"><b>Remaining Corpus:</b> <span id="goalRemainingCorpus"></span></div>
+
+                <div style="margin-top:10px;">
+                    <div id="goalProgressBar"
+                         style="height:12px; width:100%; background:#222; border:1px solid var(--border);">
+                        <div id="goalProgressFill"
+                             style="height:100%; width:0%; background:#0f0;"></div>
+                    </div>
+                </div>
+
+                <canvas id="goalChart" width="300" height="120" style="margin-top:10px; width:100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- Savings Goals Section (from Dashboard) -->
+        <div class="add-box" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Savings Goals</h3>
+                <button class="btn" onclick="showAddSavingsGoalModal()">ADD GOAL</button>
+            </div>
+            <div id="savingsGoalsList"></div>
+        </div>
+
+        <!-- Net Worth History Chart (from Dashboard) -->
+        <div class="add-box" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Net Worth History</h3>
+                <button class="btn" onclick="captureNetWorthSnapshot()">SNAPSHOT</button>
+            </div>
+            <div style="height:250px;">
+                <canvas id="netWorthChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Savings Rate Chart (from Dashboard) -->
+        <div class="add-box" style="margin-top:20px;">
+            <h3 style="margin-top:0;">Savings Rate Trend</h3>
+            <div style="height:200px;">
+                <canvas id="savingsRateChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== BUDGET SUB-TAB =================== -->
+    <div id="financeBudgetContent" class="hidden">
+        <h2>Monthly Budget Tracker</h2>
+
+        <!-- Month Selector -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Select Month</h3>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input type="month" id="budgetMonthPicker" onchange="loadBudgetForSelectedMonth()">
+                <button class="btn" onclick="goToCurrentMonth()">CURRENT MONTH</button>
+            </div>
+        </div>
+
+        <!-- Budget Grid: Planning + Summary -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+            <!-- LEFT: Set Budget Plan -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Monthly Plan</h3>
+
+                <h4 style="font-size:12px; margin:10px 0 4px 0;">Expected Income</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:8px;">
+                    <input id="planSalary" type="number" step="0.01" placeholder="Salary &#8364;">
+                    <input id="planBonus" type="number" step="0.01" placeholder="Bonus &#8364;">
+                    <input id="planFreelance" type="number" step="0.01" placeholder="Freelance &#8364;">
+                    <input id="planOtherIncome" type="number" step="0.01" placeholder="Other &#8364;">
+                </div>
+
+                <h4 style="font-size:12px; margin:10px 0 4px 0;">Planned Expenses</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:8px;">
+                    <input id="planRent" type="number" step="0.01" placeholder="Rent &#8364;">
+                    <input id="planUtilities" type="number" step="0.01" placeholder="Utilities &#8364;">
+                    <input id="planInternet" type="number" step="0.01" placeholder="Internet &#8364;">
+                    <input id="planTransport" type="number" step="0.01" placeholder="Transport &#8364;">
+                    <input id="planFuel" type="number" step="0.01" placeholder="Fuel &#8364;">
+                    <input id="planGroceries" type="number" step="0.01" placeholder="Groceries &#8364;">
+                    <input id="planDining" type="number" step="0.01" placeholder="Dining Out &#8364;">
+                    <input id="planEntertainment" type="number" step="0.01" placeholder="Entertainment &#8364;">
+                    <input id="planSubscriptions" type="number" step="0.01" placeholder="Subscriptions &#8364;">
+                    <input id="planGym" type="number" step="0.01" placeholder="Gym &#8364;">
+                    <input id="planOtherExpense" type="number" step="0.01" placeholder="Other &#8364;">
+                </div>
+
+                <button class="btn" onclick="saveBudgetPlan()">SAVE PLAN</button>
+            </div>
+
+            <!-- RIGHT: Summary -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Summary</h3>
+
+                <div style="font-size:12px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Planned Income:</span>
+                        <span id="summaryPlannedIncome" style="font-weight:bold;">&#8364;0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Actual Income:</span>
+                        <span id="summaryActualIncome" style="font-weight:bold;">&#8364;0.00</span>
+                    </div>
+                </div>
+
+                <div style="font-size:12px; margin-bottom:8px; padding-top:8px; border-top:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Planned Expenses:</span>
+                        <span id="summaryPlannedExpenses" style="font-weight:bold;">&#8364;0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Actual Expenses:</span>
+                        <span id="summaryActualExpenses" style="font-weight:bold;">&#8364;0.00</span>
+                    </div>
+                </div>
+
+                <div style="font-size:12px; padding-top:8px; border-top:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Savings:</span>
+                        <span id="summarySavings" style="font-weight:bold; color:#0f0;">&#8364;0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Savings Rate:</span>
+                        <span id="summarySavingsRate" style="font-weight:bold; color:#0f0;">0%</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin:4px 0;">
+                        <span>Budget Adherence:</span>
+                        <span id="summaryAdherence" style="font-weight:bold;">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Income/Expense Records -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+            <!-- Add Income -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Add Income</h3>
+                <select id="incomeCategory">
+                    <option value="SALARY">Salary</option>
+                    <option value="BONUS">Bonus</option>
+                    <option value="FREELANCE">Freelance</option>
+                    <option value="INVESTMENT">Investment</option>
+                    <option value="DIVIDEND">Dividend</option>
+                    <option value="INTEREST">Interest</option>
+                    <option value="GIFT">Gift</option>
+                    <option value="OTHER">Other</option>
+                </select>
+                <input id="incomeAmount" type="number" step="0.01" placeholder="Amount &#8364;">
+                <input id="incomeDescription" type="text" placeholder="Description">
+                <button class="btn" onclick="addIncome()">ADD INCOME</button>
+            </div>
+
+            <!-- Add Expense -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Add Expense</h3>
+                <select id="expenseCategory">
+                    <option value="RENT">Rent</option>
+                    <option value="UTILITIES">Utilities</option>
+                    <option value="INTERNET">Internet</option>
+                    <option value="TRANSPORT">Transport</option>
+                    <option value="FUEL">Fuel</option>
+                    <option value="GROCERIES">Groceries</option>
+                    <option value="DINING_OUT">Dining Out</option>
+                    <option value="ENTERTAINMENT">Entertainment</option>
+                    <option value="SUBSCRIPTIONS">Subscriptions</option>
+                    <option value="GYM">Gym</option>
+                    <option value="TRAVEL">Travel</option>
+                    <option value="CLOTHING">Clothing</option>
+                    <option value="PERSONAL_CARE">Personal Care</option>
+                    <option value="EDUCATION">Education</option>
+                    <option value="GIFTS">Gifts</option>
+                    <option value="OTHER">Other</option>
+                </select>
+                <input id="expenseAmount" type="number" step="0.01" placeholder="Amount &#8364;">
+                <input id="expenseDescription" type="text" placeholder="Description">
+                <button class="btn" onclick="addExpense()">ADD EXPENSE</button>
+            </div>
+        </div>
+
+        <!-- Records Display -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+            <!-- Income Records -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Income Records</h3>
+                <div id="incomeRecordsList"></div>
+            </div>
+
+            <!-- Expense Records -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Expense Records</h3>
+                <div id="expenseRecordsList"></div>
+            </div>
+        </div>
+
+        <!-- Recurring Transactions Section -->
+        <div class="add-box" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Recurring Transactions</h3>
+                <button class="btn" onclick="showAddRecurringModal()">ADD RECURRING</button>
+            </div>
+            <div class="stats-grid" style="margin-bottom:12px;">
+                <div class="stat-card">
+                    <div class="stat-label">Monthly Recurring Cost</div>
+                    <div class="stat-value negative" id="recurringMonthlyCost">&#8364;0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Monthly Recurring Income</div>
+                    <div class="stat-value positive" id="recurringMonthlyIncome">&#8364;0.00</div>
+                </div>
+            </div>
+            <div id="recurringTransactionsList"></div>
+        </div>
+
+        <!-- Bank Statement Import -->
+        <div class="add-box" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Import Bank Statement</h3>
+                <button class="btn" onclick="showImportModal()">IMPORT CSV</button>
+            </div>
+        </div>
+
+        <!-- Multi-Month Comparison -->
+        <div class="add-box" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="margin:0;">Budget Comparison</h3>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label style="font-size:12px;">Months:</label>
+                    <select id="comparisonMonths" onchange="loadBudgetComparison()" style="width:auto; padding:4px 8px;">
+                        <option value="3">3</option>
+                        <option value="6" selected>6</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
+            </div>
+            <div id="budgetComparisonChart" style="border:1px solid var(--border); padding:12px; margin-bottom:16px;">
+                <canvas id="comparisonChart" height="250"></canvas>
+            </div>
+            <div id="budgetComparisonTable"></div>
+        </div>
+    </div>
+
+    <!-- =================== SUBSCRIPTIONS SUB-TAB =================== -->
+    <div id="financeSubscriptionsContent" class="hidden">
+        <h2>Subscription Manager</h2>
+
+        <!-- Summary Cards -->
+        <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card">
+                <div class="stat-label">Monthly Cost</div>
+                <div class="stat-value negative" id="subsTotalMonthly">&#8364;0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Annual Cost</div>
+                <div class="stat-value negative" id="subsTotalAnnual">&#8364;0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Subscriptions</div>
+                <div class="stat-value" id="subsActiveCount">0</div>
+            </div>
+        </div>
+
+        <!-- Add Subscription Button -->
+        <div class="add-box" style="margin-bottom:16px;">
+            <button class="btn" onclick="showAddSubscriptionModal()">ADD SUBSCRIPTION</button>
+        </div>
+
+        <!-- Subscriptions List -->
+        <div id="subscriptionsList"></div>
+    </div>
+
+    <!-- =================== CALENDAR SUB-TAB =================== -->
+    <div id="financeCalendarContent" class="hidden">
+        <h2>Financial Calendar</h2>
+
+        <!-- Month Navigation -->
+        <div class="add-box" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <button class="btn" onclick="prevMonth()">PREV</button>
+                <h3 id="calendarMonthLabel" style="margin:0;"></h3>
+                <button class="btn" onclick="nextMonth()">NEXT</button>
+            </div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div id="calendarGrid" class="calendar-grid"></div>
+
+        <!-- Legend -->
+        <div class="add-box" style="margin-top:16px;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px;">
+                <span><span style="display:inline-block; width:12px; height:12px; background:#0f0; margin-right:4px;"></span>Income / Workout Done</span>
+                <span><span style="display:inline-block; width:12px; height:12px; background:#f33; margin-right:4px;"></span>Expense</span>
+                <span><span style="display:inline-block; width:12px; height:12px; background:#f90; margin-right:4px;"></span>Subscription / Workout Pending</span>
+                <span><span style="display:inline-block; width:12px; height:12px; background:#39f; margin-right:4px;"></span>Dividend</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== ANALYTICS SUB-TAB =================== -->
+    <div id="financeAnalyticsContent" class="hidden">
+        <h2>Expense Analytics</h2>
+
+        <!-- Anomaly Alerts -->
+        <div class="add-box" style="margin-bottom:20px;">
+            <h3 style="margin-top:0;">Spending Anomalies</h3>
+            <div id="anomaliesList"></div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+            <!-- Monthly Income vs Expenses -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Income vs Expenses</h3>
+                <div style="height:250px;">
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Breakdown (Current Month) -->
+            <div class="add-box">
+                <h3 style="margin-top:0;">Category Breakdown</h3>
+                <div style="height:250px;">
+                    <canvas id="categoryBreakdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Trends -->
+        <div class="add-box">
+            <h3 style="margin-top:0;">Category Trends (6 Months)</h3>
+            <div style="height:300px;">
+                <canvas id="categoryTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== MODALS =================== -->
+
+    <!-- ============= FINANCE VIEW MODAL ============= -->
+    <div id="financeViewModal" class="modal-overlay">
+        <div id="financeViewModalBox" class="modal">
+            <h3>Account Details</h3>
+
+            <div class="view-label">Bank</div>
+            <div id="viewFinanceBank" class="view-block"></div>
+
+            <div class="view-label">Mode</div>
+            <div id="viewMode" class="view-block"></div>
+
+            <div class="view-label">Balance (&#8364;)</div>
+            <div id="viewFinanceBalance" class="view-block"></div>
+
+            <button class="btn" onclick="closeFinanceViewModal()">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- ============= FINANCE EDIT MODAL ============= -->
+    <div id="financeModal" class="modal-overlay">
+        <div id="financeModalBox" class="modal">
+            <h3>Edit Account</h3>
+
+            <select id="editFinanceBank">
+                <option value="N26">N26</option>
+                <option value="Sparkasse">Sparkasse</option>
+                <option value="Trade Republic">Trade Republic</option>
+                <option value="Wise">Wise</option>
+                <option value="Revolut">Revolut</option>
+            </select>
+            <select id="editMode">
+                <option value="Current">Current</option>
+                <option value="Savings">Savings</option>
+                <option value="Broker">Broker</option>
+            </select>
+
+            <input id="editFinanceBalance" placeholder="Balance (&#8364;)" type="number" step="0.01">
+
+            <button class="btn" onclick="saveFinanceEdit()">SAVE</button>
+            <button class="btn" onclick="closeFinanceModal()">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ============= SAVINGS GOAL MODAL ============= -->
+    <div id="savingsGoalModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="savingsGoalModalTitle">Add Savings Goal</h3>
+            <input type="hidden" id="savingsGoalId">
+            <input id="savingsGoalName" placeholder="Goal Name (e.g., Emergency Fund)">
+            <input id="savingsGoalTarget" type="number" step="0.01" placeholder="Target Amount (&#8364;)">
+            <input id="savingsGoalCurrent" type="number" step="0.01" placeholder="Current Amount (&#8364;)">
+            <input id="savingsGoalDeadline" type="date" placeholder="Deadline">
+            <input id="savingsGoalIcon" placeholder="Icon (emoji)" maxlength="4">
+            <textarea id="savingsGoalNotes" placeholder="Notes" rows="2"></textarea>
+            <button class="btn" onclick="saveSavingsGoal()">SAVE</button>
+            <button class="btn" onclick="closeModal('savingsGoalModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ============= CONTRIBUTE MODAL ============= -->
+    <div id="contributeModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Contribute to Goal</h3>
+            <input type="hidden" id="contributeGoalId">
+            <input id="contributeAmount" type="number" step="0.01" placeholder="Amount to Add (&#8364;)">
+            <button class="btn" onclick="contributeToGoal()">CONTRIBUTE</button>
+            <button class="btn" onclick="closeModal('contributeModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ============= RECURRING TRANSACTION MODAL ============= -->
+    <div id="recurringModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="recurringModalTitle">Add Recurring Transaction</h3>
+            <input type="hidden" id="recurringId">
+            <input id="recurringName" placeholder="Name (e.g., Netflix)">
+            <input id="recurringAmount" type="number" step="0.01" placeholder="Amount (&#8364;)">
+            <select id="recurringCategory">
+                <option value="EXPENSE">Expense</option>
+                <option value="INCOME">Income</option>
+            </select>
+            <select id="recurringCategoryType">
+                <optgroup label="Expenses">
+                    <option value="RENT">Rent</option>
+                    <option value="UTILITIES">Utilities</option>
+                    <option value="INTERNET">Internet</option>
+                    <option value="TRANSPORT">Transport</option>
+                    <option value="SUBSCRIPTIONS">Subscriptions</option>
+                    <option value="GYM">Gym</option>
+                    <option value="OTHER">Other</option>
+                </optgroup>
+                <optgroup label="Income">
+                    <option value="SALARY">Salary</option>
+                    <option value="FREELANCE">Freelance</option>
+                    <option value="DIVIDEND">Dividend</option>
+                    <option value="OTHER">Other</option>
+                </optgroup>
+            </select>
+            <select id="recurringFrequency">
+                <option value="WEEKLY">Weekly</option>
+                <option value="MONTHLY">Monthly</option>
+                <option value="YEARLY">Yearly</option>
+            </select>
+            <input id="recurringNextDue" type="date" placeholder="Next Due Date">
+            <label><input type="checkbox" id="recurringActive" checked> Active</label>
+            <button class="btn" onclick="saveRecurringTransaction()">SAVE</button>
+            <button class="btn" onclick="closeModal('recurringModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ============= IMPORT MODAL ============= -->
+    <div id="importModal" class="modal-overlay">
+        <div class="modal" style="max-width:700px;">
+            <h3>Import Bank Statement</h3>
+            <div style="margin-bottom:12px;">
+                <input type="file" id="importFile" accept=".csv">
+                <select id="importFormat" style="margin-top:8px;">
+                    <option value="AUTO">Auto-detect</option>
+                    <option value="N26">N26</option>
+                    <option value="SPARKASSE">Sparkasse</option>
+                </select>
+                <button class="btn" onclick="previewImport()" style="margin-top:8px;">PREVIEW</button>
+            </div>
+            <div id="importPreviewList"></div>
+            <div style="margin-top:12px;">
+                <button class="btn" onclick="confirmImport()">CONFIRM IMPORT</button>
+                <button class="btn" onclick="closeModal('importModal')">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============= SUBSCRIPTION MODAL ============= -->
+    <div id="subscriptionModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="subscriptionModalTitle">Add Subscription</h3>
+            <input type="hidden" id="subscriptionId">
+            <input id="subscriptionName" placeholder="Name (e.g., Netflix)">
+            <input id="subscriptionProvider" placeholder="Provider (e.g., Netflix Inc.)">
+            <input id="subscriptionAmount" type="number" step="0.01" placeholder="Amount (&#8364;)">
+            <select id="subscriptionBillingCycle">
+                <option value="WEEKLY">Weekly</option>
+                <option value="MONTHLY">Monthly</option>
+                <option value="YEARLY">Yearly</option>
+            </select>
+            <input id="subscriptionNextBilling" type="date" placeholder="Next Billing Date">
+            <input id="subscriptionCategory" placeholder="Category (e.g., Entertainment)">
+            <label><input type="checkbox" id="subscriptionActive" checked> Active</label>
+            <textarea id="subscriptionNotes" placeholder="Notes" rows="2"></textarea>
+            <button class="btn" onclick="saveSubscription()">SAVE</button>
+            <button class="btn" onclick="closeModal('subscriptionModal')">CANCEL</button>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="nav.js"></script>
+    <script src="finance.js"></script>
+</body>
+</html>

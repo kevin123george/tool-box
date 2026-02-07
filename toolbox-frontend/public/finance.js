@@ -1,18 +1,369 @@
 /* ===========================================================
-   FEATURES.JS - 12 New Features for ToolBox
+   FINANCE.JS - Finance page (Accounts, Budget, Subscriptions,
+   Calendar, Analytics)
    ============================================================ */
 
-const FEATURES_API = "";
+let currentGoalId = null;
+let editingFinanceId = null;
+let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
 
 /* ===========================================================
-   FEATURE 1: SAVINGS GOALS
+   SUB-TAB SWITCHING
+   ============================================================ */
+
+function switchFinanceTab(tab) {
+    localStorage.setItem('finance_active_tab', tab);
+    const tabs = ['accounts', 'budget', 'subscriptions', 'calendar', 'analytics'];
+    tabs.forEach(t => {
+        const el = document.getElementById('finance' + t.charAt(0).toUpperCase() + t.slice(1) + 'Content');
+        if (el) el.classList.toggle('hidden', t !== tab);
+    });
+    document.querySelectorAll('.sub-tab').forEach(el => {
+        el.classList.toggle('active', el.textContent.toLowerCase() === tab);
+    });
+    // Load data for the active sub-tab
+    if (tab === 'accounts') { loadFinance(); loadGoalList(); loadSavingsGoals(); loadNetWorthHistory(); loadSavingsRateHistory(); }
+    else if (tab === 'budget') { goToCurrentMonth(); loadRecurringTransactions(); }
+    else if (tab === 'subscriptions') { loadSubscriptions(); }
+    else if (tab === 'calendar') { loadCalendar(); }
+    else if (tab === 'analytics') { loadAnalytics(); }
+}
+
+/* ===========================================================
+   FINANCE ACCOUNTS CRUD (from app.js)
+   ============================================================ */
+
+async function loadFinanceSummary() {
+    const res = await fetch(`${API}/api/finance/summary`);
+    const s = await res.json();
+
+    sumTotal.textContent = "\u20AC" + s.totalBalance.toFixed(2);
+
+    sumByModeList.innerHTML = "";
+    Object.entries(s.totalByMode).forEach(([mode, value]) => {
+        const li = document.createElement("li");
+        li.textContent = `${mode}: \u20AC ${value.toFixed(2)}`;
+        sumByModeList.appendChild(li);
+    });
+
+    sumByBankList.innerHTML = "";
+    Object.entries(s.totalByBank).forEach(([bank, value]) => {
+        const li = document.createElement("li");
+        li.textContent = `${bank}: \u20AC ${value.toFixed(2)}`;
+        sumByBankList.appendChild(li);
+    });
+}
+
+function renderGoalChart(projectionText) {
+    const lines = projectionText.split("\n").filter(l => l.includes("Age"));
+    const ages = [];
+    const values = [];
+
+    lines.forEach(line => {
+        const m = line.match(/Age (\d+): \u20AC([\d\.]+)/);
+        if (m) {
+            ages.push(Number(m[1]));
+            values.push(parseFloat(m[2]));
+        }
+    });
+
+    const canvas = document.getElementById("goalChart");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (values.length === 0) return;
+
+    const maxValue = Math.max(...values);
+
+    ctx.strokeStyle = "#0f0";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    values.forEach((v, i) => {
+        const x = (i / (values.length - 1)) * canvas.width;
+        const y = canvas.height - (v / maxValue) * canvas.height;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+}
+
+function clearGoalDisplay() {
+    goalTargetIncome.textContent = "";
+    goalRequiredCorpus.textContent = "";
+    goalCurrentCorpus.textContent = "";
+    goalAchieved.textContent = "";
+    goalFireAge.textContent = "";
+
+    const canvas = document.getElementById("goalChart");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+async function loadGoal() {
+    const sel = document.getElementById("goalSelect");
+    if (!sel) return;
+    const goalId = sel.value;
+    if (!goalId) {
+        currentGoalId = null;
+        clearGoalDisplay();
+        return;
+    }
+
+    const res = await fetch(`/api/goal/${goalId}`);
+    const g = await res.json();
+    currentGoalId = g.id;
+
+    goalTargetIncome.textContent = "\u20AC" + g.targetYearlyIncome.toFixed(2);
+    goalRequiredCorpus.textContent = "\u20AC" + g.requiredCorpus.toFixed(2);
+    goalCurrentCorpus.textContent = "\u20AC" + g.currentCorpus.toFixed(2);
+    goalAchieved.textContent = g.goalAchieved ? "YES" : "NO";
+
+    goalTargetIncomeInput.value = g.targetYearlyIncome;
+    goalTaxRateInput.value = g.taxRate;
+    goalReturnRateInput.value = g.expectedReturnRate;
+    goalContributionInput.value = g.yearlyContribution;
+    goalAgeInput.value = g.currentAge;
+
+    const projText = await fetch(`/api/goal/${goalId}/projection`).then(r => r.text());
+    const match = projText.match(/Age (\d+)/);
+    goalFireAge.textContent = match ? match[1] : (g.goalAchievedAge || "\u2014");
+
+    goalYearsToGoal.textContent = g.yearsToGoal ?? "\u2014";
+    goalAge.textContent = g.goalAchievedAge ?? "\u2014";
+
+    const remaining = g.requiredCorpus - g.currentCorpus;
+    goalRemainingCorpus.textContent = "\u20AC" + remaining.toFixed(2);
+
+    let progress = (g.currentCorpus / g.requiredCorpus) * 100;
+    if (progress > 100) progress = 100;
+
+    goalProgress.textContent = progress.toFixed(1) + "%";
+    document.getElementById("goalProgressFill").style.width = progress + "%";
+
+    renderGoalChart(projText);
+}
+
+function onGoalSelectChange() {
+    loadGoal();
+    goalStatus.textContent = "";
+}
+
+function newGoalForm() {
+    currentGoalId = null;
+    goalSelect.value = "";
+    goalTargetIncomeInput.value = "";
+    goalTaxRateInput.value = "";
+    goalReturnRateInput.value = "";
+    goalContributionInput.value = "";
+    goalAgeInput.value = "";
+    goalStatus.textContent = "Creating new goal\u2026";
+    clearGoalDisplay();
+}
+
+async function saveGoalForm() {
+    const payload = {
+        targetYearlyIncome: parseFloat(goalTargetIncomeInput.value || 0),
+        taxRate: parseFloat(goalTaxRateInput.value || 0),
+        expectedReturnRate: parseFloat(goalReturnRateInput.value || 0),
+        yearlyContribution: parseFloat(goalContributionInput.value || 0),
+        currentAge: parseInt(goalAgeInput.value || 0, 10)
+    };
+    if (currentGoalId) {
+        payload.id = currentGoalId;
+    }
+
+    goalStatus.textContent = "Saving\u2026";
+
+    const res = await fetch(`/api/goal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    const saved = await res.json();
+    currentGoalId = saved.id;
+
+    await loadGoalList(saved.id);
+    goalStatus.textContent = "Saved";
+}
+
+async function deleteGoal() {
+    if (!currentGoalId) {
+        goalStatus.textContent = "No goal selected to delete.";
+        return;
+    }
+
+    goalStatus.textContent = "Deleting\u2026";
+
+    await fetch(`/api/goal/${currentGoalId}`, { method: "DELETE" });
+
+    currentGoalId = null;
+    goalSelect.value = "";
+    clearGoalDisplay();
+    await loadGoalList();
+    newGoalForm();
+    goalStatus.textContent = "Deleted.";
+}
+
+async function loadFinance(page = 0) {
+    const size = parseInt(document.getElementById('financePageSize').value) || 10;
+    const res = await fetch(`${API}/api/finance?page=${page}&size=${size}`);
+    const response = await res.json();
+    const data = response.content;
+
+    financePage = {
+        current: response.number,
+        total: response.totalPages,
+        size: response.size,
+        totalElements: response.totalElements
+    };
+
+    updatePaginationControls('finance', financePage);
+
+    let html = '<div class="stats-grid">';
+
+    data.forEach(acc => {
+        const modified = acc.lastModified ? new Date(acc.lastModified).toLocaleString() : "\u2014";
+
+        html += `
+        <div class="stat-card" style="text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:bold; font-size:14px;">${acc.bank}</div>
+                <div style="font-size:11px; opacity:0.6; text-transform:uppercase;">${acc.mode || "Unknown"}</div>
+            </div>
+            <div style="font-size:20px; font-weight:bold; margin:10px 0;">\u20AC${acc.balance.toFixed(2)}</div>
+            <div style="font-size:10px; opacity:0.5; margin-bottom:10px;">${modified}</div>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button class="btn" style="flex:1; min-width:60px;" onclick="viewFinance('${acc.id}')">VIEW</button>
+                <button class="btn" style="flex:1; min-width:60px;" onclick="showEditFinance('${acc.id}')">EDIT</button>
+                <button class="btn" style="flex:1; min-width:60px;" onclick="delFinance('${acc.id}')">DEL</button>
+            </div>
+        </div>`;
+    });
+
+    html += '</div>';
+
+    document.getElementById("financeList").innerHTML = html;
+
+    loadFinanceSummary();
+}
+
+function financeChangePageSize() { loadFinance(0); }
+function financeGoToPage(page) { loadFinance(page); }
+function financePrevPage() { if (financePage.current > 0) loadFinance(financePage.current - 1); }
+function financeNextPage() { if (financePage.current < financePage.total - 1) loadFinance(financePage.current + 1); }
+function financeGoToLastPage() { loadFinance(financePage.total - 1); }
+function financeGoToInput() {
+    const input = parseInt(document.getElementById('financePageInput').value);
+    if (input >= 1 && input <= financePage.total) loadFinance(input - 1);
+}
+
+async function addFinance() {
+    const form = {
+        bank: financeBank.value,
+        mode: mode.value,
+        balance: parseFloat(financeBalance.value || 0)
+    };
+
+    await fetch(`${API}/api/finance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+    });
+
+    loadFinance(0);
+    if (document.getElementById("goalSelect").value) {
+        loadGoal();
+    }
+}
+
+async function viewFinance(id) {
+    const res = await fetch(`${API}/api/finance/${id}`);
+    const acc = await res.json();
+
+    viewFinanceBank.textContent = acc.bank;
+    viewMode.textContent = acc.mode || "Unknown";
+    viewFinanceBalance.textContent = "\u20AC" + acc.balance.toFixed(2);
+
+    openModal("financeViewModal");
+}
+
+function closeFinanceViewModal() { closeModal("financeViewModal"); }
+
+async function showEditFinance(id) {
+    editingFinanceId = id;
+
+    const res = await fetch(`${API}/api/finance/${id}`);
+    const acc = await res.json();
+
+    editFinanceBank.value = acc.bank;
+    editMode.value = acc.mode;
+    editFinanceBalance.value = acc.balance;
+
+    openModal("financeModal");
+}
+
+function closeFinanceModal() {
+    editingFinanceId = null;
+    closeModal("financeModal");
+}
+
+async function saveFinanceEdit() {
+    const updated = {
+        bank: editFinanceBank.value,
+        mode: editMode.value,
+        balance: parseFloat(editFinanceBalance.value || 0)
+    };
+
+    await fetch(`${API}/api/finance/${editingFinanceId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+    });
+
+    closeFinanceModal();
+    loadFinance(financePage.current);
+}
+
+async function delFinance(id) {
+    await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
+    loadFinance(financePage.current);
+}
+
+async function loadGoalList(selectedId) {
+    const res = await fetch(`/api/goal`);
+    const goals = await res.json();
+
+    const sel = document.getElementById("goalSelect");
+    sel.innerHTML = `<option value="">(Select a goal)</option>`;
+
+    goals.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = `Goal ${g.id}`;
+        sel.appendChild(opt);
+    });
+
+    if (goals.length > 0) {
+        sel.value = selectedId || goals[0].id;
+        loadGoal();
+    } else {
+        currentGoalId = null;
+        clearGoalDisplay();
+    }
+}
+
+/* ===========================================================
+   SAVINGS GOALS (from features.js)
    ============================================================ */
 
 let savingsGoals = [];
 
 async function loadSavingsGoals() {
     try {
-        const res = await fetch(`${FEATURES_API}/api/savings-goals`);
+        const res = await fetch(`${API}/api/savings-goals`);
         if (res.ok) {
             savingsGoals = await res.json();
             renderSavingsGoals();
@@ -40,12 +391,12 @@ function renderSavingsGoals() {
             <div class="card" style="margin-bottom:8px;">
                 <div class="card-main">
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                        <span style="font-size:18px;">${goal.icon || '🎯'}</span>
+                        <span style="font-size:18px;">${goal.icon || ''}</span>
                         <strong>${goal.name}</strong>
                     </div>
                     <div style="font-size:12px; opacity:0.7; margin-bottom:6px;">
-                        €${(goal.currentAmount || 0).toFixed(2)} / €${(goal.targetAmount || 0).toFixed(2)}
-                        ${daysRemaining >= 0 ? ` • ${daysRemaining} days left` : ''}
+                        \u20AC${(goal.currentAmount || 0).toFixed(2)} / \u20AC${(goal.targetAmount || 0).toFixed(2)}
+                        ${daysRemaining >= 0 ? ` \u2022 ${daysRemaining} days left` : ''}
                     </div>
                     <div style="height:8px; background:#222; border:1px solid var(--border);">
                         <div style="height:100%; width:${Math.min(progress, 100)}%; background:${progressColor};"></div>
@@ -69,7 +420,7 @@ function showAddSavingsGoalModal() {
     document.getElementById('savingsGoalTarget').value = '';
     document.getElementById('savingsGoalCurrent').value = '0';
     document.getElementById('savingsGoalDeadline').value = '';
-    document.getElementById('savingsGoalIcon').value = '🎯';
+    document.getElementById('savingsGoalIcon').value = '';
     document.getElementById('savingsGoalNotes').value = '';
     openModal('savingsGoalModal');
 }
@@ -84,7 +435,7 @@ function editSavingsGoal(id) {
     document.getElementById('savingsGoalTarget').value = goal.targetAmount || '';
     document.getElementById('savingsGoalCurrent').value = goal.currentAmount || '0';
     document.getElementById('savingsGoalDeadline').value = goal.deadline || '';
-    document.getElementById('savingsGoalIcon').value = goal.icon || '🎯';
+    document.getElementById('savingsGoalIcon').value = goal.icon || '';
     document.getElementById('savingsGoalNotes').value = goal.notes || '';
     openModal('savingsGoalModal');
 }
@@ -96,13 +447,13 @@ async function saveSavingsGoal() {
         targetAmount: parseFloat(document.getElementById('savingsGoalTarget').value) || 0,
         currentAmount: parseFloat(document.getElementById('savingsGoalCurrent').value) || 0,
         deadline: document.getElementById('savingsGoalDeadline').value || null,
-        icon: document.getElementById('savingsGoalIcon').value || '🎯',
+        icon: document.getElementById('savingsGoalIcon').value || '',
         notes: document.getElementById('savingsGoalNotes').value
     };
 
     try {
         const method = id ? 'PUT' : 'POST';
-        const url = id ? `${FEATURES_API}/api/savings-goals/${id}` : `${FEATURES_API}/api/savings-goals`;
+        const url = id ? `${API}/api/savings-goals/${id}` : `${API}/api/savings-goals`;
 
         const res = await fetch(url, {
             method,
@@ -124,7 +475,7 @@ async function deleteSavingsGoal(id) {
     if (!confirm('Delete this savings goal?')) return;
 
     try {
-        await fetch(`${FEATURES_API}/api/savings-goals/${id}`, { method: 'DELETE' });
+        await fetch(`${API}/api/savings-goals/${id}`, { method: 'DELETE' });
         showToast('Goal deleted', 'success');
         loadSavingsGoals();
     } catch (e) {
@@ -143,14 +494,14 @@ async function contributeToGoal() {
     const amount = parseFloat(document.getElementById('contributeAmount').value) || 0;
 
     try {
-        const res = await fetch(`${FEATURES_API}/api/savings-goals/${id}/contribute`, {
+        const res = await fetch(`${API}/api/savings-goals/${id}/contribute`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount })
         });
 
         if (res.ok) {
-            showToast(`Added €${amount.toFixed(2)} to goal!`, 'success');
+            showToast(`Added \u20AC${amount.toFixed(2)} to goal!`, 'success');
             closeModal('contributeModal');
             loadSavingsGoals();
         }
@@ -160,14 +511,14 @@ async function contributeToGoal() {
 }
 
 /* ===========================================================
-   FEATURE 2: NET WORTH HISTORY
+   NET WORTH HISTORY (from features.js)
    ============================================================ */
 
 let netWorthChart = null;
 
 async function loadNetWorthHistory() {
     try {
-        const res = await fetch(`${FEATURES_API}/api/networth/history`);
+        const res = await fetch(`${API}/api/networth/history`);
         if (res.ok) {
             const data = await res.json();
             renderNetWorthChart(data);
@@ -219,7 +570,7 @@ function renderNetWorthChart(data) {
             },
             scales: {
                 x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => '€' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                y: { ticks: { color: 'var(--text)', callback: v => '\u20AC' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.1)' } }
             }
         }
     });
@@ -227,7 +578,7 @@ function renderNetWorthChart(data) {
 
 async function captureNetWorthSnapshot() {
     try {
-        const res = await fetch(`${FEATURES_API}/api/networth/snapshot`, { method: 'POST' });
+        const res = await fetch(`${API}/api/networth/snapshot`, { method: 'POST' });
         if (res.ok) {
             showToast('Net worth snapshot captured!', 'success');
             loadNetWorthHistory();
@@ -238,14 +589,14 @@ async function captureNetWorthSnapshot() {
 }
 
 /* ===========================================================
-   FEATURE 3: SAVINGS RATE TRACKER
+   SAVINGS RATE TRACKER (from features.js)
    ============================================================ */
 
 let savingsRateChart = null;
 
 async function loadSavingsRateHistory() {
     try {
-        const res = await fetch(`${FEATURES_API}/api/budget/savings-rate?months=12`);
+        const res = await fetch(`${API}/api/budget/savings-rate?months=12`);
         if (res.ok) {
             const data = await res.json();
             renderSavingsRateChart(data);
@@ -292,293 +643,417 @@ function renderSavingsRateChart(data) {
 }
 
 /* ===========================================================
-   FEATURE 4: DIVIDEND TRACKER
+   BUDGET TRACKER (from app.js)
    ============================================================ */
 
-let dividends = [];
+let currentBudgetMonth = null;
+let currentBudgetData = null;
 
-async function loadDividends() {
-    try {
-        const [divRes, summaryRes] = await Promise.all([
-            fetch(`${FEATURES_API}/api/dividends`),
-            fetch(`${FEATURES_API}/api/dividends/summary`)
-        ]);
-
-        if (divRes.ok) {
-            dividends = await divRes.json();
-            renderDividendsList();
-        }
-
-        if (summaryRes.ok) {
-            const summary = await summaryRes.json();
-            renderDividendSummary(summary);
-        }
-    } catch (e) {
-        console.error("Failed to load dividends:", e);
-    }
+function getCurrentYearMonth() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
 }
 
-function renderDividendsList() {
-    const container = document.getElementById('dividendsList');
-    if (!container) return;
+function goToCurrentMonth() {
+    const current = getCurrentYearMonth();
+    document.getElementById('budgetMonthPicker').value = current;
+    loadBudgetForSelectedMonth();
+    loadBudgetComparison();
+}
 
-    if (dividends.length === 0) {
-        container.innerHTML = '<div style="opacity:0.5; text-align:center; padding:20px;">No dividend records yet.</div>';
+async function loadBudgetForSelectedMonth() {
+    const picker = document.getElementById('budgetMonthPicker');
+    if (!picker.value) {
+        goToCurrentMonth();
         return;
     }
 
-    container.innerHTML = `
-        <div class="stock-row stock-header">
-            <div>Symbol</div>
-            <div>Amount</div>
-            <div>Date</div>
-            <div>Frequency</div>
-            <div>Actions</div>
-        </div>
-        ${dividends.slice(0, 10).map(d => `
-            <div class="stock-row">
-                <div><strong>${d.stockSymbol}</strong></div>
-                <div>€${(d.amount || 0).toFixed(2)}</div>
-                <div>${d.paymentDate || '-'}</div>
-                <div>${d.frequency || '-'}</div>
-                <div>
-                    <button class="btn" onclick="editDividend('${d.id}')" style="padding:2px 6px;">EDIT</button>
-                    <button class="btn" onclick="deleteDividend('${d.id}')" style="padding:2px 6px;">DEL</button>
-                </div>
+    const [year, month] = picker.value.split('-');
+    currentBudgetMonth = { year: parseInt(year), month: parseInt(month) };
+
+    try {
+        const res = await fetch(`${API}/api/budget/${year}/${month}`);
+
+        if (res.ok) {
+            currentBudgetData = await res.json();
+            displayBudgetData();
+        } else if (res.status === 404) {
+            // Budget doesn't exist yet - create empty one
+            currentBudgetData = {
+                month: `${year}-${month}`,
+                plannedIncome: {},
+                plannedExpenses: {},
+                incomeRecords: [],
+                expenseRecords: []
+            };
+            displayBudgetData();
+        }
+    } catch (e) {
+        console.error("Error loading budget:", e);
+    }
+}
+
+function displayBudgetData() {
+    if (!currentBudgetData) return;
+
+    const p = currentBudgetData;
+
+    // Fill planned income fields
+    document.getElementById('planSalary').value = p.plannedIncome?.SALARY || '';
+    document.getElementById('planBonus').value = p.plannedIncome?.BONUS || '';
+    document.getElementById('planFreelance').value = p.plannedIncome?.FREELANCE || '';
+    document.getElementById('planOtherIncome').value = p.plannedIncome?.OTHER || '';
+
+    // Fill planned expense fields
+    document.getElementById('planRent').value = p.plannedExpenses?.RENT || '';
+    document.getElementById('planUtilities').value = p.plannedExpenses?.UTILITIES || '';
+    document.getElementById('planInternet').value = p.plannedExpenses?.INTERNET || '';
+    document.getElementById('planTransport').value = p.plannedExpenses?.TRANSPORT || '';
+    document.getElementById('planFuel').value = p.plannedExpenses?.FUEL || '';
+    document.getElementById('planGroceries').value = p.plannedExpenses?.GROCERIES || '';
+    document.getElementById('planDining').value = p.plannedExpenses?.DINING_OUT || '';
+    document.getElementById('planEntertainment').value = p.plannedExpenses?.ENTERTAINMENT || '';
+    document.getElementById('planSubscriptions').value = p.plannedExpenses?.SUBSCRIPTIONS || '';
+    document.getElementById('planGym').value = p.plannedExpenses?.GYM || '';
+    document.getElementById('planOtherExpense').value = p.plannedExpenses?.OTHER || '';
+
+    // Update summary
+    document.getElementById('summaryPlannedIncome').textContent = '\u20AC' + (p.totalPlannedIncome || 0).toFixed(2);
+    document.getElementById('summaryActualIncome').textContent = '\u20AC' + (p.totalIncome || 0).toFixed(2);
+    document.getElementById('summaryPlannedExpenses').textContent = '\u20AC' + (p.totalPlannedExpenses || 0).toFixed(2);
+    document.getElementById('summaryActualExpenses').textContent = '\u20AC' + (p.totalExpenses || 0).toFixed(2);
+    document.getElementById('summarySavings').textContent = '\u20AC' + (p.remaining || 0).toFixed(2);
+    document.getElementById('summarySavingsRate').textContent = (p.savingsRate || 0).toFixed(1) + '%';
+    document.getElementById('summaryAdherence').textContent = (p.budgetAdherence || 100).toFixed(1) + '%';
+
+    // Display income records
+    displayIncomeRecords(p.incomeRecords || []);
+
+    // Display expense records
+    displayExpenseRecords(p.expenseRecords || []);
+}
+
+function displayIncomeRecords(records) {
+    let html = '';
+
+    records.forEach((rec, idx) => {
+        const date = new Date(rec.recordDate).toLocaleDateString();
+        html += `
+        <div class="card" style="margin-bottom:6px;">
+            <div class="card-main">
+                <div style="font-weight:bold; font-size:12px;">${rec.category}</div>
+                <div style="font-size:11px; opacity:0.7;">\u20AC${rec.amount.toFixed(2)}</div>
+                <div style="font-size:10px; opacity:0.5;">${rec.description}</div>
+                <div style="font-size:9px; opacity:0.4;">${date}</div>
             </div>
-        `).join('')}
-    `;
+            <button class="btn" onclick="deleteIncomeRecord(${idx})">DEL</button>
+        </div>`;
+    });
+
+    document.getElementById('incomeRecordsList').innerHTML = html || '<div style="opacity:0.5; font-size:11px;">No income records yet</div>';
 }
 
-function renderDividendSummary(summary) {
-    const totalEl = document.getElementById('dividendTotal');
-    const projectionEl = document.getElementById('dividendProjection');
+function displayExpenseRecords(records) {
+    let html = '';
 
-    if (totalEl) totalEl.textContent = '€' + (summary.totalReceived || 0).toFixed(2);
-    if (projectionEl) projectionEl.textContent = '€' + (summary.annualProjection || 0).toFixed(2);
+    records.forEach((rec, idx) => {
+        const date = new Date(rec.recordDate).toLocaleDateString();
+        html += `
+        <div class="card" style="margin-bottom:6px;">
+            <div class="card-main">
+                <div style="font-weight:bold; font-size:12px;">${rec.category}</div>
+                <div style="font-size:11px; opacity:0.7;">\u20AC${rec.amount.toFixed(2)}</div>
+                <div style="font-size:10px; opacity:0.5;">${rec.description}</div>
+                <div style="font-size:9px; opacity:0.4;">${date}</div>
+            </div>
+            <button class="btn" onclick="deleteExpenseRecord(${idx})">DEL</button>
+        </div>`;
+    });
+
+    document.getElementById('expenseRecordsList').innerHTML = html || '<div style="opacity:0.5; font-size:11px;">No expense records yet</div>';
 }
 
-function showAddDividendModal() {
-    document.getElementById('dividendModalTitle').textContent = 'Add Dividend';
-    document.getElementById('dividendId').value = '';
-    document.getElementById('dividendSymbol').value = '';
-    document.getElementById('dividendAmount').value = '';
-    document.getElementById('dividendPaymentDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('dividendFrequency').value = 'QUARTERLY';
-    document.getElementById('dividendNotes').value = '';
-    openModal('dividendModal');
-}
+async function saveBudgetPlan() {
+    if (!currentBudgetMonth) return;
 
-function editDividend(id) {
-    const div = dividends.find(d => d.id === id);
-    if (!div) return;
+    const plannedIncome = {};
+    const plannedExpenses = {};
 
-    document.getElementById('dividendModalTitle').textContent = 'Edit Dividend';
-    document.getElementById('dividendId').value = div.id;
-    document.getElementById('dividendSymbol').value = div.stockSymbol || '';
-    document.getElementById('dividendAmount').value = div.amount || '';
-    document.getElementById('dividendPaymentDate').value = div.paymentDate || '';
-    document.getElementById('dividendFrequency').value = div.frequency || 'QUARTERLY';
-    document.getElementById('dividendNotes').value = div.notes || '';
-    openModal('dividendModal');
-}
+    // Gather planned income
+    const salary = parseFloat(document.getElementById('planSalary').value);
+    const bonus = parseFloat(document.getElementById('planBonus').value);
+    const freelance = parseFloat(document.getElementById('planFreelance').value);
+    const otherIncome = parseFloat(document.getElementById('planOtherIncome').value);
 
-async function saveDividend() {
-    const id = document.getElementById('dividendId').value;
-    const dividend = {
-        stockSymbol: document.getElementById('dividendSymbol').value.toUpperCase(),
-        amount: parseFloat(document.getElementById('dividendAmount').value) || 0,
-        paymentDate: document.getElementById('dividendPaymentDate').value || null,
-        frequency: document.getElementById('dividendFrequency').value,
-        notes: document.getElementById('dividendNotes').value
+    if (salary) plannedIncome.SALARY = salary;
+    if (bonus) plannedIncome.BONUS = bonus;
+    if (freelance) plannedIncome.FREELANCE = freelance;
+    if (otherIncome) plannedIncome.OTHER = otherIncome;
+
+    // Gather planned expenses
+    const rent = parseFloat(document.getElementById('planRent').value);
+    const utilities = parseFloat(document.getElementById('planUtilities').value);
+    const internet = parseFloat(document.getElementById('planInternet').value);
+    const transport = parseFloat(document.getElementById('planTransport').value);
+    const fuel = parseFloat(document.getElementById('planFuel').value);
+    const groceries = parseFloat(document.getElementById('planGroceries').value);
+    const dining = parseFloat(document.getElementById('planDining').value);
+    const entertainment = parseFloat(document.getElementById('planEntertainment').value);
+    const subscriptions = parseFloat(document.getElementById('planSubscriptions').value);
+    const gym = parseFloat(document.getElementById('planGym').value);
+    const otherExpense = parseFloat(document.getElementById('planOtherExpense').value);
+
+    if (rent) plannedExpenses.RENT = rent;
+    if (utilities) plannedExpenses.UTILITIES = utilities;
+    if (internet) plannedExpenses.INTERNET = internet;
+    if (transport) plannedExpenses.TRANSPORT = transport;
+    if (fuel) plannedExpenses.FUEL = fuel;
+    if (groceries) plannedExpenses.GROCERIES = groceries;
+    if (dining) plannedExpenses.DINING_OUT = dining;
+    if (entertainment) plannedExpenses.ENTERTAINMENT = entertainment;
+    if (subscriptions) plannedExpenses.SUBSCRIPTIONS = subscriptions;
+    if (gym) plannedExpenses.GYM = gym;
+    if (otherExpense) plannedExpenses.OTHER = otherExpense;
+
+    const payload = {
+        plannedIncome,
+        plannedExpenses,
+        autoCreateRecords: true  // Auto-create records from planned amounts
     };
 
-    try {
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? `${FEATURES_API}/api/dividends/${id}` : `${FEATURES_API}/api/dividends`;
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/planned`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
 
-        const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dividend)
-        });
-
-        if (res.ok) {
-            showToast('Dividend saved!', 'success');
-            closeModal('dividendModal');
-            loadDividends();
-        }
-    } catch (e) {
-        showToast('Failed to save: ' + e.message, 'error');
-    }
+    loadBudgetForSelectedMonth();
 }
 
-async function deleteDividend(id) {
-    if (!confirm('Delete this dividend record?')) return;
+async function addIncome() {
+    if (!currentBudgetMonth) return;
 
-    try {
-        await fetch(`${FEATURES_API}/api/dividends/${id}`, { method: 'DELETE' });
-        showToast('Dividend deleted', 'success');
-        loadDividends();
-    } catch (e) {
-        showToast('Failed to delete: ' + e.message, 'error');
-    }
-}
+    const category = document.getElementById('incomeCategory').value;
+    const amount = parseFloat(document.getElementById('incomeAmount').value);
+    const description = document.getElementById('incomeDescription').value;
 
-/* ===========================================================
-   FEATURE 5: PRICE ALERTS
-   ============================================================ */
-
-let priceAlerts = [];
-
-async function loadPriceAlerts() {
-    try {
-        const res = await fetch(`${FEATURES_API}/api/alerts`);
-        if (res.ok) {
-            priceAlerts = await res.json();
-            renderPriceAlerts();
-        }
-    } catch (e) {
-        console.error("Failed to load price alerts:", e);
-    }
-}
-
-function renderPriceAlerts() {
-    const container = document.getElementById('priceAlertsList');
-    if (!container) return;
-
-    if (priceAlerts.length === 0) {
-        container.innerHTML = '<div style="opacity:0.5; text-align:center; padding:20px;">No price alerts set.</div>';
+    if (!amount || amount <= 0) {
+        showToast('Please enter a valid amount', 'warning');
         return;
     }
 
-    container.innerHTML = priceAlerts.map(alert => {
-        const statusClass = alert.triggered ? 'negative' : (alert.active ? 'positive' : '');
-        const statusText = alert.triggered ? 'TRIGGERED' : (alert.active ? 'ACTIVE' : 'INACTIVE');
-
-        return `
-            <div class="card" style="margin-bottom:8px;">
-                <div class="card-main">
-                    <strong>${alert.symbol}</strong>
-                    <span style="margin-left:10px;">
-                        ${alert.direction === 'ABOVE' ? '↑' : '↓'} €${(alert.targetPrice || 0).toFixed(2)}
-                    </span>
-                    <span class="${statusClass}" style="margin-left:10px; font-size:11px;">${statusText}</span>
-                </div>
-                <div class="card-actions">
-                    <button class="btn" onclick="deletePriceAlert('${alert.id}')">DEL</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function showAddPriceAlertModal() {
-    document.getElementById('alertSymbol').value = '';
-    document.getElementById('alertTargetPrice').value = '';
-    document.getElementById('alertDirection').value = 'ABOVE';
-    openModal('priceAlertModal');
-}
-
-async function savePriceAlert() {
-    const alert = {
-        symbol: document.getElementById('alertSymbol').value.toUpperCase(),
-        targetPrice: parseFloat(document.getElementById('alertTargetPrice').value) || 0,
-        direction: document.getElementById('alertDirection').value
-    };
+    const record = { category, amount, description };
 
     try {
-        const res = await fetch(`${FEATURES_API}/api/alerts`, {
+        await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(alert)
+            body: JSON.stringify(record)
         });
 
-        if (res.ok) {
-            showToast('Price alert created!', 'success');
-            closeModal('priceAlertModal');
-            loadPriceAlerts();
-        }
+        document.getElementById('incomeAmount').value = '';
+        document.getElementById('incomeDescription').value = '';
+
+        loadBudgetForSelectedMonth();
+        showToast('Income record added!', 'success');
     } catch (e) {
-        showToast('Failed to create alert: ' + e.message, 'error');
+        showToast('Failed to add income: ' + e.message, 'error');
     }
 }
 
-async function deletePriceAlert(id) {
-    if (!confirm('Delete this alert?')) return;
+async function addExpense() {
+    if (!currentBudgetMonth) return;
+
+    const category = document.getElementById('expenseCategory').value;
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    const description = document.getElementById('expenseDescription').value;
+
+    if (!amount || amount <= 0) {
+        showToast('Please enter a valid amount', 'warning');
+        return;
+    }
+
+    const record = { category, amount, description };
 
     try {
-        await fetch(`${FEATURES_API}/api/alerts/${id}`, { method: 'DELETE' });
-        showToast('Alert deleted', 'success');
-        loadPriceAlerts();
+        await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+        });
+
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseDescription').value = '';
+
+        loadBudgetForSelectedMonth();
+        showToast('Expense record added!', 'success');
     } catch (e) {
-        showToast('Failed to delete: ' + e.message, 'error');
+        showToast('Failed to add expense: ' + e.message, 'error');
     }
+}
+
+async function deleteIncomeRecord(index) {
+    if (!currentBudgetMonth || !confirm('Delete this income record?')) return;
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income/${index}`, {
+        method: 'DELETE'
+    });
+
+    loadBudgetForSelectedMonth();
+}
+
+async function deleteExpenseRecord(index) {
+    if (!currentBudgetMonth || !confirm('Delete this expense record?')) return;
+
+    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses/${index}`, {
+        method: 'DELETE'
+    });
+
+    loadBudgetForSelectedMonth();
 }
 
 /* ===========================================================
-   FEATURE 6: CAPITAL GAINS ESTIMATOR
+   BUDGET COMPARISON (from app.js)
    ============================================================ */
 
-async function loadCapitalGains() {
+let comparisonChart = null;
+
+async function loadBudgetComparison() {
+    const months = document.getElementById('comparisonMonths')?.value || 6;
+
     try {
-        const res = await fetch(`${FEATURES_API}/api/stocks/capital-gains`);
-        if (res.ok) {
-            const data = await res.json();
-            renderCapitalGains(data);
+        const res = await fetch(`${API}/api/budget/compare?months=${months}`);
+        if (!res.ok) {
+            console.error('Failed to load budget comparison');
+            return;
         }
+
+        const data = await res.json();
+        renderBudgetComparisonChart(data);
+        renderBudgetComparisonTable(data);
     } catch (e) {
-        console.error("Failed to load capital gains:", e);
+        console.error('Error loading budget comparison:', e);
     }
 }
 
-function renderCapitalGains(data) {
-    const container = document.getElementById('capitalGainsList');
-    const summaryContainer = document.getElementById('capitalGainsSummary');
+function renderBudgetComparisonChart(data) {
+    const canvas = document.getElementById('comparisonChart');
+    if (!canvas) return;
 
-    if (summaryContainer) {
-        const gainClass = data.totalUnrealizedGain >= 0 ? 'positive' : 'negative';
-        summaryContainer.innerHTML = `
-            <div class="stat-card">
-                <div class="stat-label">Unrealized Gain</div>
-                <div class="stat-value ${gainClass}">€${(data.totalUnrealizedGain || 0).toFixed(2)}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Est. Tax (26.375%)</div>
-                <div class="stat-value">€${(data.totalEstimatedTax || 0).toFixed(2)}</div>
-            </div>
-        `;
+    const ctx = canvas.getContext('2d');
+
+    // Destroy existing chart if any
+    if (comparisonChart) {
+        comparisonChart.destroy();
     }
 
-    if (container && data.holdings) {
-        container.innerHTML = `
-            <div class="stock-row stock-header" style="grid-template-columns:1fr 80px 80px 80px 80px 80px;">
-                <div>Symbol</div>
-                <div>Buy</div>
-                <div>Current</div>
-                <div>Gain</div>
-                <div>Tax</div>
-                <div>Days</div>
-            </div>
-            ${data.holdings.map(h => {
-                const gainClass = h.unrealizedGain >= 0 ? 'positive' : 'negative';
-                return `
-                    <div class="stock-row" style="grid-template-columns:1fr 80px 80px 80px 80px 80px;">
-                        <div><strong>${h.symbol}</strong></div>
-                        <div>€${(h.buyPrice || 0).toFixed(2)}</div>
-                        <div>€${(h.currentPrice || 0).toFixed(2)}</div>
-                        <div class="${gainClass}">€${(h.unrealizedGain || 0).toFixed(2)}</div>
-                        <div>€${(h.estimatedTax || 0).toFixed(2)}</div>
-                        <div>${h.holdingPeriodDays || 0}</div>
-                    </div>
-                `;
-            }).join('')}
-        `;
-    }
+    const labels = data.map(d => d.month);
+    const incomeData = data.map(d => d.income);
+    const expenseData = data.map(d => d.expenses);
+    const savingsData = data.map(d => d.savings);
+
+    comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: '#0f0',
+                    borderColor: '#0f0',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Expenses',
+                    data: expenseData,
+                    backgroundColor: '#f33',
+                    borderColor: '#f33',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Savings',
+                    data: savingsData,
+                    backgroundColor: '#39f',
+                    borderColor: '#39f',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        font: { family: 'monospace', size: 11 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        font: { family: 'monospace', size: 10 }
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,0.1)'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        font: { family: 'monospace', size: 10 },
+                        callback: value => '\u20AC' + value.toFixed(0)
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,0.1)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderBudgetComparisonTable(data) {
+    const container = document.getElementById('budgetComparisonTable');
+    if (!container) return;
+
+    let html = `
+        <div class="stock-row stock-header">
+            <div>Month</div>
+            <div>Income</div>
+            <div>Expenses</div>
+            <div>Savings</div>
+            <div>Savings Rate</div>
+            <div>Adherence</div>
+        </div>`;
+
+    data.forEach(d => {
+        const savingsClass = d.savings >= 0 ? 'positive' : 'negative';
+        const adherenceClass = d.budgetAdherence <= 100 ? 'positive' : 'negative';
+
+        html += `
+        <div class="stock-row">
+            <div><strong>${d.month}</strong></div>
+            <div>\u20AC${d.income.toFixed(2)}</div>
+            <div>\u20AC${d.expenses.toFixed(2)}</div>
+            <div class="${savingsClass}">\u20AC${d.savings.toFixed(2)}</div>
+            <div class="${savingsClass}">${d.savingsRate.toFixed(1)}%</div>
+            <div class="${adherenceClass}">${d.budgetAdherence.toFixed(1)}%</div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
 }
 
 /* ===========================================================
-   FEATURE 7: RECURRING TRANSACTIONS
+   RECURRING TRANSACTIONS (from features.js)
    ============================================================ */
 
 let recurringTransactions = [];
@@ -586,8 +1061,8 @@ let recurringTransactions = [];
 async function loadRecurringTransactions() {
     try {
         const [transRes, summaryRes] = await Promise.all([
-            fetch(`${FEATURES_API}/api/recurring`),
-            fetch(`${FEATURES_API}/api/recurring/summary`)
+            fetch(`${API}/api/recurring`),
+            fetch(`${API}/api/recurring/summary`)
         ]);
 
         if (transRes.ok) {
@@ -599,8 +1074,8 @@ async function loadRecurringTransactions() {
             const summary = await summaryRes.json();
             const costEl = document.getElementById('recurringMonthlyCost');
             const incomeEl = document.getElementById('recurringMonthlyIncome');
-            if (costEl) costEl.textContent = '€' + (summary.monthlyRecurringCost || 0).toFixed(2);
-            if (incomeEl) incomeEl.textContent = '€' + (summary.monthlyRecurringIncome || 0).toFixed(2);
+            if (costEl) costEl.textContent = '\u20AC' + (summary.monthlyRecurringCost || 0).toFixed(2);
+            if (incomeEl) incomeEl.textContent = '\u20AC' + (summary.monthlyRecurringIncome || 0).toFixed(2);
         }
     } catch (e) {
         console.error("Failed to load recurring transactions:", e);
@@ -624,8 +1099,8 @@ function renderRecurringTransactions() {
             <div class="card" style="margin-bottom:8px;">
                 <div class="card-main">
                     <strong>${t.name}</strong>
-                    <span style="color:${typeColor}; margin-left:10px;">€${(t.amount || 0).toFixed(2)}</span>
-                    <span style="margin-left:10px; font-size:11px; opacity:0.7;">${t.frequency} • ${t.categoryType}</span>
+                    <span style="color:${typeColor}; margin-left:10px;">\u20AC${(t.amount || 0).toFixed(2)}</span>
+                    <span style="margin-left:10px; font-size:11px; opacity:0.7;">${t.frequency} \u2022 ${t.categoryType}</span>
                     <span style="margin-left:10px; font-size:11px;">${activeStatus}</span>
                 </div>
                 <div class="card-actions">
@@ -680,7 +1155,7 @@ async function saveRecurringTransaction() {
 
     try {
         const method = id ? 'PUT' : 'POST';
-        const url = id ? `${FEATURES_API}/api/recurring/${id}` : `${FEATURES_API}/api/recurring`;
+        const url = id ? `${API}/api/recurring/${id}` : `${API}/api/recurring`;
 
         const res = await fetch(url, {
             method,
@@ -702,7 +1177,7 @@ async function deleteRecurringTransaction(id) {
     if (!confirm('Delete this recurring transaction?')) return;
 
     try {
-        await fetch(`${FEATURES_API}/api/recurring/${id}`, { method: 'DELETE' });
+        await fetch(`${API}/api/recurring/${id}`, { method: 'DELETE' });
         showToast('Deleted', 'success');
         loadRecurringTransactions();
     } catch (e) {
@@ -711,7 +1186,7 @@ async function deleteRecurringTransaction(id) {
 }
 
 /* ===========================================================
-   FEATURE 8: SUBSCRIPTION MANAGER
+   SUBSCRIPTION MANAGER (from features.js)
    ============================================================ */
 
 let subscriptions = [];
@@ -719,8 +1194,8 @@ let subscriptions = [];
 async function loadSubscriptions() {
     try {
         const [subsRes, summaryRes] = await Promise.all([
-            fetch(`${FEATURES_API}/api/subscriptions`),
-            fetch(`${FEATURES_API}/api/subscriptions/summary`)
+            fetch(`${API}/api/subscriptions`),
+            fetch(`${API}/api/subscriptions/summary`)
         ]);
 
         if (subsRes.ok) {
@@ -742,8 +1217,8 @@ function renderSubscriptionSummary(summary) {
     const annualEl = document.getElementById('subsTotalAnnual');
     const countEl = document.getElementById('subsActiveCount');
 
-    if (monthlyEl) monthlyEl.textContent = '€' + (summary.totalMonthly || 0).toFixed(2);
-    if (annualEl) annualEl.textContent = '€' + (summary.totalAnnual || 0).toFixed(2);
+    if (monthlyEl) monthlyEl.textContent = '\u20AC' + (summary.totalMonthly || 0).toFixed(2);
+    if (annualEl) annualEl.textContent = '\u20AC' + (summary.totalAnnual || 0).toFixed(2);
     if (countEl) countEl.textContent = summary.activeCount || 0;
 }
 
@@ -766,7 +1241,7 @@ function renderSubscriptions() {
                     <strong>${sub.name}</strong>
                     <span style="margin-left:8px; opacity:0.7;">${sub.provider || ''}</span>
                     <div style="font-size:12px; margin-top:4px;">
-                        €${(sub.amount || 0).toFixed(2)} / ${sub.billingCycle}
+                        \u20AC${(sub.amount || 0).toFixed(2)} / ${sub.billingCycle}
                         <span style="margin-left:10px;">Next: ${sub.nextBillingDate || '-'}</span>
                         <span class="${statusClass}" style="margin-left:10px;">${status}</span>
                     </div>
@@ -826,7 +1301,7 @@ async function saveSubscription() {
 
     try {
         const method = id ? 'PUT' : 'POST';
-        const url = id ? `${FEATURES_API}/api/subscriptions/${id}` : `${FEATURES_API}/api/subscriptions`;
+        const url = id ? `${API}/api/subscriptions/${id}` : `${API}/api/subscriptions`;
 
         const res = await fetch(url, {
             method,
@@ -848,7 +1323,7 @@ async function deleteSubscription(id) {
     if (!confirm('Delete this subscription?')) return;
 
     try {
-        await fetch(`${FEATURES_API}/api/subscriptions/${id}`, { method: 'DELETE' });
+        await fetch(`${API}/api/subscriptions/${id}`, { method: 'DELETE' });
         showToast('Subscription deleted', 'success');
         loadSubscriptions();
     } catch (e) {
@@ -857,136 +1332,7 @@ async function deleteSubscription(id) {
 }
 
 /* ===========================================================
-   FEATURE 9: PORTFOLIO ALLOCATION
-   ============================================================ */
-
-let allocationChart = null;
-
-async function loadPortfolioAllocation() {
-    try {
-        const res = await fetch(`${FEATURES_API}/api/stocks/allocation`);
-        if (res.ok) {
-            const data = await res.json();
-            renderAllocationChart(data);
-            renderAllocationTable(data);
-        }
-    } catch (e) {
-        console.error("Failed to load allocation:", e);
-    }
-}
-
-function renderAllocationChart(data) {
-    const canvas = document.getElementById('allocationChart');
-    if (!canvas || !data.allocations) return;
-
-    if (allocationChart) {
-        allocationChart.destroy();
-    }
-
-    const colors = ['#0f0', '#39f', '#f90', '#f33', '#9f0', '#f0f', '#0ff', '#ff0'];
-
-    const ctx = canvas.getContext('2d');
-    allocationChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: data.allocations.map(a => a.symbol),
-            datasets: [{
-                data: data.allocations.map(a => a.percentage),
-                backgroundColor: colors.slice(0, data.allocations.length),
-                borderColor: 'var(--bg)',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { color: 'var(--text)' }
-                }
-            }
-        }
-    });
-}
-
-function renderAllocationTable(data) {
-    const container = document.getElementById('allocationTable');
-    if (!container || !data.allocations) return;
-
-    container.innerHTML = `
-        <div class="stock-row stock-header" style="grid-template-columns:1fr 80px 80px 80px 80px;">
-            <div>Symbol</div>
-            <div>Value</div>
-            <div>Current %</div>
-            <div>Target %</div>
-            <div>Diff</div>
-        </div>
-        ${data.allocations.map(a => {
-            const diffClass = a.difference > 5 ? 'negative' : (a.difference < -5 ? 'positive' : '');
-            return `
-                <div class="stock-row" style="grid-template-columns:1fr 80px 80px 80px 80px;">
-                    <div><strong>${a.symbol}</strong></div>
-                    <div>€${(a.currentValue || 0).toFixed(0)}</div>
-                    <div>${(a.percentage || 0).toFixed(1)}%</div>
-                    <div>${(a.targetPercentage || 0).toFixed(1)}%</div>
-                    <div class="${diffClass}">${a.difference > 0 ? '+' : ''}${(a.difference || 0).toFixed(1)}%</div>
-                </div>
-            `;
-        }).join('')}
-    `;
-
-    // Render suggestions
-    const suggestionsContainer = document.getElementById('rebalanceSuggestions');
-    if (suggestionsContainer && data.rebalanceSuggestions) {
-        const suggestions = Object.entries(data.rebalanceSuggestions);
-        if (suggestions.length > 0) {
-            suggestionsContainer.innerHTML = suggestions.map(([symbol, suggestion]) =>
-                `<div style="padding:4px 0; font-size:12px;"><strong>${symbol}:</strong> ${suggestion}</div>`
-            ).join('');
-        } else {
-            suggestionsContainer.innerHTML = '<div style="opacity:0.5;">Portfolio is balanced!</div>';
-        }
-    }
-}
-
-function showSetTargetModal() {
-    // Load current targets
-    fetch(`${FEATURES_API}/api/stocks/allocation/target`)
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('targetAllocationsInput').value =
-                data.allocations ? JSON.stringify(data.allocations, null, 2) : '{}';
-            openModal('targetAllocationModal');
-        })
-        .catch(() => {
-            document.getElementById('targetAllocationsInput').value = '{}';
-            openModal('targetAllocationModal');
-        });
-}
-
-async function saveTargetAllocation() {
-    try {
-        const allocations = JSON.parse(document.getElementById('targetAllocationsInput').value);
-
-        const res = await fetch(`${FEATURES_API}/api/stocks/allocation/target`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ allocations })
-        });
-
-        if (res.ok) {
-            showToast('Target allocation saved!', 'success');
-            closeModal('targetAllocationModal');
-            loadPortfolioAllocation();
-        }
-    } catch (e) {
-        showToast('Invalid JSON: ' + e.message, 'error');
-    }
-}
-
-/* ===========================================================
-   FEATURE 10: BANK STATEMENT IMPORT
+   BANK STATEMENT IMPORT (from features.js)
    ============================================================ */
 
 let importPreviews = [];
@@ -1006,7 +1352,7 @@ async function previewImport() {
 
     try {
         showLoading('Parsing CSV...');
-        const res = await fetch(`${FEATURES_API}/api/budget/import/preview`, {
+        const res = await fetch(`${API}/api/budget/import/preview`, {
             method: 'POST',
             body: formData
         });
@@ -1057,7 +1403,7 @@ function renderImportPreview() {
                             <td style="padding:6px;">${item.date || '-'}</td>
                             <td style="padding:6px;">${item.description || '-'}</td>
                             <td style="padding:6px; color:${item.type === 'INCOME' ? '#0f0' : '#f33'};">
-                                €${(item.amount || 0).toFixed(2)}
+                                \u20AC${(item.amount || 0).toFixed(2)}
                             </td>
                             <td style="padding:6px;">${item.type}</td>
                             <td style="padding:6px;">
@@ -1100,7 +1446,7 @@ async function confirmImport() {
 
     try {
         showLoading('Importing transactions...');
-        const res = await fetch(`${FEATURES_API}/api/budget/${year}/${month}/import/confirm`, {
+        const res = await fetch(`${API}/api/budget/${year}/${month}/import/confirm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(includedItems)
@@ -1128,7 +1474,7 @@ function showImportModal() {
 }
 
 /* ===========================================================
-   FEATURE 11: FINANCIAL CALENDAR
+   FINANCIAL CALENDAR (from features.js)
    ============================================================ */
 
 let calendarYear = new Date().getFullYear();
@@ -1137,7 +1483,7 @@ let calendarEvents = [];
 
 async function loadCalendar() {
     try {
-        const res = await fetch(`${FEATURES_API}/api/calendar/${calendarYear}/${calendarMonth}`);
+        const res = await fetch(`${API}/api/calendar/${calendarYear}/${calendarMonth}`);
         if (res.ok) {
             calendarEvents = await res.json();
             renderCalendar();
@@ -1197,10 +1543,10 @@ function renderCalendar() {
                     ${dayEvents.slice(0, 3).map(e => {
                         const color = getEventColor(e.type, e.completed);
                         const titleText = e.type === 'WORKOUT'
-                            ? `${e.title}${e.completed ? ' ✓' : ''} (${e.amount} min)`
-                            : `${e.title}: €${e.amount.toFixed(2)}`;
+                            ? `${e.title}${e.completed ? ' \u2713' : ''} (${e.amount} min)`
+                            : `${e.title}: \u20AC${e.amount.toFixed(2)}`;
                         const displayText = e.type === 'WORKOUT'
-                            ? `${e.completed ? '✓' : '○'} ${e.title.substring(0, 8)}`
+                            ? `${e.completed ? '\u2713' : '\u25CB'} ${e.title.substring(0, 8)}`
                             : e.title.substring(0, 10);
                         return `<div class="calendar-event" style="background:${color};" title="${titleText}">
                             ${displayText}
@@ -1246,7 +1592,7 @@ function nextMonth() {
 }
 
 /* ===========================================================
-   FEATURE 12: EXPENSE ANALYTICS
+   EXPENSE ANALYTICS (from features.js)
    ============================================================ */
 
 let categoryTrendsChart = null;
@@ -1256,9 +1602,9 @@ let categoryBreakdownChart = null;
 async function loadAnalytics() {
     try {
         const [trendsRes, monthlyRes, anomaliesRes] = await Promise.all([
-            fetch(`${FEATURES_API}/api/analytics/category-trends?months=6`),
-            fetch(`${FEATURES_API}/api/analytics/monthly?months=6`),
-            fetch(`${FEATURES_API}/api/analytics/anomalies`)
+            fetch(`${API}/api/analytics/category-trends?months=6`),
+            fetch(`${API}/api/analytics/monthly?months=6`),
+            fetch(`${API}/api/analytics/anomalies`)
         ]);
 
         if (trendsRes.ok) {
@@ -1293,9 +1639,9 @@ function renderAnomalies(anomalies) {
     container.innerHTML = anomalies.map(a => `
         <div class="card" style="margin-bottom:8px; border-color:#f90;">
             <div class="card-main">
-                <strong style="color:#f90;">⚠ ${a.category}</strong>
+                <strong style="color:#f90;">${a.category}</strong>
                 <div style="font-size:12px; margin-top:4px;">
-                    €${a.currentAmount.toFixed(2)} this month (avg: €${a.averageAmount.toFixed(2)})
+                    \u20AC${a.currentAmount.toFixed(2)} this month (avg: \u20AC${a.averageAmount.toFixed(2)})
                     <span class="negative" style="margin-left:10px;">+${a.percentageIncrease.toFixed(0)}%</span>
                 </div>
             </div>
@@ -1334,7 +1680,7 @@ function renderCategoryTrendsChart(trends) {
             plugins: { legend: { labels: { color: 'var(--text)' } } },
             scales: {
                 x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => '€' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                y: { ticks: { color: 'var(--text)', callback: v => '\u20AC' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
             }
         }
     });
@@ -1370,7 +1716,7 @@ function renderMonthlyComparisonChart(monthly) {
             plugins: { legend: { labels: { color: 'var(--text)' } } },
             scales: {
                 x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => '€' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                y: { ticks: { color: 'var(--text)', callback: v => '\u20AC' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
             }
         }
     });
@@ -1416,56 +1762,10 @@ function renderCategoryBreakdownChart(monthly) {
 }
 
 /* ===========================================================
-   TAB INITIALIZATION HOOKS
+   INITIALIZATION
    ============================================================ */
 
-// Hook into the switchTab function to load data for new tabs
-const originalSwitchTab = window.switchTab;
-window.switchTab = function(which) {
-    // Call original implementation
-    if (originalSwitchTab) {
-        originalSwitchTab(which);
-    }
-
-    // Handle new tabs
-    if (which === 'subscriptions') {
-        subscriptionsTabContent?.classList.remove('hidden');
-        loadSubscriptions();
-    } else if (which === 'calendar') {
-        calendarTabContent?.classList.remove('hidden');
-        loadCalendar();
-    } else if (which === 'analytics') {
-        analyticsTabContent?.classList.remove('hidden');
-        loadAnalytics();
-    } else if (which === 'dashboard') {
-        // Load additional dashboard features
-        loadSavingsGoals();
-        loadNetWorthHistory();
-        loadSavingsRateHistory();
-    } else if (which === 'stocks') {
-        // Load additional stocks features
-        loadDividends();
-        loadPriceAlerts();
-        loadCapitalGains();
-        loadPortfolioAllocation();
-    } else if (which === 'budget') {
-        // Load additional budget features
-        loadRecurringTransactions();
-    }
-
-    // Hide new tabs when switching away
-    if (which !== 'subscriptions') subscriptionsTabContent?.classList.add('hidden');
-    if (which !== 'calendar') calendarTabContent?.classList.add('hidden');
-    if (which !== 'analytics') analyticsTabContent?.classList.add('hidden');
-};
-
-// Get references to new tab content elements
-const subscriptionsTabContent = document.getElementById('subscriptionsTabContent');
-const calendarTabContent = document.getElementById('calendarTabContent');
-const analyticsTabContent = document.getElementById('analyticsTabContent');
-
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Features will be loaded when switching to their respective tabs
-    console.log('Features.js initialized');
+    const saved = localStorage.getItem('finance_active_tab') || 'accounts';
+    switchFinanceTab(saved);
 });

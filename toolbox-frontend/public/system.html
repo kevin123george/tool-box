@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox - System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+
+<div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+    </div>
+</div>
+
+<button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
+
+<div id="nav-placeholder" data-active="system"></div>
+
+<h1>Hey Kevin!!!</h1>
+
+<div id="systemStatsContent">
+    <div style="text-align:center; padding:40px; opacity:0.5;">Loading system stats...</div>
+</div>
+
+<div class="add-box" style="margin-top:20px;">
+    <h3 style="margin:0 0 10px 0;">Push Notifications</h3>
+    <p style="font-size:12px; opacity:0.7; margin-bottom:10px;">
+        Get alerts when CPU, Memory, or Disk usage exceeds 90%<br>
+        <small style="opacity:0.6;">Cooldown: 5 minutes between alerts</small>
+    </p>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <button id="subscribeBtn" class="btn" onclick="subscribeToPush()">
+            Enable Notifications
+        </button>
+        <button id="unsubscribeBtn" class="btn" onclick="unsubscribeFromPush()" style="display:none;">
+            Disable Notifications
+        </button>
+        <button id="testNotificationBtn" class="btn" onclick="testNotification()" style="display:none;">
+            Test Notification
+        </button>
+    </div>
+
+    <div id="notificationStatus" style="font-size:11px; opacity:0.6;"></div>
+</div>
+
+<script src="shared.js"></script>
+<script src="nav.js"></script>
+<script src="system.js"></script>
+</body>
+</html>
