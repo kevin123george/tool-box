@@ -313,7 +313,10 @@
     <div id="stockHoldingModalBox" class="modal">
         <h3 id="stockHoldingModalTitle">Add Holding</h3>
 
-        <input id="stockSymbol" placeholder="Symbol (e.g., AAPL)" maxlength="10">
+        <div style="position:relative;">
+            <input id="stockSymbol" placeholder="Search by name or symbol (e.g. Apple)" maxlength="30" autocomplete="off" data-ticker-search>
+            <div class="ticker-search-dropdown" style="display:none;"></div>
+        </div>
         <input id="stockQuantity" placeholder="Quantity" type="number" step="0.0000001">
         <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.0000001">
 
@@ -327,7 +330,10 @@
     <div id="watchlistModalBox" class="modal">
         <h3 id="watchlistModalTitle">Add to Watchlist</h3>
 
-        <input id="watchSymbol" placeholder="Symbol (e.g., TSLA)" maxlength="10">
+        <div style="position:relative;">
+            <input id="watchSymbol" placeholder="Search by name or symbol (e.g. Tesla)" maxlength="30" autocomplete="off" data-ticker-search>
+            <div class="ticker-search-dropdown" style="display:none;"></div>
+        </div>
         <input id="watchInitialPrice" placeholder="Initial Price (€)" type="number" step="0.0000001">
 
         <button class="btn" onclick="saveWatchlist()">SAVE</button>
@@ -367,7 +373,10 @@
     <div class="modal">
         <h3 id="dividendModalTitle">Add Dividend</h3>
         <input type="hidden" id="dividendId">
-        <input id="dividendSymbol" placeholder="Stock Symbol (e.g., AAPL)">
+        <div style="position:relative;">
+            <input id="dividendSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search>
+            <div class="ticker-search-dropdown" style="display:none;"></div>
+        </div>
         <input id="dividendAmount" type="number" step="0.01" placeholder="Amount (€)">
         <input id="dividendPaymentDate" type="date">
         <select id="dividendFrequency">
@@ -386,7 +395,10 @@
 <div id="priceAlertModal" class="modal-overlay">
     <div class="modal">
         <h3>Add Price Alert</h3>
-        <input id="alertSymbol" placeholder="Stock Symbol (e.g., AAPL)">
+        <div style="position:relative;">
+            <input id="alertSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search>
+            <div class="ticker-search-dropdown" style="display:none;"></div>
+        </div>
         <input id="alertTargetPrice" type="number" step="0.01" placeholder="Target Price (€)">
         <select id="alertDirection">
             <option value="ABOVE">Above (notify when price rises above)</option>
@@ -1603,8 +1615,8 @@
     <div class="add-box" style="margin-bottom:16px;">
         <div style="display:flex; gap:8px; align-items:center;">
             <div style="position:relative; flex:1;">
-                <input type="text" id="fundamentalsSymbol" placeholder="Search by name or symbol (e.g. Apple, AAPL)" style="width:100%; text-transform:uppercase;" autocomplete="off">
-                <div id="tickerSearchDropdown" class="ticker-search-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:1000; max-height:260px; overflow-y:auto; border:1px solid var(--border); border-top:none; border-radius:0 0 6px 6px; background:var(--card-bg); box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+                <input type="text" id="fundamentalsSymbol" placeholder="Search by name or symbol (e.g. Apple, AAPL)" style="width:100%; text-transform:uppercase;" autocomplete="off" data-ticker-search>
+                <div class="ticker-search-dropdown" style="display:none;"></div>
             </div>
             <button class="btn" onclick="loadFundamentals()" style="white-space:nowrap;">ANALYZE</button>
             <select id="fundamentalsPortfolio" onchange="loadFundamentalsFromPortfolio()" style="flex:1;">
@@ -1694,7 +1706,10 @@
         <div class="add-box">
             <h3 style="margin-top:0;">Inputs</h3>
             <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <input type="text" id="dcfSymbol" placeholder="Symbol" style="flex:1; text-transform:uppercase;">
+                <div style="position:relative; flex:1;">
+                    <input type="text" id="dcfSymbol" placeholder="Search by name or symbol" style="width:100%; text-transform:uppercase;" autocomplete="off" data-ticker-search>
+                    <div class="ticker-search-dropdown" style="display:none;"></div>
+                </div>
                 <button class="btn" onclick="loadDCFDefaults()">LOAD DEFAULTS</button>
             </div>
             <div id="dcfCompanyName" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
@@ -1759,7 +1774,10 @@
     <!-- Add Symbol + Filters -->
     <div class="add-box" style="margin-bottom:16px;">
         <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
-            <input type="text" id="screenerAddSymbol" placeholder="Add symbol to screener" style="flex:1; text-transform:uppercase;">
+            <div style="position:relative; flex:1;">
+                <input type="text" id="screenerAddSymbol" placeholder="Search by name or symbol" style="width:100%; text-transform:uppercase;" autocomplete="off" data-ticker-search>
+                <div class="ticker-search-dropdown" style="display:none;"></div>
+            </div>
             <button class="btn" onclick="addScreenerSymbol()" style="background:#0f0; color:#000; font-weight:bold;">+ ADD</button>
         </div>
 

@@ -65,90 +65,92 @@ function fmtRatio(n) {
 }
 
 /* ===========================================================
-   TICKER SEARCH AUTOCOMPLETE
+   TICKER SEARCH AUTOCOMPLETE (global — attaches to all [data-ticker-search] inputs)
    =============================================================*/
-
-let _tickerSearchTimer = null;
-let _tickerSearchIdx = -1;
 
 (function initTickerSearch() {
     document.addEventListener('DOMContentLoaded', () => {
-        const input = document.getElementById('fundamentalsSymbol');
-        const dropdown = document.getElementById('tickerSearchDropdown');
-        if (!input || !dropdown) return;
+        document.querySelectorAll('input[data-ticker-search]').forEach(input => {
+            const dropdown = input.parentElement.querySelector('.ticker-search-dropdown');
+            if (!dropdown) return;
 
-        input.addEventListener('input', () => {
-            clearTimeout(_tickerSearchTimer);
-            const q = input.value.trim();
-            if (q.length < 2) { dropdown.style.display = 'none'; _tickerSearchIdx = -1; return; }
-            _tickerSearchTimer = setTimeout(() => fetchTickerResults(q), 300);
-        });
+            let timer = null;
+            let idx = -1;
 
-        input.addEventListener('keydown', (e) => {
-            if (dropdown.style.display === 'none') return;
-            const items = dropdown.querySelectorAll('.ticker-item');
-            if (!items.length) return;
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                const q = input.value.trim();
+                if (q.length < 2) { dropdown.style.display = 'none'; idx = -1; return; }
+                timer = setTimeout(() => _fetchTickerResults(input, dropdown, q, () => idx = -1), 300);
+            });
 
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                _tickerSearchIdx = Math.min(_tickerSearchIdx + 1, items.length - 1);
-                highlightTickerItem(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                _tickerSearchIdx = Math.max(_tickerSearchIdx - 1, 0);
-                highlightTickerItem(items);
-            } else if (e.key === 'Enter' && _tickerSearchIdx >= 0) {
-                e.preventDefault();
-                items[_tickerSearchIdx].click();
-            } else if (e.key === 'Escape') {
-                dropdown.style.display = 'none';
-                _tickerSearchIdx = -1;
-            }
-        });
+            input.addEventListener('keydown', (e) => {
+                if (dropdown.style.display === 'none') return;
+                const items = dropdown.querySelectorAll('.ticker-item');
+                if (!items.length) return;
 
-        document.addEventListener('click', (e) => {
-            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.style.display = 'none';
-                _tickerSearchIdx = -1;
-            }
-        });
-    });
-})();
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    idx = Math.min(idx + 1, items.length - 1);
+                    items.forEach((el, i) => el.classList.toggle('active', i === idx));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    idx = Math.max(idx - 1, 0);
+                    items.forEach((el, i) => el.classList.toggle('active', i === idx));
+                } else if (e.key === 'Enter' && idx >= 0) {
+                    e.preventDefault();
+                    items[idx].click();
+                } else if (e.key === 'Escape') {
+                    dropdown.style.display = 'none';
+                    idx = -1;
+                }
+            });
 
-function highlightTickerItem(items) {
-    items.forEach((el, i) => {
-        el.style.background = i === _tickerSearchIdx ? 'var(--border)' : 'transparent';
-    });
-}
-
-async function fetchTickerResults(query) {
-    const dropdown = document.getElementById('tickerSearchDropdown');
-    try {
-        const res = await fetch(`${API}/api/market/search?q=${encodeURIComponent(query)}`);
-        const results = await res.json();
-        if (!results.length) { dropdown.style.display = 'none'; return; }
-        _tickerSearchIdx = -1;
-        dropdown.innerHTML = results.map((r, i) =>
-            `<div class="ticker-item" data-symbol="${r.symbol}" style="padding:8px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); font-family:monospace; font-size:12px;" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background=_tickerSearchIdx===${i}?'var(--border)':'transparent'">`
-            + `<span><strong style="color:#39f;">${r.symbol}</strong> <span style="opacity:0.7;">${r.name}</span></span>`
-            + `<span style="opacity:0.4; font-size:10px;">${r.exchange}</span>`
-            + `</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-
-        dropdown.querySelectorAll('.ticker-item').forEach(el => {
-            el.addEventListener('click', () => {
-                document.getElementById('fundamentalsSymbol').value = el.dataset.symbol;
-                dropdown.style.display = 'none';
-                _tickerSearchIdx = -1;
-                loadFundamentals();
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                    idx = -1;
+                }
             });
         });
-    } catch (e) {
-        console.error('Ticker search failed:', e);
-        dropdown.style.display = 'none';
+    });
+
+    async function _fetchTickerResults(input, dropdown, query, resetIdx) {
+        try {
+            const res = await fetch(`${API}/api/market/search?q=${encodeURIComponent(query)}`);
+            const results = await res.json();
+            if (!results.length) { dropdown.style.display = 'none'; return; }
+            resetIdx();
+            dropdown.innerHTML = results.map(r =>
+                `<div class="ticker-item" data-symbol="${r.symbol}">`
+                + `<span><strong style="color:#39f;">${r.symbol}</strong> <span style="opacity:0.7;">${r.name}</span></span>`
+                + `<span style="opacity:0.4; font-size:10px;">${r.exchange}</span>`
+                + `</div>`
+            ).join('');
+            dropdown.style.display = 'block';
+
+            dropdown.querySelectorAll('.ticker-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    input.value = el.dataset.symbol;
+                    dropdown.style.display = 'none';
+                    resetIdx();
+                    // Auto-trigger associated action if the input has one
+                    _onTickerSelected(input);
+                });
+            });
+        } catch (e) {
+            console.error('Ticker search failed:', e);
+            dropdown.style.display = 'none';
+        }
     }
-}
+
+    function _onTickerSelected(input) {
+        const id = input.id;
+        if (id === 'fundamentalsSymbol') loadFundamentals();
+        else if (id === 'dcfSymbol') loadDCFDefaults();
+        else if (id === 'screenerAddSymbol') addScreenerSymbol();
+    }
+})();
 
 /* ===========================================================
    FUNDAMENTALS TAB

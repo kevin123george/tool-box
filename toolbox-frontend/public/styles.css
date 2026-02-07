@@ -522,6 +522,45 @@ input, textarea, select {
 }
 
 /* =========================
+   TICKER SEARCH DROPDOWN
+   ========================= */
+
+.ticker-search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.ticker-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.ticker-item:hover,
+.ticker-item.active {
+    background: var(--border);
+}
+
+.ticker-item:last-child {
+    border-bottom: none;
+}
+
+/* =========================
    MODALS
    ========================= */
 
