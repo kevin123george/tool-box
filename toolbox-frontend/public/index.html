@@ -1610,6 +1610,34 @@
         </div>
     </div>
 
+    <!-- Price Chart (hidden until analysis loaded) -->
+    <div id="fundamentalsPriceChart" style="display:none;">
+        <div class="add-box" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0;">Price Chart</h3>
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <div id="fundRangeButtons" style="display:flex; gap:2px;">
+                        <button class="btn fund-range-btn" data-period="5d" data-interval="15m" style="padding:4px 8px; font-size:11px;">1W</button>
+                        <button class="btn fund-range-btn" data-period="1mo" data-interval="1d" style="padding:4px 8px; font-size:11px;">1M</button>
+                        <button class="btn fund-range-btn" data-period="3mo" data-interval="1d" style="padding:4px 8px; font-size:11px;">3M</button>
+                        <button class="btn fund-range-btn active" data-period="6mo" data-interval="1d" style="padding:4px 8px; font-size:11px; background:#39f; color:#000;">6M</button>
+                        <button class="btn fund-range-btn" data-period="1y" data-interval="1d" style="padding:4px 8px; font-size:11px;">1Y</button>
+                        <button class="btn fund-range-btn" data-period="5y" data-interval="1wk" style="padding:4px 8px; font-size:11px;">5Y</button>
+                    </div>
+                    <span style="margin:0 6px; opacity:0.3;">|</span>
+                    <div style="display:flex; gap:2px;">
+                        <button class="btn fund-indicator-btn" data-indicator="sma" style="padding:4px 8px; font-size:11px;" onclick="toggleFundIndicator('sma')">SMA</button>
+                        <button class="btn fund-indicator-btn" data-indicator="ema" style="padding:4px 8px; font-size:11px;" onclick="toggleFundIndicator('ema')">EMA</button>
+                        <button class="btn fund-indicator-btn" data-indicator="bb" style="padding:4px 8px; font-size:11px;" onclick="toggleFundIndicator('bb')">BB</button>
+                    </div>
+                </div>
+            </div>
+            <div id="fundCrosshairInfo" style="font-size:11px; font-family:monospace; margin-bottom:4px; min-height:16px; opacity:0.7;"></div>
+            <div id="fundCandlestickChart" style="height:350px; width:100%;"></div>
+            <div id="fundVolumeChart" style="height:80px; width:100%;"></div>
+        </div>
+    </div>
+
     <!-- Overview Cards -->
     <div id="fundamentalsOverview" style="display:none;">
         <div id="companyHeader" style="margin-bottom:16px;">
@@ -1882,6 +1910,7 @@
 <script src="advanced-chart.js"></script>
 <script src="features.js"></script>
 <script src="fundamentals.js"></script>
+<script src="fundamentals-chart.js"></script>
 
 </body>
 </html>

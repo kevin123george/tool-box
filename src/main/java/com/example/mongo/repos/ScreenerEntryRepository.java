@@ -7,10 +7,11 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface ScreenerEntryRepository extends MongoRepository<ScreenerEntry, String> {
 
-  Optional<ScreenerEntry> findBySymbol(String symbol);
+  Optional<ScreenerEntry> findFirstBySymbol(String symbol);
+
+  List<ScreenerEntry> findAllBySymbol(String symbol);
 
   List<ScreenerEntry> findBySector(String sector);
 
-  @org.springframework.data.mongodb.repository.Query(value = "{}", fields = "{'sector': 1}")
-  List<ScreenerEntry> findDistinctSectors();
+  void deleteBySymbol(String symbol);
 }

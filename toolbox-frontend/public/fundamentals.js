@@ -132,9 +132,12 @@ async function loadFundamentals() {
         renderMarginsChart(margins);
 
         document.getElementById('fundamentalsOverview').style.display = 'block';
+        document.getElementById('fundamentalsPriceChart').style.display = 'block';
+        if (typeof loadFundPriceChart === 'function') loadFundPriceChart(symbol);
     } catch (e) {
         showToast('Failed to load fundamentals: ' + e.message, 'error');
         document.getElementById('fundamentalsEmpty').style.display = 'block';
+        document.getElementById('fundamentalsPriceChart').style.display = 'none';
     } finally {
         hideLoading();
     }

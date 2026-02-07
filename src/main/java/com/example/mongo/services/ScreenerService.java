@@ -26,8 +26,18 @@ public class ScreenerService {
   public ScreenerEntry addSymbol(String symbol) {
     String upper = symbol.toUpperCase();
 
+    // Clean up duplicates if any exist
+    List<ScreenerEntry> allExisting = screenerRepo.findAllBySymbol(upper);
+    if (allExisting.size() > 1) {
+      log.warn("[screener] Found {} duplicates for {}, cleaning up", allExisting.size(), upper);
+      screenerRepo.deleteBySymbol(upper);
+      screenerRepo.save(allExisting.get(0));
+      allExisting = List.of(allExisting.get(0));
+    }
+
     // Check if already exists and not expired
-    Optional<ScreenerEntry> existing = screenerRepo.findBySymbol(upper);
+    Optional<ScreenerEntry> existing =
+        allExisting.isEmpty() ? Optional.empty() : Optional.of(allExisting.get(0));
     if (existing.isPresent()
         && existing.get().getExpiresAt() != null
         && existing.get().getExpiresAt().isAfter(LocalDateTime.now())) {

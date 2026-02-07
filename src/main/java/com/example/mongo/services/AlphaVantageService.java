@@ -95,8 +95,18 @@ public class AlphaVantageService {
   public CompanyOverview fetchCompanyOverview(String symbol) {
     String upper = symbol.toUpperCase();
 
+    // Clean up duplicates if any exist
+    List<CompanyOverview> allCached = overviewRepo.findAllBySymbol(upper);
+    if (allCached.size() > 1) {
+      log.warn("[yfinance] Found {} duplicate overviews for {}, cleaning up", allCached.size(), upper);
+      overviewRepo.deleteBySymbol(upper);
+      overviewRepo.save(allCached.get(0));
+      allCached = List.of(allCached.get(0));
+    }
+
     // Check cache first
-    Optional<CompanyOverview> cached = overviewRepo.findBySymbol(upper);
+    Optional<CompanyOverview> cached =
+        allCached.isEmpty() ? Optional.empty() : Optional.of(allCached.get(0));
     if (cached.isPresent()
         && cached.get().getExpiresAt() != null
         && cached.get().getExpiresAt().isAfter(LocalDateTime.now())) {
