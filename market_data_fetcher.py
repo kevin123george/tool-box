@@ -6,6 +6,7 @@ Returns JSON to stdout. All OHLC prices converted to EUR, volume unchanged.
 import sys
 import json
 import math
+import requests
 import yfinance as yf
 
 TARGET_CURRENCY = "EUR"
@@ -86,18 +87,48 @@ def fetch_ohlc(symbol, period, interval):
     }
 
 
+def search_tickers(query):
+    """Search for tickers by name/symbol using Yahoo Finance search API."""
+    url = "https://query2.finance.yahoo.com/v1/finance/search"
+    params = {"q": query, "quotesCount": 8, "newsCount": 0}
+    headers = {"User-Agent": "Mozilla/5.0"}
+    resp = requests.get(url, params=params, headers=headers, timeout=5)
+    resp.raise_for_status()
+    data = resp.json()
+    quotes = data.get("quotes", [])
+    allowed_types = {"EQUITY", "ETF"}
+    results = []
+    for q in quotes:
+        qtype = q.get("quoteType", "").upper()
+        if qtype not in allowed_types:
+            continue
+        results.append({
+            "symbol": q.get("symbol", ""),
+            "name": q.get("shortname") or q.get("longname", ""),
+            "exchange": q.get("exchDisp", ""),
+            "type": qtype
+        })
+    return {"results": results}
+
+
 def main():
-    if len(sys.argv) < 5:
-        print(json.dumps({"error": "Usage: market_data_fetcher.py <SYMBOL> ohlc <PERIOD> <INTERVAL>"}))
+    if len(sys.argv) < 3:
+        print(json.dumps({"error": "Usage: market_data_fetcher.py <SYMBOL> <COMMAND> [args...]"}))
         sys.exit(1)
 
-    symbol = sys.argv[1].upper()
+    arg1 = sys.argv[1]
     command = sys.argv[2].lower()
-    period = sys.argv[3]
-    interval = sys.argv[4]
 
     try:
-        if command == "ohlc":
+        if command == "search":
+            result = search_tickers(arg1)
+        elif command == "ohlc":
+            if len(sys.argv) < 5:
+                print(json.dumps({"error": "Usage: market_data_fetcher.py <SYMBOL> ohlc <PERIOD> <INTERVAL>"}))
+                sys.exit(1)
+            symbol = arg1.upper()
+            period = sys.argv[3]
+            interval = sys.argv[4]
             result = fetch_ohlc(symbol, period, interval)
         else:
             result = {"error": f"Unknown command: {command}"}

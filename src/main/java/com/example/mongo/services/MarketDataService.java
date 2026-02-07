@@ -158,6 +158,47 @@ public class MarketDataService {
   }
 
   @SuppressWarnings("unchecked")
+  public List<Map<String, Object>> searchTickers(String query) {
+    try {
+      File projectRoot = findProjectRoot();
+      String pythonExecutable = findPythonExecutable(projectRoot);
+      String scriptPath = new File(projectRoot, "market_data_fetcher.py").getAbsolutePath();
+      ProcessBuilder pb = new ProcessBuilder(pythonExecutable, scriptPath, query, "search");
+      pb.directory(projectRoot);
+      pb.redirectErrorStream(true);
+
+      Process process = pb.start();
+      StringBuilder output = new StringBuilder();
+      try (BufferedReader reader =
+          new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          output.append(line);
+        }
+      }
+
+      int exitCode = process.waitFor();
+      if (exitCode != 0) {
+        log.error("[MarketData] Ticker search failed for '{}': {}", query, output);
+        return Collections.emptyList();
+      }
+
+      Map<String, Object> result = objectMapper.readValue(output.toString(), Map.class);
+      if (result.containsKey("error")) {
+        log.error("[MarketData] Search error for '{}': {}", query, result.get("error"));
+        return Collections.emptyList();
+      }
+
+      List<Map<String, Object>> results =
+          (List<Map<String, Object>>) result.get("results");
+      return results != null ? results : Collections.emptyList();
+    } catch (Exception e) {
+      log.error("[MarketData] Exception searching tickers for '{}': {}", query, e.getMessage());
+      return Collections.emptyList();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
   private Map<String, Object> callPython(String symbol, String period, String interval) {
     try {
       File projectRoot = findProjectRoot();

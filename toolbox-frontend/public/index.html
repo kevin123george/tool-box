@@ -1602,7 +1602,10 @@
     <!-- Symbol Search -->
     <div class="add-box" style="margin-bottom:16px;">
         <div style="display:flex; gap:8px; align-items:center;">
-            <input type="text" id="fundamentalsSymbol" placeholder="Enter symbol (e.g. AAPL)" style="flex:1; text-transform:uppercase;">
+            <div style="position:relative; flex:1;">
+                <input type="text" id="fundamentalsSymbol" placeholder="Search by name or symbol (e.g. Apple, AAPL)" style="width:100%; text-transform:uppercase;" autocomplete="off">
+                <div id="tickerSearchDropdown" class="ticker-search-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:1000; max-height:260px; overflow-y:auto; border:1px solid var(--border); border-top:none; border-radius:0 0 6px 6px; background:var(--card-bg); box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+            </div>
             <button class="btn" onclick="loadFundamentals()" style="white-space:nowrap;">ANALYZE</button>
             <select id="fundamentalsPortfolio" onchange="loadFundamentalsFromPortfolio()" style="flex:1;">
                 <option value="">-- From Portfolio --</option>

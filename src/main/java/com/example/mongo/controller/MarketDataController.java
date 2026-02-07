@@ -13,6 +13,11 @@ public class MarketDataController {
 
   @Autowired private MarketDataService marketDataService;
 
+  @GetMapping("/search")
+  public List<Map<String, Object>> searchTickers(@RequestParam String q) {
+    return marketDataService.searchTickers(q);
+  }
+
   @GetMapping("/ohlc/{symbol}")
   public List<Map<String, Object>> getOHLC(
       @PathVariable String symbol,
