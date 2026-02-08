@@ -140,7 +140,8 @@ async function loadGoal() {
     if (progress > 100) progress = 100;
 
     goalProgress.textContent = progress.toFixed(1) + "%";
-    document.getElementById("goalProgressFill").style.width = progress + "%";
+    const progressBar = document.getElementById("goalProgressBar");
+    if (progressBar) progressBar.value = progress;
 
     renderGoalChart(projText);
 }

@@ -15,6 +15,23 @@ body {
 
 .hidden { display: none; }
 
+/* Restore native date/month picker icons stripped by Tailwind preflight */
+input[type="month"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+    appearance: auto;
+    -webkit-appearance: auto;
+}
+
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
 /* =========================
    QUILL EDITOR
    ========================= */
