@@ -1,52 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToolBox - System</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+<div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
 
 <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
-    <div class="loading-spinner">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loadingText">Loading...</div>
+    <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg"></span>
+        <span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span>
     </div>
 </div>
 
-<button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
-
 <div id="nav-placeholder" data-active="system"></div>
 
-<h1>Hey Kevin!!!</h1>
+<h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
 
 <div id="systemStatsContent">
-    <div style="text-align:center; padding:40px; opacity:0.5;">Loading system stats...</div>
+    <div class="text-center p-10 opacity-50">Loading system stats...</div>
 </div>
 
-<div class="add-box" style="margin-top:20px;">
-    <h3 style="margin:0 0 10px 0;">Push Notifications</h3>
-    <p style="font-size:12px; opacity:0.7; margin-bottom:10px;">
+<div class="card bg-base-200 shadow p-6 mt-5">
+    <h3 class="font-bold uppercase mb-2">Push Notifications</h3>
+    <p class="text-xs opacity-70 mb-3">
         Get alerts when CPU, Memory, or Disk usage exceeds 90%<br>
-        <small style="opacity:0.6;">Cooldown: 5 minutes between alerts</small>
+        <small class="opacity-60">Cooldown: 5 minutes between alerts</small>
     </p>
 
-    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-        <button id="subscribeBtn" class="btn" onclick="subscribeToPush()">
+    <div class="flex gap-2 flex-wrap mb-3">
+        <button id="subscribeBtn" class="btn btn-primary btn-sm" onclick="subscribeToPush()">
             Enable Notifications
         </button>
-        <button id="unsubscribeBtn" class="btn" onclick="unsubscribeFromPush()" style="display:none;">
+        <button id="unsubscribeBtn" class="btn btn-error btn-sm hidden" onclick="unsubscribeFromPush()">
             Disable Notifications
         </button>
-        <button id="testNotificationBtn" class="btn" onclick="testNotification()" style="display:none;">
+        <button id="testNotificationBtn" class="btn btn-ghost btn-sm hidden" onclick="testNotification()">
             Test Notification
         </button>
     </div>
 
-    <div id="notificationStatus" style="font-size:11px; opacity:0.6;"></div>
+    <div id="notificationStatus" class="text-xs opacity-60"></div>
 </div>
 
 <script src="shared.js"></script>

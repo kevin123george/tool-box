@@ -12,13 +12,9 @@ let dcfProjectionChartInstance = null;
 // State
 let lastDCFResult = null;
 
-function getChartTextColor() {
-    return getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff';
-}
+// getChartTextColor() is now defined in shared.js
 
-function getChartGridColor() {
-    return document.body.classList.contains('light') ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
-}
+// getChartGridColor() is now defined in shared.js
 
 function chartDefaults() {
     const color = getChartTextColor();
@@ -505,14 +501,14 @@ function renderSensitivityTable(result) {
     const discountRates = [baseDiscount - 0.02, baseDiscount - 0.01, baseDiscount, baseDiscount + 0.01, baseDiscount + 0.02];
 
     let html = '<table style="width:100%; border-collapse:collapse; font-size:11px; font-family:monospace;">';
-    html += '<thead><tr><th style="padding:6px; border:1px solid var(--border);">Growth \\ WACC</th>';
+    html += '<thead><tr><th style="padding:6px; border:1px solid oklch(var(--b3));">Growth \\ WACC</th>';
     discountRates.forEach(dr => {
-        html += `<th style="padding:6px; border:1px solid var(--border); text-align:center;">${(dr * 100).toFixed(1)}%</th>`;
+        html += `<th style="padding:6px; border:1px solid oklch(var(--b3)); text-align:center;">${(dr * 100).toFixed(1)}%</th>`;
     });
     html += '</tr></thead><tbody>';
 
     growthRates.forEach(gr => {
-        html += `<tr><td style="padding:6px; border:1px solid var(--border); font-weight:bold;">${(gr * 100).toFixed(1)}%</td>`;
+        html += `<tr><td style="padding:6px; border:1px solid oklch(var(--b3)); font-weight:bold;">${(gr * 100).toFixed(1)}%</td>`;
         discountRates.forEach(dr => {
             // Quick DCF recalc for sensitivity
             let fcf = inputs.initialFCF;
@@ -529,7 +525,7 @@ function renderSensitivityTable(result) {
 
             const isBase = Math.abs(gr - baseGrowth) < 0.001 && Math.abs(dr - baseDiscount) < 0.001;
             const color = result.currentPrice ? (iv > result.currentPrice ? '#0f0' : '#f33') : getChartTextColor();
-            html += `<td style="padding:6px; border:1px solid var(--border); text-align:center; color:${color}; ${isBase ? 'font-weight:bold; text-decoration:underline;' : ''}">\u20AC${iv.toFixed(2)}</td>`;
+            html += `<td style="padding:6px; border:1px solid oklch(var(--b3)); text-align:center; color:${color}; ${isBase ? 'font-weight:bold; text-decoration:underline;' : ''}">\u20AC${iv.toFixed(2)}</td>`;
         });
         html += '</tr>';
     });
@@ -625,7 +621,7 @@ function renderScreenerTable(entries) {
     }
 
     tbody.innerHTML = entries.map(e => `
-        <tr style="border-bottom:1px solid var(--border); cursor:pointer;" onclick="navigateToFundamentals('${e.symbol}')">
+        <tr style="border-bottom:1px solid oklch(var(--b3)); cursor:pointer;" onclick="navigateToFundamentals('${e.symbol}')">
             <td style="padding:8px 6px; font-weight:bold; color:#39f;">${e.symbol || ''}</td>
             <td style="padding:8px 6px;">${e.name ? e.name.substring(0, 25) : ''}</td>
             <td style="padding:8px 6px; font-size:11px;">${e.sector || ''}</td>
@@ -646,7 +642,7 @@ function renderScreenerPagination(data) {
 
     let html = '';
     for (let i = 0; i < data.totalPages; i++) {
-        const active = i === data.page ? 'background:var(--text); color:var(--bg);' : '';
+        const active = i === data.page ? 'background:oklch(var(--bc)); color:oklch(var(--b1));' : '';
         html += `<button class="btn" style="min-width:32px; ${active}" onclick="screenerPage=${i}; searchScreener();">${i + 1}</button>`;
     }
     container.innerHTML = html;

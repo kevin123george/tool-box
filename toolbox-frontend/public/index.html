@@ -1,53 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToolBox</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+<div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
 
 <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
-    <div class="loading-spinner">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loadingText">Loading...</div>
+    <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg"></span>
+        <span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span>
     </div>
 </div>
 
-<button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
-
 <div id="nav-placeholder" data-active="home"></div>
 
-<h1>Hey Kevin!!!</h1>
+<h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
 
-<div class="home-grid">
-    <a href="/memos.html" class="home-card">
-        <div class="home-card-icon">&#128221;</div>
-        <div class="home-card-title">Memos</div>
-        <div class="home-card-desc">Rich text notes, search &amp; categories</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="/memos.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
+        <div class="card-body">
+            <div class="text-3xl mb-2">&#128221;</div>
+            <h2 class="card-title text-sm uppercase">Memos</h2>
+            <p class="text-xs opacity-70">Rich text notes, search &amp; categories</p>
+        </div>
     </a>
-    <a href="/finance.html" class="home-card">
-        <div class="home-card-icon">&#128176;</div>
-        <div class="home-card-title">Finance</div>
-        <div class="home-card-desc">Accounts, budget, subscriptions, calendar &amp; analytics</div>
+    <a href="/finance.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
+        <div class="card-body">
+            <div class="text-3xl mb-2">&#128176;</div>
+            <h2 class="card-title text-sm uppercase">Finance</h2>
+            <p class="text-xs opacity-70">Accounts, budget, subscriptions, calendar &amp; analytics</p>
+        </div>
     </a>
-    <a href="/investments.html" class="home-card">
-        <div class="home-card-icon">&#128200;</div>
-        <div class="home-card-title">Investments</div>
-        <div class="home-card-desc">Stocks, history, research, fundamentals, DCF &amp; screener</div>
+    <a href="/investments.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
+        <div class="card-body">
+            <div class="text-3xl mb-2">&#128200;</div>
+            <h2 class="card-title text-sm uppercase">Investments</h2>
+            <p class="text-xs opacity-70">Stocks, history, research, fundamentals, DCF &amp; screener</p>
+        </div>
     </a>
-    <a href="/fitness.html" class="home-card">
-        <div class="home-card-icon">&#127947;</div>
-        <div class="home-card-title">Fitness</div>
-        <div class="home-card-desc">Workouts, weight tracking, plans &amp; analytics</div>
+    <a href="/fitness.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
+        <div class="card-body">
+            <div class="text-3xl mb-2">&#127947;</div>
+            <h2 class="card-title text-sm uppercase">Fitness</h2>
+            <p class="text-xs opacity-70">Workouts, weight tracking, plans &amp; analytics</p>
+        </div>
     </a>
-    <a href="/system.html" class="home-card">
-        <div class="home-card-icon">&#128187;</div>
-        <div class="home-card-title">System</div>
-        <div class="home-card-desc">CPU, memory &amp; disk monitoring, push notifications</div>
+    <a href="/system.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
+        <div class="card-body">
+            <div class="text-3xl mb-2">&#128187;</div>
+            <h2 class="card-title text-sm uppercase">System</h2>
+            <p class="text-xs opacity-70">CPU, memory &amp; disk monitoring, push notifications</p>
+        </div>
     </a>
 </div>
 

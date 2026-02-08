@@ -18,8 +18,8 @@ function switchFinanceTab(tab) {
         const el = document.getElementById('finance' + t.charAt(0).toUpperCase() + t.slice(1) + 'Content');
         if (el) el.classList.toggle('hidden', t !== tab);
     });
-    document.querySelectorAll('.sub-tab').forEach(el => {
-        el.classList.toggle('active', el.textContent.toLowerCase() === tab);
+    document.querySelectorAll('.tabs .tab').forEach(el => {
+        el.classList.toggle('tab-active', el.textContent.toLowerCase() === tab);
     });
     // Load data for the active sub-tab
     if (tab === 'accounts') { loadFinance(); loadGoalList(); loadSavingsGoals(); loadNetWorthHistory(); loadSavingsRateHistory(); }
@@ -398,7 +398,7 @@ function renderSavingsGoals() {
                         \u20AC${(goal.currentAmount || 0).toFixed(2)} / \u20AC${(goal.targetAmount || 0).toFixed(2)}
                         ${daysRemaining >= 0 ? ` \u2022 ${daysRemaining} days left` : ''}
                     </div>
-                    <div style="height:8px; background:#222; border:1px solid var(--border);">
+                    <div style="height:8px; background:#222; border:1px solid oklch(var(--b3));">
                         <div style="height:100%; width:${Math.min(progress, 100)}%; background:${progressColor};"></div>
                     </div>
                     <div style="font-size:11px; text-align:right; margin-top:2px;">${progress.toFixed(1)}%</div>
@@ -566,11 +566,11 @@ function renderNetWorthChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: 'var(--text)' } }
+                legend: { labels: { color: getChartTextColor() } }
             },
             scales: {
-                x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => '\u20AC' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                x: { ticks: { color: getChartTextColor() }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                y: { ticks: { color: getChartTextColor(), callback: v => '\u20AC' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.1)' } }
             }
         }
     });
@@ -632,11 +632,11 @@ function renderSavingsRateChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: 'var(--text)' } }
+                legend: { labels: { color: getChartTextColor() } }
             },
             scales: {
-                x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.1)' }, min: 0, max: 100 }
+                x: { ticks: { color: getChartTextColor() }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                y: { ticks: { color: getChartTextColor(), callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.1)' }, min: 0, max: 100 }
             }
         }
     });
@@ -989,7 +989,7 @@ function renderBudgetComparisonChart(data) {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        color: getChartTextColor(),
                         font: { family: 'monospace', size: 11 }
                     }
                 }
@@ -997,7 +997,7 @@ function renderBudgetComparisonChart(data) {
             scales: {
                 x: {
                     ticks: {
-                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        color: getChartTextColor(),
                         font: { family: 'monospace', size: 10 }
                     },
                     grid: {
@@ -1007,7 +1007,7 @@ function renderBudgetComparisonChart(data) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#fff',
+                        color: getChartTextColor(),
                         font: { family: 'monospace', size: 10 },
                         callback: value => '\u20AC' + value.toFixed(0)
                     },
@@ -1384,7 +1384,7 @@ function renderImportPreview() {
         <div style="max-height:300px; overflow-y:auto;">
             <table style="width:100%; font-size:12px; border-collapse:collapse;">
                 <thead>
-                    <tr style="background:var(--text); color:var(--bg);">
+                    <tr style="background:oklch(var(--bc)); color:oklch(var(--b1));">
                         <th style="padding:6px;">Include</th>
                         <th style="padding:6px;">Date</th>
                         <th style="padding:6px;">Description</th>
@@ -1395,7 +1395,7 @@ function renderImportPreview() {
                 </thead>
                 <tbody>
                     ${importPreviews.map((item, idx) => `
-                        <tr style="border-bottom:1px solid var(--border);">
+                        <tr style="border-bottom:1px solid oklch(var(--b3));">
                             <td style="padding:6px; text-align:center;">
                                 <input type="checkbox" ${item.included ? 'checked' : ''}
                                     onchange="importPreviews[${idx}].included = this.checked">
@@ -1677,10 +1677,10 @@ function renderCategoryTrendsChart(trends) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: 'var(--text)' } } },
+            plugins: { legend: { labels: { color: getChartTextColor() } } },
             scales: {
-                x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => '\u20AC' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                x: { ticks: { color: getChartTextColor() }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                y: { ticks: { color: getChartTextColor(), callback: v => '\u20AC' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
             }
         }
     });
@@ -1713,10 +1713,10 @@ function renderMonthlyComparisonChart(monthly) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: 'var(--text)' } } },
+            plugins: { legend: { labels: { color: getChartTextColor() } } },
             scales: {
-                x: { ticks: { color: 'var(--text)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: 'var(--text)', callback: v => '\u20AC' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                x: { ticks: { color: getChartTextColor() }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                y: { ticks: { color: getChartTextColor(), callback: v => '\u20AC' + v }, grid: { color: 'rgba(255,255,255,0.1)' } }
             }
         }
     });
@@ -1744,7 +1744,7 @@ function renderCategoryBreakdownChart(monthly) {
             datasets: [{
                 data: values,
                 backgroundColor: colors.slice(0, categories.length),
-                borderColor: 'var(--bg)',
+                borderColor: getComputedStyle(document.body).backgroundColor,
                 borderWidth: 2
             }]
         },
@@ -1754,7 +1754,7 @@ function renderCategoryBreakdownChart(monthly) {
             plugins: {
                 legend: {
                     position: 'right',
-                    labels: { color: 'var(--text)' }
+                    labels: { color: getChartTextColor() }
                 }
             }
         }

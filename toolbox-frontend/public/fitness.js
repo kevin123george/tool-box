@@ -301,7 +301,7 @@ function showTodaysWorkoutModal() {
                 const duration = ex.durationSeconds ? `${Math.round(ex.durationSeconds / 60)} min` : '';
 
                 return `
-                    <div class="exercise-checklist-item" style="display:flex; align-items:center; padding:12px; border:1px solid var(--border); margin-bottom:8px;">
+                    <div class="exercise-checklist-item" style="display:flex; align-items:center; padding:12px; border:1px solid oklch(var(--b3)); margin-bottom:8px;">
                         <input type="checkbox" id="exercise_${idx}" ${isChecked} style="width:20px; height:20px; margin-right:12px;">
                         <div style="flex:1;">
                             <div style="font-weight:bold;">${ex.name}</div>
@@ -419,9 +419,9 @@ async function loadFitnessStats() {
         // Update streak color based on value
         const streakEl = document.getElementById('fitnessCurrentStreak');
         if (stats.currentStreak >= 7) {
-            streakEl.classList.add('positive');
+            streakEl.classList.add('text-success');
         } else if (stats.currentStreak === 0) {
-            streakEl.classList.remove('positive');
+            streakEl.classList.remove('text-success');
         }
     } catch (e) {
         console.error('Failed to load fitness stats:', e);

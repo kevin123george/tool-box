@@ -1,63 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToolBox - Memos</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+    <div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
     <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
-        <div class="loading-spinner"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading...</div></div>
+        <div class="flex flex-col items-center gap-4"><span class="loading loading-spinner loading-lg"></span><span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span></div>
     </div>
-    <button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
     <div id="nav-placeholder" data-active="memos"></div>
-    <h1>Hey Kevin!!!</h1>
+    <h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
 
     <!-- =================== MEMOS =================== -->
     <div id="memoTabContent" class="tab-content">
-        <h2>Memos</h2>
+        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Memos</h2>
 
-        <div class="finance-grid memo-layout" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start memo-layout">
             <!-- LEFT: ADD MEMO FORM -->
-            <div class="add-box" style="position:sticky; top:20px;">
-                <h3 style="margin-top:0;">Add Memo</h3>
-                <input id="memoTitle" placeholder="Title">
-
-                <!-- Quill Editor -->
+            <div class="card bg-base-200 shadow p-4 md:sticky md:top-5">
+                <h3 class="font-bold mb-2">Add Memo</h3>
+                <input id="memoTitle" placeholder="Title" class="input input-bordered w-full mb-2">
                 <div id="memoContent" style="height: 150px;"></div>
-
-                <select id="memoCategory">
+                <select id="memoCategory" class="select select-bordered w-full mb-2 mt-2">
                     <option value="personal">personal</option>
                     <option value="work">work</option>
                     <option value="ideas">ideas</option>
                     <option value="journal">journal</option>
                 </select>
-
-                <label><input type="checkbox" id="memoPinned"> Pin?</label>
-
-                <input type="file" id="memoFile" accept="image/*">
-
-                <button class="btn" onclick="addMemo()">ADD MEMO</button>
+                <label class="label cursor-pointer justify-start gap-2 mb-2">
+                    <input type="checkbox" id="memoPinned" class="checkbox checkbox-sm">
+                    <span class="label-text">Pin?</span>
+                </label>
+                <input type="file" id="memoFile" accept="image/*" class="file-input file-input-bordered w-full mb-2">
+                <button class="btn btn-primary" onclick="addMemo()">ADD MEMO</button>
             </div>
 
             <!-- RIGHT: MEMO LIST -->
             <div>
                 <!-- Pagination Controls -->
-                <div id="memoPagination" class="pagination">
-                    <div class="pagination-info" id="memoPageInfo"></div>
-                    <div class="pagination-controls">
-                        <button class="btn" id="memoFirstBtn" onclick="memoGoToPage(0)">FIRST</button>
-                        <button class="btn" id="memoPrevBtn" onclick="memoPrevPage()">PREV</button>
-                        <span style="font-size:12px;">Page</span>
-                        <input type="number" id="memoPageInput" min="1" value="1" onchange="memoGoToInput()">
-                        <span style="font-size:12px;" id="memoTotalPagesSpan"></span>
-                        <button class="btn" id="memoNextBtn" onclick="memoNextPage()">NEXT</button>
-                        <button class="btn" id="memoLastBtn" onclick="memoGoToLastPage()">LAST</button>
-                        <span style="font-size:12px; margin-left:8px;">Show</span>
-                        <select id="memoPageSize" onchange="memoChangePageSize()">
+                <div id="memoPagination" class="flex flex-wrap items-center justify-between gap-2 p-3 bg-base-200 rounded-box mb-3">
+                    <div class="text-xs opacity-80" id="memoPageInfo"></div>
+                    <div class="join">
+                        <button class="btn btn-sm join-item" id="memoFirstBtn" onclick="memoGoToPage(0)">FIRST</button>
+                        <button class="btn btn-sm join-item" id="memoPrevBtn" onclick="memoPrevPage()">PREV</button>
+                        <span class="btn btn-sm join-item btn-disabled">Page</span>
+                        <input type="number" id="memoPageInput" min="1" value="1" class="input input-bordered input-sm w-16 join-item" onchange="memoGoToInput()">
+                        <span class="btn btn-sm join-item btn-disabled" id="memoTotalPagesSpan"></span>
+                        <button class="btn btn-sm join-item" id="memoNextBtn" onclick="memoNextPage()">NEXT</button>
+                        <button class="btn btn-sm join-item" id="memoLastBtn" onclick="memoGoToLastPage()">LAST</button>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs">Show</span>
+                        <select id="memoPageSize" class="select select-bordered select-sm w-20" onchange="memoChangePageSize()">
                             <option value="10">10</option>
                             <option value="20">20</option>
                             <option value="30">30</option>
@@ -66,59 +67,56 @@
                         </select>
                     </div>
                 </div>
-
                 <div id="memoList"></div>
             </div>
         </div>
     </div>
 
     <!-- ============= MEMO VIEW MODAL ============= -->
-    <div id="memoViewModal" class="modal-overlay">
-        <div id="memoViewModalBox" class="modal">
-            <h3>Memo Details</h3>
+    <dialog id="memoViewModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Memo Details</h3>
             <div class="view-label">Title</div>
-            <div id="viewMemoTitle" class="view-block"></div>
-
+            <div id="viewMemoTitle" class="p-3 bg-base-300 rounded mb-3"></div>
             <div class="view-label">Content</div>
-            <div id="viewMemoContent" class="memo-content-view"></div>
-
+            <div id="viewMemoContent" class="memo-content-view mb-3"></div>
             <div class="view-label">Meta</div>
-            <div id="viewMemoMeta" class="view-block"></div>
-
-            <div id="viewMemoImageWrapper" style="display:none;">
+            <div id="viewMemoMeta" class="p-3 bg-base-300 rounded mb-3"></div>
+            <div id="viewMemoImageWrapper" class="hidden">
                 <div class="view-label">Media</div>
-                <img id="viewMemoImage" style="max-width:100%; border:1px solid var(--border);">
+                <img id="viewMemoImage" class="max-w-full border border-base-300 rounded">
             </div>
-
-            <button class="btn" onclick="closeMemoViewModal()">CLOSE</button>
+            <div class="modal-action">
+                <button class="btn" onclick="closeMemoViewModal()">CLOSE</button>
+            </div>
         </div>
-    </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <!-- ============= MEMO EDIT MODAL ============= -->
-    <div id="memoModal" class="modal-overlay">
-        <div id="memoModalBox" class="modal">
-            <h3>Edit Memo</h3>
-
-            <input id="editMemoTitle" placeholder="Title">
-
-            <!-- Quill Editor for Edit -->
+    <dialog id="memoModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Edit Memo</h3>
+            <input id="editMemoTitle" placeholder="Title" class="input input-bordered w-full mb-2">
             <div id="editMemoContent" style="height: 200px;"></div>
-
-            <select id="editMemoCategory">
+            <select id="editMemoCategory" class="select select-bordered w-full mb-2 mt-2">
                 <option value="personal">personal</option>
                 <option value="work">work</option>
                 <option value="ideas">ideas</option>
                 <option value="journal">journal</option>
             </select>
-
-            <label><input type="checkbox" id="editMemoPinned"> Pin?</label>
-
-            <input type="file" id="editMemoFile" accept="image/*">
-
-            <button class="btn" onclick="saveMemoEdit()">SAVE</button>
-            <button class="btn" onclick="closeMemoModal()">CANCEL</button>
+            <label class="label cursor-pointer justify-start gap-2 mb-2">
+                <input type="checkbox" id="editMemoPinned" class="checkbox checkbox-sm">
+                <span class="label-text">Pin?</span>
+            </label>
+            <input type="file" id="editMemoFile" accept="image/*" class="file-input file-input-bordered w-full mb-2">
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="saveMemoEdit()">SAVE</button>
+                <button class="btn" onclick="closeMemoModal()">CANCEL</button>
+            </div>
         </div>
-    </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="shared.js"></script>

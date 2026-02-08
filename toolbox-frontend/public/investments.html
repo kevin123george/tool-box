@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToolBox - Investments</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="styles.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,119 +16,123 @@
 </head>
 <body>
 
-<div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+<div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
 
 <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
-    <div class="loading-spinner">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loadingText">Loading...</div>
+    <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg"></span>
+        <span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span>
     </div>
 </div>
 
-<button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
-
 <div id="nav-placeholder" data-active="investments"></div>
 
-<h1>Hey Kevin!!!</h1>
+<h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
 
 <!-- Sub-tabs -->
-<div class="sub-tabs" role="tablist">
-    <button class="sub-tab active" id="subStocks" role="tab" onclick="switchInvestmentTab('stocks')">Stocks</button>
-    <button class="sub-tab" id="subStockhistory" role="tab" onclick="switchInvestmentTab('stockhistory')">Stock History</button>
-    <button class="sub-tab" id="subResearch" role="tab" onclick="switchInvestmentTab('research')">Research</button>
-    <button class="sub-tab" id="subFundamentals" role="tab" onclick="switchInvestmentTab('fundamentals')">Fundamentals</button>
-    <button class="sub-tab" id="subDcf" role="tab" onclick="switchInvestmentTab('dcf')">DCF</button>
-    <button class="sub-tab" id="subScreener" role="tab" onclick="switchInvestmentTab('screener')">Screener</button>
+<div class="tabs tabs-bordered mb-4" role="tablist">
+    <button class="tab tab-active" id="subStocks" role="tab" onclick="switchInvestmentTab('stocks')">Stocks</button>
+    <button class="tab" id="subStockhistory" role="tab" onclick="switchInvestmentTab('stockhistory')">Stock History</button>
+    <button class="tab" id="subResearch" role="tab" onclick="switchInvestmentTab('research')">Research</button>
+    <button class="tab" id="subFundamentals" role="tab" onclick="switchInvestmentTab('fundamentals')">Fundamentals</button>
+    <button class="tab" id="subDcf" role="tab" onclick="switchInvestmentTab('dcf')">DCF</button>
+    <button class="tab" id="subScreener" role="tab" onclick="switchInvestmentTab('screener')">Screener</button>
 </div>
 
 <!-- =================== STOCKS TAB =================== -->
 <div id="stocksTabContent" class="tab-content">
-    <h2>Portfolio Tracker</h2>
+    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Portfolio Tracker</h2>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">Total Invested</div>
-            <div class="stat-value" id="statInvested">€0.00</div>
+    <div class="stats shadow w-full mb-4">
+        <div class="stat">
+            <div class="stat-title">Total Invested</div>
+            <div class="stat-value text-lg" id="statInvested">€0.00</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Current Value</div>
-            <div class="stat-value" id="statValue">€0.00</div>
+        <div class="stat">
+            <div class="stat-title">Current Value</div>
+            <div class="stat-value text-lg" id="statValue">€0.00</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Profit</div>
-            <div class="stat-value" id="statProfit">€0.00</div>
+        <div class="stat">
+            <div class="stat-title">Total Profit</div>
+            <div class="stat-value text-lg" id="statProfit">€0.00</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Return %</div>
-            <div class="stat-value" id="statReturn">0.00%</div>
+        <div class="stat">
+            <div class="stat-title">Return %</div>
+            <div class="stat-value text-lg" id="statReturn">0.00%</div>
         </div>
     </div>
 
-    <div class="add-box">
-        <h3>Holdings</h3>
-        <button class="btn" onclick="showAddHolding()" aria-label="Add new stock holding">ADD HOLDING</button>
-        <button class="btn" onclick="refreshStocks()" aria-label="Refresh stock data">REFRESH</button>
-        <button class="btn" onclick="exportPortfolioCsv()" aria-label="Export portfolio to CSV">EXPORT CSV</button>
+    <div class="card bg-base-200 shadow p-4 mb-4">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+            <h3 class="font-bold">Holdings</h3>
+            <div class="flex gap-2 flex-wrap">
+                <button class="btn btn-primary btn-sm" onclick="showAddHolding()" aria-label="Add new stock holding">ADD HOLDING</button>
+                <button class="btn btn-sm" onclick="refreshStocks()" aria-label="Refresh stock data">REFRESH</button>
+                <button class="btn btn-sm" onclick="exportPortfolioCsv()" aria-label="Export portfolio to CSV">EXPORT CSV</button>
+            </div>
+        </div>
     </div>
 
     <div id="holdingsList"></div>
 
-    <div class="add-box" style="margin-top:20px;">
-        <h3>Watchlist</h3>
-        <button class="btn" onclick="showAddWatchlist()">ADD TO WATCHLIST</button>
+    <div class="card bg-base-200 shadow p-4 mt-5 mb-4">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+            <h3 class="font-bold">Watchlist</h3>
+            <button class="btn btn-primary btn-sm" onclick="showAddWatchlist()">ADD TO WATCHLIST</button>
+        </div>
     </div>
 
     <div id="watchlistList"></div>
 
     <!-- Dividends Section -->
-    <div class="add-box" style="margin-top:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 style="margin:0;">Dividends</h3>
-            <button class="btn" onclick="showAddDividendModal()">ADD DIVIDEND</button>
+    <div class="card bg-base-200 shadow p-4 mt-5">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold">Dividends</h3>
+            <button class="btn btn-primary btn-sm" onclick="showAddDividendModal()">ADD DIVIDEND</button>
         </div>
-        <div class="stats-grid" style="margin-bottom:12px;">
-            <div class="stat-card">
-                <div class="stat-label">Total Received</div>
-                <div class="stat-value positive" id="dividendTotal">€0.00</div>
+        <div class="stats shadow w-full mb-3">
+            <div class="stat">
+                <div class="stat-title">Total Received</div>
+                <div class="stat-value text-lg text-success" id="dividendTotal">€0.00</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Annual Projection</div>
-                <div class="stat-value" id="dividendProjection">€0.00</div>
+            <div class="stat">
+                <div class="stat-title">Annual Projection</div>
+                <div class="stat-value text-lg" id="dividendProjection">€0.00</div>
             </div>
         </div>
         <div id="dividendsList"></div>
     </div>
 
     <!-- Price Alerts Section -->
-    <div class="add-box" style="margin-top:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 style="margin:0;">Price Alerts</h3>
-            <button class="btn" onclick="showAddPriceAlertModal()">ADD ALERT</button>
+    <div class="card bg-base-200 shadow p-4 mt-5">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold">Price Alerts</h3>
+            <button class="btn btn-primary btn-sm" onclick="showAddPriceAlertModal()">ADD ALERT</button>
         </div>
         <div id="priceAlertsList"></div>
     </div>
 
     <!-- Capital Gains Section -->
-    <div class="add-box" style="margin-top:20px;">
-        <h3 style="margin-top:0;">Capital Gains Estimator</h3>
-        <div class="stats-grid" id="capitalGainsSummary" style="margin-bottom:12px;"></div>
+    <div class="card bg-base-200 shadow p-4 mt-5">
+        <h3 class="font-bold mb-3">Capital Gains Estimator</h3>
+        <div id="capitalGainsSummary" class="stats shadow w-full mb-3"></div>
         <div id="capitalGainsList"></div>
     </div>
 
     <!-- Portfolio Allocation Section -->
-    <div class="add-box" style="margin-top:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 style="margin:0;">Portfolio Allocation</h3>
-            <button class="btn" onclick="showSetTargetModal()">SET TARGET</button>
+    <div class="card bg-base-200 shadow p-4 mt-5">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold">Portfolio Allocation</h3>
+            <button class="btn btn-sm" onclick="showSetTargetModal()">SET TARGET</button>
         </div>
-        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div style="height:250px;">
                 <canvas id="allocationChart"></canvas>
             </div>
             <div>
                 <div id="allocationTable"></div>
-                <div style="margin-top:12px;">
-                    <h4 style="margin:0 0 8px 0; font-size:12px;">Rebalancing Suggestions</h4>
+                <div class="mt-3">
+                    <h4 class="font-bold text-xs mb-2">Rebalancing Suggestions</h4>
                     <div id="rebalanceSuggestions"></div>
                 </div>
             </div>
@@ -135,19 +142,19 @@
 
 <!-- =================== STOCK HISTORY TAB =================== -->
 <div id="stockHistoryTabContent" class="tab-content hidden">
-    <h2>Advanced Stock Analysis</h2>
+    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Advanced Stock Analysis</h2>
 
-    <div class="add-box" style="margin-bottom:16px;">
-        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; align-items:end;">
+    <div class="card bg-base-200 shadow p-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
-                <label class="control-label">Symbol</label>
-                <select id="histStockFilter" onchange="loadAdvancedChart()" style="margin-top:4px;">
+                <label class="label text-xs">Symbol</label>
+                <select id="histStockFilter" onchange="loadAdvancedChart()" class="select select-bordered select-sm w-full">
                     <option value="">Select Stock</option>
                 </select>
             </div>
             <div>
-                <label class="control-label">Interval</label>
-                <select id="chartInterval" onchange="loadAdvancedChart()" style="margin-top:4px;">
+                <label class="label text-xs">Interval</label>
+                <select id="chartInterval" onchange="loadAdvancedChart()" class="select select-bordered select-sm w-full">
                     <option value="1m">1 Minute</option>
                     <option value="5m">5 Minutes</option>
                     <option value="15m">15 Minutes</option>
@@ -159,31 +166,31 @@
                 </select>
             </div>
             <div>
-                <label class="control-label">Time Range</label>
-                <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">
-                    <button class="btn range-btn" data-range="1d" style="padding:4px 8px; font-size:11px;">1D</button>
-                    <button class="btn range-btn" data-range="1w" style="padding:4px 8px; font-size:11px;">1W</button>
-                    <button class="btn range-btn active" data-range="1m" style="padding:4px 8px; font-size:11px;">1M</button>
-                    <button class="btn range-btn" data-range="3m" style="padding:4px 8px; font-size:11px;">3M</button>
-                    <button class="btn range-btn" data-range="6m" style="padding:4px 8px; font-size:11px;">6M</button>
-                    <button class="btn range-btn" data-range="1y" style="padding:4px 8px; font-size:11px;">1Y</button>
-                    <button class="btn range-btn" data-range="all" style="padding:4px 8px; font-size:11px;">ALL</button>
+                <label class="label text-xs">Time Range</label>
+                <div class="flex gap-1 flex-wrap">
+                    <button class="btn btn-xs range-btn" data-range="1d">1D</button>
+                    <button class="btn btn-xs range-btn" data-range="1w">1W</button>
+                    <button class="btn btn-xs range-btn active" data-range="1m">1M</button>
+                    <button class="btn btn-xs range-btn" data-range="3m">3M</button>
+                    <button class="btn btn-xs range-btn" data-range="6m">6M</button>
+                    <button class="btn btn-xs range-btn" data-range="1y">1Y</button>
+                    <button class="btn btn-xs range-btn" data-range="all">ALL</button>
                 </div>
             </div>
             <div>
-                <label class="control-label">Actions</label>
-                <div style="display:flex; gap:4px; margin-top:4px;">
-                    <button class="btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
-                    <button class="btn" onclick="exportChartImage()" title="Export">📊</button>
-                    <button class="btn" onclick="loadAdvancedChart()" title="Refresh">🔄</button>
+                <label class="label text-xs">Actions</label>
+                <div class="flex gap-1">
+                    <button class="btn btn-sm" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
+                    <button class="btn btn-sm" onclick="exportChartImage()" title="Export">&#128202;</button>
+                    <button class="btn btn-sm" onclick="loadAdvancedChart()" title="Refresh">&#128260;</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Performance Metrics Panel -->
-    <div class="add-box metrics-panel" style="margin-bottom:16px;">
-        <h3 style="margin:0 0 12px 0; font-size:14px;">📈 Performance Metrics</h3>
+    <div class="card bg-base-200 shadow p-4 mb-4">
+        <h3 class="font-bold text-sm mb-3">&#128200; Performance Metrics</h3>
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Total Return</div>
@@ -199,7 +206,7 @@
             </div>
             <div class="metric-card">
                 <div class="metric-label">Max Drawdown</div>
-                <div class="metric-value negative" id="metricMaxDrawdown">--</div>
+                <div class="metric-value text-error" id="metricMaxDrawdown">--</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Sharpe Ratio</div>
@@ -218,7 +225,7 @@
                 <div class="metric-value" id="metricAlpha">--</div>
             </div>
         </div>
-        <div class="metrics-grid" style="margin-top:12px;">
+        <div class="metrics-grid mt-3">
             <div class="metric-card">
                 <div class="metric-label">Highest Price</div>
                 <div class="metric-value" id="metricHigh">--</div>
@@ -239,9 +246,9 @@
     </div>
 
     <!-- Technical Indicators Toggle -->
-    <div class="add-box" style="margin-bottom:16px;">
-        <h3 style="margin:0 0 12px 0; font-size:14px;">🔧 Technical Indicators</h3>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <div class="card bg-base-200 shadow p-4 mb-4">
+        <h3 class="font-bold text-sm mb-3">&#128295; Technical Indicators</h3>
+        <div class="flex gap-2 flex-wrap">
             <label class="indicator-toggle">
                 <input type="checkbox" id="indSMA" onchange="toggleIndicator('sma')"> SMA (20)
             </label>
@@ -267,7 +274,7 @@
     </div>
 
     <!-- Main Chart Container -->
-    <div id="chartContainer" class="chart-container" style="border:1px solid var(--border); margin-bottom:16px; position:relative; padding:12px;">
+    <div id="chartContainer" class="chart-container mb-4" style="border:1px solid oklch(var(--b3)); position:relative; padding:12px;">
         <div id="crosshairInfo" class="crosshair-info">
             <span id="crosshairDate">--</span>
             <span>O: <span id="crosshairOpen">--</span></span>
@@ -296,42 +303,42 @@
         <canvas id="historyChart" height="300"></canvas>
     </div>
 
-    <div class="add-box">
-        <h3 style="margin:0 0 12px 0;">Recent Price History</h3>
+    <div class="card bg-base-200 shadow p-4">
+        <h3 class="font-bold mb-3">Recent Price History</h3>
         <div id="historyTable"></div>
     </div>
 </div>
 
 <!-- =================== RESEARCH TAB =================== -->
 <div id="researchTabContent" class="tab-content hidden">
-    <h2>STOCK RESEARCH & ANALYSIS</h2>
+    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Stock Research & Analysis</h2>
 
-    <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
-        <button class="btn" onclick="generateResearch()" id="generateBtn">
-            🔍 GENERATE RESEARCH REPORT
+    <div class="flex gap-4 mb-5 flex-wrap">
+        <button class="btn btn-primary btn-sm" onclick="generateResearch()" id="generateBtn">
+            &#128269; GENERATE RESEARCH REPORT
         </button>
-        <button class="btn" onclick="loadLatestResearch()">
-            📄 LOAD LATEST REPORT
+        <button class="btn btn-sm" onclick="loadLatestResearch()">
+            &#128196; LOAD LATEST REPORT
         </button>
     </div>
 
-    <div id="portfolioSummary" class="hidden" style="margin-bottom:20px;">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
-            <div class="stat-card">
-                <div class="stat-label">Total Value</div>
-                <div class="stat-value" id="portfolioValue">$0.00</div>
+    <div id="portfolioSummary" class="hidden mb-5">
+        <div class="stats shadow w-full">
+            <div class="stat">
+                <div class="stat-title">Total Value</div>
+                <div class="stat-value text-lg" id="portfolioValue">$0.00</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Gain/Loss</div>
-                <div class="stat-value" id="portfolioGain">$0.00</div>
+            <div class="stat">
+                <div class="stat-title">Total Gain/Loss</div>
+                <div class="stat-value text-lg" id="portfolioGain">$0.00</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Return %</div>
-                <div class="stat-value" id="portfolioReturn">0.00%</div>
+            <div class="stat">
+                <div class="stat-title">Return %</div>
+                <div class="stat-value text-lg" id="portfolioReturn">0.00%</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Overall Sentiment</div>
-                <div class="stat-value" id="overallSentiment">NEUTRAL</div>
+            <div class="stat">
+                <div class="stat-title">Overall Sentiment</div>
+                <div class="stat-value text-lg" id="overallSentiment">NEUTRAL</div>
             </div>
         </div>
     </div>
@@ -341,151 +348,151 @@
 
 <!-- =================== FUNDAMENTALS TAB =================== -->
 <div id="fundamentalsTabContent" class="tab-content hidden" role="tabpanel">
-    <h2>Fundamental Analysis</h2>
+    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Fundamental Analysis</h2>
 
-    <div class="add-box" style="margin-bottom:16px;">
-        <div style="display:flex; gap:8px; align-items:center;">
-            <div style="position:relative; flex:1;">
-                <input type="text" id="fundamentalsSymbol" placeholder="Search by name or symbol (e.g. Apple, AAPL)" style="width:100%; text-transform:uppercase;" autocomplete="off" data-ticker-search>
+    <div class="card bg-base-200 shadow p-4 mb-4">
+        <div class="flex gap-2 items-center flex-wrap">
+            <div class="relative flex-1">
+                <input type="text" id="fundamentalsSymbol" placeholder="Search by name or symbol (e.g. Apple, AAPL)" class="input input-bordered w-full uppercase" autocomplete="off" data-ticker-search>
                 <div class="ticker-search-dropdown" style="display:none;"></div>
             </div>
-            <button class="btn" onclick="loadFundamentals()" style="white-space:nowrap;">ANALYZE</button>
-            <select id="fundamentalsPortfolio" onchange="loadFundamentalsFromPortfolio()" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="loadFundamentals()">ANALYZE</button>
+            <select id="fundamentalsPortfolio" onchange="loadFundamentalsFromPortfolio()" class="select select-bordered select-sm flex-1">
                 <option value="">-- From Portfolio --</option>
             </select>
         </div>
     </div>
 
     <div id="fundamentalsPriceChart" style="display:none;">
-        <div class="add-box" style="margin-bottom:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="margin:0;">Price Chart</h3>
-                <div style="display:flex; gap:4px; align-items:center;">
-                    <div id="fundRangeButtons" style="display:flex; gap:2px;">
-                        <button class="btn fund-range-btn" data-period="5d" data-interval="15m" style="padding:4px 8px; font-size:11px;">1W</button>
-                        <button class="btn fund-range-btn" data-period="1mo" data-interval="1d" style="padding:4px 8px; font-size:11px;">1M</button>
-                        <button class="btn fund-range-btn" data-period="3mo" data-interval="1d" style="padding:4px 8px; font-size:11px;">3M</button>
-                        <button class="btn fund-range-btn active" data-period="6mo" data-interval="1d" style="padding:4px 8px; font-size:11px; background:#39f; color:#000;">6M</button>
-                        <button class="btn fund-range-btn" data-period="1y" data-interval="1d" style="padding:4px 8px; font-size:11px;">1Y</button>
-                        <button class="btn fund-range-btn" data-period="5y" data-interval="1wk" style="padding:4px 8px; font-size:11px;">5Y</button>
+        <div class="card bg-base-200 shadow p-4 mb-4">
+            <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
+                <h3 class="font-bold">Price Chart</h3>
+                <div class="flex gap-1 items-center flex-wrap">
+                    <div id="fundRangeButtons" class="flex gap-1">
+                        <button class="btn btn-xs fund-range-btn" data-period="5d" data-interval="15m">1W</button>
+                        <button class="btn btn-xs fund-range-btn" data-period="1mo" data-interval="1d">1M</button>
+                        <button class="btn btn-xs fund-range-btn" data-period="3mo" data-interval="1d">3M</button>
+                        <button class="btn btn-xs fund-range-btn active" data-period="6mo" data-interval="1d">6M</button>
+                        <button class="btn btn-xs fund-range-btn" data-period="1y" data-interval="1d">1Y</button>
+                        <button class="btn btn-xs fund-range-btn" data-period="5y" data-interval="1wk">5Y</button>
                     </div>
-                    <span style="margin:0 6px; opacity:0.3;">|</span>
-                    <div style="display:flex; gap:2px;">
-                        <button class="btn fund-indicator-btn" data-indicator="sma" style="padding:4px 8px; font-size:11px;" onclick="toggleFundIndicator('sma')">SMA</button>
-                        <button class="btn fund-indicator-btn" data-indicator="ema" style="padding:4px 8px; font-size:11px;" onclick="toggleFundIndicator('ema')">EMA</button>
-                        <button class="btn fund-indicator-btn" data-indicator="bb" style="padding:4px 8px; font-size:11px;" onclick="toggleFundIndicator('bb')">BB</button>
+                    <span class="opacity-30 mx-1">|</span>
+                    <div class="flex gap-1">
+                        <button class="btn btn-xs fund-indicator-btn" data-indicator="sma" onclick="toggleFundIndicator('sma')">SMA</button>
+                        <button class="btn btn-xs fund-indicator-btn" data-indicator="ema" onclick="toggleFundIndicator('ema')">EMA</button>
+                        <button class="btn btn-xs fund-indicator-btn" data-indicator="bb" onclick="toggleFundIndicator('bb')">BB</button>
                     </div>
                 </div>
             </div>
-            <div id="fundCrosshairInfo" style="font-size:11px; font-family:monospace; margin-bottom:4px; min-height:16px; opacity:0.7;"></div>
+            <div id="fundCrosshairInfo" class="text-xs font-mono mb-1 min-h-4 opacity-70"></div>
             <div id="fundCandlestickChart" style="height:350px; width:100%;"></div>
             <div id="fundVolumeChart" style="height:80px; width:100%;"></div>
         </div>
     </div>
 
     <div id="fundamentalsOverview" style="display:none;">
-        <div id="companyHeader" style="margin-bottom:16px;">
-            <h3 id="companyName" style="margin:0;"></h3>
-            <div id="companyMeta" style="font-size:12px; opacity:0.7;"></div>
+        <div class="mb-4">
+            <h3 id="companyName" class="font-bold text-lg"></h3>
+            <div id="companyMeta" class="text-xs opacity-70"></div>
         </div>
 
-        <div class="stats-grid" style="margin-bottom:20px;" id="overviewCards"></div>
+        <div class="stats shadow w-full mb-5" id="overviewCards"></div>
 
-        <div class="add-box" style="margin-bottom:16px;">
-            <h3 style="margin-top:0;">Key Ratios</h3>
-            <div id="keyRatiosGrid" class="stats-grid"></div>
+        <div class="card bg-base-200 shadow p-4 mb-4">
+            <h3 class="font-bold mb-2">Key Ratios</h3>
+            <div id="keyRatiosGrid" class="stats shadow w-full"></div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-            <div class="add-box">
-                <h3 style="margin-top:0;">Revenue History</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Revenue History</h3>
                 <div style="height:280px; position:relative;"><canvas id="revenueChart"></canvas></div>
             </div>
-            <div class="add-box">
-                <h3 style="margin-top:0;">EPS (Beat/Miss)</h3>
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">EPS (Beat/Miss)</h3>
                 <div style="height:280px; position:relative;"><canvas id="epsChart"></canvas></div>
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-            <div class="add-box">
-                <h3 style="margin-top:0;">Free Cash Flow</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Free Cash Flow</h3>
                 <div style="height:280px; position:relative;"><canvas id="fcfChart"></canvas></div>
             </div>
-            <div class="add-box">
-                <h3 style="margin-top:0;">Margin Trends</h3>
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Margin Trends</h3>
                 <div style="height:280px; position:relative;"><canvas id="marginsChart"></canvas></div>
             </div>
         </div>
     </div>
 
-    <div id="fundamentalsEmpty" class="add-box" style="text-align:center; padding:40px; opacity:0.5;">
+    <div id="fundamentalsEmpty" class="flex flex-col items-center p-10 border-2 border-dashed border-base-300 rounded-lg opacity-50">
         Enter a stock symbol above to view fundamental analysis
     </div>
 </div>
 
 <!-- =================== DCF TAB =================== -->
 <div id="dcfTabContent" class="tab-content hidden" role="tabpanel">
-    <h2>DCF Calculator</h2>
+    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">DCF Calculator</h2>
 
-    <div style="display:grid; grid-template-columns:1fr 2fr; gap:16px;">
-        <div class="add-box">
-            <h3 style="margin-top:0;">Inputs</h3>
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <div style="position:relative; flex:1;">
-                    <input type="text" id="dcfSymbol" placeholder="Search by name or symbol" style="width:100%; text-transform:uppercase;" autocomplete="off" data-ticker-search>
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
+        <div class="card bg-base-200 shadow p-4">
+            <h3 class="font-bold mb-3">Inputs</h3>
+            <div class="flex gap-2 mb-3">
+                <div class="relative flex-1">
+                    <input type="text" id="dcfSymbol" placeholder="Search by name or symbol" class="input input-bordered input-sm w-full uppercase" autocomplete="off" data-ticker-search>
                     <div class="ticker-search-dropdown" style="display:none;"></div>
                 </div>
-                <button class="btn" onclick="loadDCFDefaults()">LOAD DEFAULTS</button>
+                <button class="btn btn-sm" onclick="loadDCFDefaults()">LOAD DEFAULTS</button>
             </div>
-            <div id="dcfCompanyName" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
+            <div id="dcfCompanyName" class="text-xs opacity-70 mb-3"></div>
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Initial FCF (€)</label>
-            <input type="number" id="dcfInitialFCF" placeholder="e.g. 100000000000" style="margin-bottom:8px;">
+            <label class="label text-xs">Initial FCF (€)</label>
+            <input type="number" id="dcfInitialFCF" placeholder="e.g. 100000000000" class="input input-bordered input-sm w-full mb-2">
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Growth Rate (%)</label>
-            <input type="number" id="dcfGrowthRate" placeholder="10" step="0.5" style="margin-bottom:8px;">
+            <label class="label text-xs">Growth Rate (%)</label>
+            <input type="number" id="dcfGrowthRate" placeholder="10" step="0.5" class="input input-bordered input-sm w-full mb-2">
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Discount Rate / WACC (%)</label>
-            <input type="number" id="dcfDiscountRate" placeholder="10" step="0.5" style="margin-bottom:8px;">
+            <label class="label text-xs">Discount Rate / WACC (%)</label>
+            <input type="number" id="dcfDiscountRate" placeholder="10" step="0.5" class="input input-bordered input-sm w-full mb-2">
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Terminal Growth Rate (%)</label>
-            <input type="number" id="dcfTerminalGrowth" placeholder="3" step="0.5" style="margin-bottom:8px;">
+            <label class="label text-xs">Terminal Growth Rate (%)</label>
+            <input type="number" id="dcfTerminalGrowth" placeholder="3" step="0.5" class="input input-bordered input-sm w-full mb-2">
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Projection Years</label>
-            <input type="number" id="dcfYears" placeholder="10" style="margin-bottom:8px;">
+            <label class="label text-xs">Projection Years</label>
+            <input type="number" id="dcfYears" placeholder="10" class="input input-bordered input-sm w-full mb-2">
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Shares Outstanding</label>
-            <input type="number" id="dcfShares" placeholder="e.g. 15000000000" style="margin-bottom:8px;">
+            <label class="label text-xs">Shares Outstanding</label>
+            <input type="number" id="dcfShares" placeholder="e.g. 15000000000" class="input input-bordered input-sm w-full mb-2">
 
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Current Price (€)</label>
-            <input type="number" id="dcfCurrentPrice" placeholder="e.g. 175.50" step="0.01" style="margin-bottom:12px;">
+            <label class="label text-xs">Current Price (€)</label>
+            <input type="number" id="dcfCurrentPrice" placeholder="e.g. 175.50" step="0.01" class="input input-bordered input-sm w-full mb-3">
 
-            <button class="btn" onclick="calculateDCF()" style="width:100%; background:#39f; color:#000; font-weight:bold;">CALCULATE DCF</button>
+            <button class="btn btn-primary w-full font-bold" onclick="calculateDCF()">CALCULATE DCF</button>
         </div>
 
         <div>
             <div id="dcfResults" style="display:none;">
-                <div class="add-box" style="margin-bottom:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                        <h3 style="margin:0;">DCF Result</h3>
-                        <div id="dcfVerdict" style="padding:6px 16px; font-weight:bold; font-size:14px;"></div>
+                <div class="card bg-base-200 shadow p-4 mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">DCF Result</h3>
+                        <div id="dcfVerdict" class="badge badge-lg font-bold"></div>
                     </div>
-                    <div class="stats-grid" id="dcfResultCards"></div>
+                    <div class="stats shadow w-full" id="dcfResultCards"></div>
                 </div>
 
-                <div class="add-box" style="margin-bottom:16px;">
-                    <h3 style="margin-top:0;">Projected Cash Flows</h3>
+                <div class="card bg-base-200 shadow p-4 mb-4">
+                    <h3 class="font-bold mb-2">Projected Cash Flows</h3>
                     <div style="height:300px; position:relative;"><canvas id="dcfProjectionChart"></canvas></div>
                 </div>
 
-                <div class="add-box">
-                    <h3 style="margin-top:0;">Sensitivity Analysis</h3>
-                    <div id="dcfSensitivityTable" style="overflow-x:auto;"></div>
+                <div class="card bg-base-200 shadow p-4">
+                    <h3 class="font-bold mb-2">Sensitivity Analysis</h3>
+                    <div id="dcfSensitivityTable" class="overflow-x-auto"></div>
                 </div>
             </div>
 
-            <div id="dcfEmpty" class="add-box" style="text-align:center; padding:40px; opacity:0.5;">
+            <div id="dcfEmpty" class="flex flex-col items-center p-10 border-2 border-dashed border-base-300 rounded-lg opacity-50">
                 Enter a symbol and click "Load Defaults" to pre-fill inputs, then calculate
             </div>
         </div>
@@ -494,35 +501,35 @@
 
 <!-- =================== SCREENER TAB =================== -->
 <div id="screenerTabContent" class="tab-content hidden" role="tabpanel">
-    <h2>Stock Screener</h2>
+    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Stock Screener</h2>
 
-    <div class="add-box" style="margin-bottom:16px;">
-        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
-            <div style="position:relative; flex:1;">
-                <input type="text" id="screenerAddSymbol" placeholder="Search by name or symbol" style="width:100%; text-transform:uppercase;" autocomplete="off" data-ticker-search>
+    <div class="card bg-base-200 shadow p-4 mb-4">
+        <div class="flex gap-2 items-center mb-3">
+            <div class="relative flex-1">
+                <input type="text" id="screenerAddSymbol" placeholder="Search by name or symbol" class="input input-bordered input-sm w-full uppercase" autocomplete="off" data-ticker-search>
                 <div class="ticker-search-dropdown" style="display:none;"></div>
             </div>
-            <button class="btn" onclick="addScreenerSymbol()" style="background:#0f0; color:#000; font-weight:bold;">+ ADD</button>
+            <button class="btn btn-success btn-sm font-bold" onclick="addScreenerSymbol()">+ ADD</button>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Sector</label>
-                <select id="screenerSector" onchange="searchScreener()">
+                <label class="label text-xs">Sector</label>
+                <select id="screenerSector" onchange="searchScreener()" class="select select-bordered select-sm w-full">
                     <option value="">All Sectors</option>
                 </select>
             </div>
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Min P/E</label>
-                <input type="number" id="screenerMinPE" placeholder="0" onchange="searchScreener()">
+                <label class="label text-xs">Min P/E</label>
+                <input type="number" id="screenerMinPE" placeholder="0" onchange="searchScreener()" class="input input-bordered input-sm w-full">
             </div>
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Max P/E</label>
-                <input type="number" id="screenerMaxPE" placeholder="100" onchange="searchScreener()">
+                <label class="label text-xs">Max P/E</label>
+                <input type="number" id="screenerMaxPE" placeholder="100" onchange="searchScreener()" class="input input-bordered input-sm w-full">
             </div>
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Min Market Cap</label>
-                <select id="screenerMinCap" onchange="searchScreener()">
+                <label class="label text-xs">Min Market Cap</label>
+                <select id="screenerMinCap" onchange="searchScreener()" class="select select-bordered select-sm w-full">
                     <option value="">Any</option>
                     <option value="300000000">Small ($300M+)</option>
                     <option value="2000000000">Mid ($2B+)</option>
@@ -532,22 +539,22 @@
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:8px;">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Min Div Yield (%)</label>
-                <input type="number" id="screenerMinDivYield" placeholder="0" step="0.1" onchange="searchScreener()">
+                <label class="label text-xs">Min Div Yield (%)</label>
+                <input type="number" id="screenerMinDivYield" placeholder="0" step="0.1" onchange="searchScreener()" class="input input-bordered input-sm w-full">
             </div>
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Min ROE (%)</label>
-                <input type="number" id="screenerMinROE" placeholder="0" step="1" onchange="searchScreener()">
+                <label class="label text-xs">Min ROE (%)</label>
+                <input type="number" id="screenerMinROE" placeholder="0" step="1" onchange="searchScreener()" class="input input-bordered input-sm w-full">
             </div>
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Max D/E Ratio</label>
-                <input type="number" id="screenerMaxDE" placeholder="" step="0.1" onchange="searchScreener()">
+                <label class="label text-xs">Max D/E Ratio</label>
+                <input type="number" id="screenerMaxDE" placeholder="" step="0.1" onchange="searchScreener()" class="input input-bordered input-sm w-full">
             </div>
             <div>
-                <label style="font-size:11px; display:block; margin-bottom:4px;">Sort By</label>
-                <select id="screenerSortBy" onchange="searchScreener()">
+                <label class="label text-xs">Sort By</label>
+                <select id="screenerSortBy" onchange="searchScreener()" class="select select-bordered select-sm w-full">
                     <option value="marketCap">Market Cap</option>
                     <option value="peRatio">P/E Ratio</option>
                     <option value="dividendYield">Div Yield</option>
@@ -558,114 +565,129 @@
         </div>
     </div>
 
-    <div class="add-box">
-        <div id="screenerResults">
-            <table style="width:100%; border-collapse:collapse; font-size:12px;" id="screenerTable">
+    <div class="card bg-base-200 shadow p-4">
+        <div id="screenerResults" class="overflow-x-auto">
+            <table class="table table-zebra table-sm" id="screenerTable">
                 <thead>
-                    <tr style="border-bottom:1px solid var(--border); text-align:left;">
-                        <th style="padding:8px 6px;">Symbol</th>
-                        <th style="padding:8px 6px;">Name</th>
-                        <th style="padding:8px 6px;">Sector</th>
-                        <th style="padding:8px 6px; text-align:right;">Mkt Cap</th>
-                        <th style="padding:8px 6px; text-align:right;">P/E</th>
-                        <th style="padding:8px 6px; text-align:right;">EPS</th>
-                        <th style="padding:8px 6px; text-align:right;">Div Yield</th>
-                        <th style="padding:8px 6px; text-align:right;">ROE</th>
-                        <th style="padding:8px 6px; text-align:right;">D/E</th>
-                        <th style="padding:8px 6px; text-align:right;">Margin</th>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Sector</th>
+                        <th class="text-right">Mkt Cap</th>
+                        <th class="text-right">P/E</th>
+                        <th class="text-right">EPS</th>
+                        <th class="text-right">Div Yield</th>
+                        <th class="text-right">ROE</th>
+                        <th class="text-right">D/E</th>
+                        <th class="text-right">Margin</th>
                     </tr>
                 </thead>
                 <tbody id="screenerTableBody">
-                    <tr><td colspan="10" style="text-align:center; padding:30px; opacity:0.5;">Add symbols to the screener to compare stocks</td></tr>
+                    <tr><td colspan="10" class="text-center p-8 opacity-50">Add symbols to the screener to compare stocks</td></tr>
                 </tbody>
             </table>
         </div>
-        <div id="screenerPagination" style="display:flex; justify-content:center; gap:8px; margin-top:12px;"></div>
+        <div id="screenerPagination" class="flex justify-center gap-2 mt-3"></div>
     </div>
 </div>
 
 <!-- =================== MODALS =================== -->
 
 <!-- Stock Holding Modal -->
-<div id="stockHoldingModal" class="modal-overlay">
-    <div id="stockHoldingModalBox" class="modal">
-        <h3 id="stockHoldingModalTitle">Add Holding</h3>
-        <div style="position:relative;">
-            <input id="stockSymbol" placeholder="Search by name or symbol (e.g. Apple)" maxlength="30" autocomplete="off" data-ticker-search>
+<dialog id="stockHoldingModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4" id="stockHoldingModalTitle">Add Holding</h3>
+        <div class="relative mb-2">
+            <input id="stockSymbol" placeholder="Search by name or symbol (e.g. Apple)" maxlength="30" autocomplete="off" data-ticker-search class="input input-bordered w-full">
             <div class="ticker-search-dropdown" style="display:none;"></div>
         </div>
-        <input id="stockQuantity" placeholder="Quantity" type="number" step="0.0000001">
-        <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.0000001">
-        <button class="btn" onclick="saveStockHolding()">SAVE</button>
-        <button class="btn" onclick="closeStockHoldingModal()">CANCEL</button>
+        <input id="stockQuantity" placeholder="Quantity" type="number" step="0.0000001" class="input input-bordered w-full mb-2">
+        <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.0000001" class="input input-bordered w-full mb-2">
+        <div class="modal-action">
+            <button class="btn btn-primary" onclick="saveStockHolding()">SAVE</button>
+            <button class="btn" onclick="closeStockHoldingModal()">CANCEL</button>
+        </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <!-- Watchlist Modal -->
-<div id="watchlistModal" class="modal-overlay">
-    <div id="watchlistModalBox" class="modal">
-        <h3 id="watchlistModalTitle">Add to Watchlist</h3>
-        <div style="position:relative;">
-            <input id="watchSymbol" placeholder="Search by name or symbol (e.g. Tesla)" maxlength="30" autocomplete="off" data-ticker-search>
+<dialog id="watchlistModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4" id="watchlistModalTitle">Add to Watchlist</h3>
+        <div class="relative mb-2">
+            <input id="watchSymbol" placeholder="Search by name or symbol (e.g. Tesla)" maxlength="30" autocomplete="off" data-ticker-search class="input input-bordered w-full">
             <div class="ticker-search-dropdown" style="display:none;"></div>
         </div>
-        <input id="watchInitialPrice" placeholder="Initial Price (€)" type="number" step="0.0000001">
-        <button class="btn" onclick="saveWatchlist()">SAVE</button>
-        <button class="btn" onclick="closeWatchlistModal()">CANCEL</button>
+        <input id="watchInitialPrice" placeholder="Initial Price (€)" type="number" step="0.0000001" class="input input-bordered w-full mb-2">
+        <div class="modal-action">
+            <button class="btn btn-primary" onclick="saveWatchlist()">SAVE</button>
+            <button class="btn" onclick="closeWatchlistModal()">CANCEL</button>
+        </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <!-- Dividend Modal -->
-<div id="dividendModal" class="modal-overlay">
-    <div class="modal">
-        <h3 id="dividendModalTitle">Add Dividend</h3>
+<dialog id="dividendModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4" id="dividendModalTitle">Add Dividend</h3>
         <input type="hidden" id="dividendId">
-        <div style="position:relative;">
-            <input id="dividendSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search>
+        <div class="relative mb-2">
+            <input id="dividendSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search class="input input-bordered w-full">
             <div class="ticker-search-dropdown" style="display:none;"></div>
         </div>
-        <input id="dividendAmount" type="number" step="0.01" placeholder="Amount (€)">
-        <input id="dividendPaymentDate" type="date">
-        <select id="dividendFrequency">
+        <input id="dividendAmount" type="number" step="0.01" placeholder="Amount (€)" class="input input-bordered w-full mb-2">
+        <input id="dividendPaymentDate" type="date" class="input input-bordered w-full mb-2">
+        <select id="dividendFrequency" class="select select-bordered w-full mb-2">
             <option value="MONTHLY">Monthly</option>
             <option value="QUARTERLY">Quarterly</option>
             <option value="SEMI_ANNUAL">Semi-Annual</option>
             <option value="ANNUAL">Annual</option>
         </select>
-        <textarea id="dividendNotes" placeholder="Notes" rows="2"></textarea>
-        <button class="btn" onclick="saveDividend()">SAVE</button>
-        <button class="btn" onclick="closeModal('dividendModal')">CANCEL</button>
+        <textarea id="dividendNotes" placeholder="Notes" rows="2" class="textarea textarea-bordered w-full mb-2"></textarea>
+        <div class="modal-action">
+            <button class="btn btn-primary" onclick="saveDividend()">SAVE</button>
+            <button class="btn" onclick="closeModal('dividendModal')">CANCEL</button>
+        </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <!-- Price Alert Modal -->
-<div id="priceAlertModal" class="modal-overlay">
-    <div class="modal">
-        <h3>Add Price Alert</h3>
-        <div style="position:relative;">
-            <input id="alertSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search>
+<dialog id="priceAlertModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Add Price Alert</h3>
+        <div class="relative mb-2">
+            <input id="alertSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search class="input input-bordered w-full">
             <div class="ticker-search-dropdown" style="display:none;"></div>
         </div>
-        <input id="alertTargetPrice" type="number" step="0.01" placeholder="Target Price (€)">
-        <select id="alertDirection">
+        <input id="alertTargetPrice" type="number" step="0.01" placeholder="Target Price (€)" class="input input-bordered w-full mb-2">
+        <select id="alertDirection" class="select select-bordered w-full mb-2">
             <option value="ABOVE">Above (notify when price rises above)</option>
             <option value="BELOW">Below (notify when price drops below)</option>
         </select>
-        <button class="btn" onclick="savePriceAlert()">CREATE ALERT</button>
-        <button class="btn" onclick="closeModal('priceAlertModal')">CANCEL</button>
+        <div class="modal-action">
+            <button class="btn btn-primary" onclick="savePriceAlert()">CREATE ALERT</button>
+            <button class="btn" onclick="closeModal('priceAlertModal')">CANCEL</button>
+        </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <!-- Target Allocation Modal -->
-<div id="targetAllocationModal" class="modal-overlay">
-    <div class="modal">
-        <h3>Set Target Allocation</h3>
-        <p style="font-size:12px; opacity:0.7;">Enter target percentages as JSON (e.g., {"AAPL": 30, "GOOGL": 25})</p>
-        <textarea id="targetAllocationsInput" rows="6" style="font-family:monospace;"></textarea>
-        <button class="btn" onclick="saveTargetAllocation()">SAVE</button>
-        <button class="btn" onclick="closeModal('targetAllocationModal')">CANCEL</button>
+<dialog id="targetAllocationModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Set Target Allocation</h3>
+        <p class="text-xs opacity-70 mb-2">Enter target percentages as JSON (e.g., {"AAPL": 30, "GOOGL": 25})</p>
+        <textarea id="targetAllocationsInput" rows="6" class="textarea textarea-bordered w-full font-mono mb-2"></textarea>
+        <div class="modal-action">
+            <button class="btn btn-primary" onclick="saveTargetAllocation()">SAVE</button>
+            <button class="btn" onclick="closeModal('targetAllocationModal')">CANCEL</button>
+        </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <script src="shared.js"></script>
 <script src="nav.js"></script>

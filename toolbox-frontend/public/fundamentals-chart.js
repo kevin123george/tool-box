@@ -43,7 +43,7 @@ function initFundCharts() {
     if (fundMainChart) { fundMainChart.remove(); fundMainChart = null; }
     if (fundVolumeChart) { fundVolumeChart.remove(); fundVolumeChart = null; }
 
-    const isDark = !document.body.classList.contains('light');
+    const isDark = isDarkTheme();
 
     const chartWidth = container.clientWidth > 50 ? container.clientWidth : 800;
 

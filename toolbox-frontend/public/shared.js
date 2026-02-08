@@ -1,36 +1,28 @@
 const API = "";
 
 /* ===========================================================
-   TOAST NOTIFICATION SYSTEM
+   TOAST NOTIFICATION SYSTEM (DaisyUI alerts)
 =============================================================*/
 
 function showToast(message, type = 'info', title = null, duration = 4000) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
-    const icons = {
-        success: '✓',
-        error: '✕',
-        warning: '⚠',
-        info: 'ℹ'
-    };
-
-    const titles = {
-        success: 'Success',
-        error: 'Error',
-        warning: 'Warning',
-        info: 'Info'
+    const alertClass = {
+        success: 'alert-success',
+        error: 'alert-error',
+        warning: 'alert-warning',
+        info: 'alert-info'
     };
 
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `alert ${alertClass[type] || alertClass.info} shadow-lg`;
     toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || icons.info}</span>
-        <div class="toast-content">
-            <div class="toast-title">${title || titles[type] || titles.info}</div>
-            <div class="toast-message">${message}</div>
+        <div>
+            <span class="font-bold">${title || ''}</span>
+            <span>${message}</span>
         </div>
-        <button class="toast-close" onclick="closeToast(this.parentElement)" aria-label="Close notification">&times;</button>
+        <button class="btn btn-ghost btn-xs" onclick="closeToast(this.closest('.alert'))" aria-label="Close notification">&times;</button>
     `;
 
     container.appendChild(toast);
@@ -45,6 +37,9 @@ function showToast(message, type = 'info', title = null, duration = 4000) {
 function closeToast(toast) {
     if (!toast || toast.classList.contains('hiding')) return;
     toast.classList.add('hiding');
+    toast.style.transition = 'opacity 0.3s, transform 0.3s';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
     setTimeout(() => toast.remove(), 300);
 }
 
@@ -71,12 +66,10 @@ function hideLoading() {
 function setButtonLoading(button, loading) {
     if (!button) return;
     if (loading) {
-        button.classList.add('loading');
         button.disabled = true;
         button.dataset.originalText = button.textContent;
-        button.textContent = '';
+        button.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
     } else {
-        button.classList.remove('loading');
         button.disabled = false;
         if (button.dataset.originalText) {
             button.textContent = button.dataset.originalText;
@@ -85,23 +78,54 @@ function setButtonLoading(button, loading) {
 }
 
 /* ===========================================================
-   THEME
+   THEME (DaisyUI multi-theme)
 =============================================================*/
 
-function applyMode() {
-    const mode = localStorage.getItem("retroMode") || "dark";
-    document.body.classList.toggle("light", mode === "light");
-    const toggle = document.getElementById("modeToggle");
-    if (toggle) toggle.textContent = mode === "light" ? "DARK MODE" : "LIGHT MODE";
+const DAISY_THEMES = [
+    'light','dark','cupcake','bumblebee','emerald','corporate','synthwave','retro',
+    'cyberpunk','valentine','halloween','garden','forest','aqua','lofi','pastel',
+    'fantasy','wireframe','black','luxury','dracula','cmyk','autumn','business',
+    'acid','lemonade','night','coffee','winter','dim','nord','sunset',
+    'caramellatte','abyss','silk'
+];
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme || 'dark');
 }
 
-function toggleMode() {
-    const next = document.body.classList.contains("light") ? "dark" : "light";
-    localStorage.setItem("retroMode", next);
-    applyMode();
+function setTheme(theme) {
+    localStorage.setItem('daisyTheme', theme);
+    applyTheme(theme);
 }
 
-applyMode();
+function renderThemePicker() {
+    const container = document.getElementById('themePickerContainer');
+    if (!container) return;
+
+    const current = localStorage.getItem('daisyTheme') || 'dark';
+
+    container.innerHTML = `
+        <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-1">
+                <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                <span class="hidden sm:inline text-xs uppercase">${current}</span>
+                <svg width="12" height="12" class="hidden sm:inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[200] menu menu-sm bg-base-200 rounded-box shadow-2xl p-2 w-52 max-h-80 overflow-y-auto flex-nowrap">
+                ${DAISY_THEMES.map(t => `
+                    <li><button class="text-xs ${t === current ? 'active font-bold' : ''}" onclick="setTheme('${t}')">${t}</button></li>
+                `).join('')}
+            </ul>
+        </div>
+    `;
+}
+
+// Legacy aliases
+function applyMode() { applyTheme(localStorage.getItem('daisyTheme') || 'dark'); renderThemePicker(); }
+function toggleMode() { /* no-op, replaced by theme picker */ }
+
+// Apply theme immediately
+applyTheme(localStorage.getItem('daisyTheme') || 'dark');
 
 /* ===========================================================
    HELPERS
@@ -121,12 +145,43 @@ function isMobile() {
     return window.innerWidth <= 768 || 'ontouchstart' in window;
 }
 
+const LIGHT_THEMES = ['light','cupcake','bumblebee','emerald','corporate','garden','lofi','pastel','fantasy','wireframe','cmyk','autumn','acid','lemonade','winter','caramellatte','silk'];
+
+function isDarkTheme() {
+    return !LIGHT_THEMES.includes(document.documentElement.getAttribute('data-theme'));
+}
+
+function getChartTextColor() {
+    return getComputedStyle(document.body).color;
+}
+
+function getChartGridColor() {
+    return isDarkTheme() ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+}
+
 /* ===========================================================
-   MODAL UTILS
+   MODAL UTILS (dialog API)
 =============================================================*/
 
-function openModal(id) { document.getElementById(id).style.display = "flex"; }
-function closeModal(id) { document.getElementById(id).style.display = "none"; }
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'DIALOG') {
+        el.showModal();
+    } else {
+        el.style.display = "flex";
+    }
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'DIALOG') {
+        el.close();
+    } else {
+        el.style.display = "none";
+    }
+}
 
 /* ===========================================================
    PAGINATION HELPERS
@@ -158,11 +213,11 @@ function renderEmptyState(containerId, icon, title, message, buttonText, buttonA
     if (!container) return;
 
     container.innerHTML = `
-        <div class="empty-state">
-            <div class="empty-state-icon">${icon}</div>
-            <div class="empty-state-title">${title}</div>
-            <div class="empty-state-message">${message}</div>
-            ${buttonText ? `<button class="btn" onclick="${buttonAction}">${buttonText}</button>` : ''}
+        <div class="flex flex-col items-center p-10 border-2 border-dashed border-base-300 rounded-lg text-center">
+            <div class="text-5xl mb-4 opacity-50">${icon}</div>
+            <div class="font-bold uppercase mb-2">${title}</div>
+            <div class="text-sm opacity-70 mb-4">${message}</div>
+            ${buttonText ? `<button class="btn btn-primary btn-sm" onclick="${buttonAction}">${buttonText}</button>` : ''}
         </div>
     `;
 }

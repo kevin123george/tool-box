@@ -1,99 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToolBox - Fitness</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="toastContainer" class="toast-container" role="alert" aria-live="polite"></div>
+    <div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
     <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
-        <div class="loading-spinner"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading...</div></div>
+        <div class="flex flex-col items-center gap-4"><span class="loading loading-spinner loading-lg"></span><span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span></div>
     </div>
-    <button id="modeToggle" class="btn" onclick="toggleMode()" aria-label="Toggle light/dark mode">LIGHT MODE</button>
     <div id="nav-placeholder" data-active="fitness"></div>
-    <h1>Hey Kevin!!!</h1>
+    <h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
 
     <!-- =================== FITNESS TAB =================== -->
     <div id="fitnessTabContent" class="tab-content" role="tabpanel" aria-labelledby="tabFitness">
-        <h2>Fitness Tracker</h2>
+        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Fitness Tracker</h2>
 
         <!-- Today's Workout Banner -->
-        <div id="todaysWorkoutBanner" class="add-box" style="margin-bottom:20px; border-color:#0f0;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+        <div id="todaysWorkoutBanner" class="card bg-base-200 shadow p-4 mb-5 border-l-4 border-success">
+            <div class="flex justify-between items-start mb-3">
                 <div>
-                    <div style="font-size:11px; opacity:0.7;">TODAY'S WORKOUT</div>
-                    <div style="font-size:20px; font-weight:bold;" id="todaysWorkoutType">Loading...</div>
-                    <div style="font-size:12px; opacity:0.7;" id="todaysWorkoutPlan"></div>
+                    <div class="text-xs opacity-70">TODAY'S WORKOUT</div>
+                    <div class="text-xl font-bold" id="todaysWorkoutType">Loading...</div>
+                    <div class="text-xs opacity-70" id="todaysWorkoutPlan"></div>
                 </div>
                 <div id="todaysWorkoutActions">
-                    <button class="btn" onclick="showTodaysWorkoutModal()" style="background:#0f0; color:#000; font-weight:bold;">START WORKOUT</button>
+                    <button class="btn btn-success btn-sm" onclick="showTodaysWorkoutModal()">START WORKOUT</button>
                 </div>
             </div>
-            <div id="todaysWorkoutStatus" style="font-size:12px; margin-bottom:8px;"></div>
-            <div id="todaysExercisePreview" style="font-size:11px; opacity:0.8;"></div>
+            <div id="todaysWorkoutStatus" class="text-xs mb-2"></div>
+            <div id="todaysExercisePreview" class="text-xs opacity-80"></div>
         </div>
 
         <!-- Stats Cards -->
-        <div class="stats-grid" style="margin-bottom:20px;">
-            <div class="stat-card">
-                <div class="stat-label">Current Streak</div>
-                <div class="stat-value positive" id="fitnessCurrentStreak">0 days</div>
+        <div class="stats shadow w-full mb-5">
+            <div class="stat">
+                <div class="stat-title">Current Streak</div>
+                <div class="stat-value text-success text-lg" id="fitnessCurrentStreak">0 days</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Longest Streak</div>
-                <div class="stat-value" id="fitnessLongestStreak">0 days</div>
+            <div class="stat">
+                <div class="stat-title">Longest Streak</div>
+                <div class="stat-value text-lg" id="fitnessLongestStreak">0 days</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">This Week</div>
-                <div class="stat-value" id="fitnessThisWeek">0 workouts</div>
+            <div class="stat">
+                <div class="stat-title">This Week</div>
+                <div class="stat-value text-lg" id="fitnessThisWeek">0 workouts</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Workouts</div>
-                <div class="stat-value" id="fitnessTotalWorkouts">0</div>
+            <div class="stat">
+                <div class="stat-title">Total Workouts</div>
+                <div class="stat-value text-lg" id="fitnessTotalWorkouts">0</div>
             </div>
         </div>
 
         <!-- Weekly Schedule + Quick Log -->
-        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <!-- Weekly Schedule View -->
-            <div class="add-box">
-                <h3 style="margin-top:0;">This Week <span style="font-size:11px; opacity:0.5; font-weight:normal;" class="desktop-only">(click a day to see exercises)</span><span class="mobile-only" style="font-size:11px; opacity:0.5; font-weight:normal;">(tap a day)</span></h3>
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">This Week <span class="text-xs opacity-50 font-normal hidden md:inline">(click a day to see exercises)</span><span class="md:hidden text-xs opacity-50 font-normal">(tap a day)</span></h3>
                 <div id="weeklySchedule" class="swipe-hint" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px;">
-                    <!-- Will be populated by JS -->
                 </div>
-                <div style="margin-top:12px; font-size:11px; opacity:0.7; display:flex; gap:16px; flex-wrap:wrap;">
-                    <span><span style="color:#0f0;">■</span> Completed</span>
-                    <span><span style="color:#f90;">■</span> Planned</span>
-                    <span><span style="color:#888;">■</span> Rest</span>
+                <div class="mt-3 text-xs opacity-70 flex gap-4 flex-wrap">
+                    <span><span class="text-success">&#9632;</span> Completed</span>
+                    <span><span class="text-warning">&#9632;</span> Planned</span>
+                    <span><span class="opacity-50">&#9632;</span> Rest</span>
                 </div>
             </div>
 
-            <!-- Day Details Panel (shows exercises for selected day) -->
-            <div id="dayDetailsPanel" class="add-box" style="display:none; margin-top:16px; border-color:#39f;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <div style="flex:1; min-width:0;">
-                        <h3 style="margin:0;" id="dayDetailsTitle">Monday - Push Day</h3>
-                        <div style="font-size:12px; opacity:0.7;" id="dayDetailsSubtitle">Chest, Shoulders, Triceps</div>
+            <!-- Day Details Panel -->
+            <div id="dayDetailsPanel" class="card bg-base-200 shadow p-4 border-l-4 border-info" style="display:none;">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold" id="dayDetailsTitle">Monday - Push Day</h3>
+                        <div class="text-xs opacity-70" id="dayDetailsSubtitle">Chest, Shoulders, Triceps</div>
                     </div>
-                    <button class="btn" onclick="hideDayDetails()" style="min-width:44px; min-height:44px;">✕ <span class="desktop-only">CLOSE</span></button>
+                    <button class="btn btn-ghost btn-sm" onclick="hideDayDetails()">&#10005;</button>
                 </div>
-                <div id="dayDetailsExercises">
-                    <!-- Exercises will be listed here -->
-                </div>
-                <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
-                    <button class="btn" id="dayDetailsStartBtn" onclick="startDayWorkout()" style="background:#0f0; color:#000;">START THIS WORKOUT</button>
+                <div id="dayDetailsExercises"></div>
+                <div class="mt-3 pt-3 border-t border-base-300">
+                    <button class="btn btn-success btn-sm" id="dayDetailsStartBtn" onclick="startDayWorkout()">START THIS WORKOUT</button>
                 </div>
             </div>
 
             <!-- Quick Log Form -->
-            <div class="add-box">
-                <h3 style="margin-top:0;">Log Workout</h3>
-                <input type="date" id="workoutDate" style="margin-bottom:8px;">
-                <select id="workoutType" style="margin-bottom:8px;">
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Log Workout</h3>
+                <input type="date" id="workoutDate" class="input input-bordered w-full mb-2">
+                <select id="workoutType" class="select select-bordered w-full mb-2">
                     <option value="PUSH">Push</option>
                     <option value="PULL">Pull</option>
                     <option value="LEGS">Legs</option>
@@ -102,204 +101,192 @@
                     <option value="CORE">Core</option>
                     <option value="REST">Rest Day</option>
                 </select>
-                <input type="number" id="workoutDuration" placeholder="Duration (minutes)" style="margin-bottom:8px;">
-                <input type="number" id="workoutCalories" placeholder="Calories burned (optional)" style="margin-bottom:8px;">
-                <textarea id="workoutNotes" placeholder="Notes (optional)" rows="2" style="margin-bottom:8px;"></textarea>
-                <label style="margin-bottom:8px; display:block;">
-                    <input type="checkbox" id="workoutCompleted" checked> Completed
+                <input type="number" id="workoutDuration" placeholder="Duration (minutes)" class="input input-bordered w-full mb-2">
+                <input type="number" id="workoutCalories" placeholder="Calories burned (optional)" class="input input-bordered w-full mb-2">
+                <textarea id="workoutNotes" placeholder="Notes (optional)" rows="2" class="textarea textarea-bordered w-full mb-2"></textarea>
+                <label class="label cursor-pointer justify-start gap-2 mb-2">
+                    <input type="checkbox" id="workoutCompleted" checked class="checkbox checkbox-sm">
+                    <span class="label-text">Completed</span>
                 </label>
-                <button class="btn" onclick="logWorkout()">LOG WORKOUT</button>
+                <button class="btn btn-primary btn-sm" onclick="logWorkout()">LOG WORKOUT</button>
             </div>
         </div>
 
         <!-- Weight Tracker + Chart -->
-        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 2fr; gap:16px; margin-bottom:16px;">
-            <!-- Weight Input -->
-            <div class="add-box">
-                <h3 style="margin-top:0;">Log Weight</h3>
-                <input type="date" id="weightDate" style="margin-bottom:8px;">
-                <input type="number" id="weightValue" placeholder="Weight (kg)" step="0.1" style="margin-bottom:8px;">
-                <input type="text" id="weightNotes" placeholder="Notes (optional)" style="margin-bottom:8px;">
-                <button class="btn" onclick="logWeight()">LOG WEIGHT</button>
-
-                <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
-                    <div style="font-size:12px; opacity:0.7;">Current Weight</div>
-                    <div style="font-size:24px; font-weight:bold;" id="currentWeight">-- kg</div>
-                    <div style="font-size:12px;" id="weightChangeIndicator"></div>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4 mb-4">
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Log Weight</h3>
+                <input type="date" id="weightDate" class="input input-bordered w-full mb-2">
+                <input type="number" id="weightValue" placeholder="Weight (kg)" step="0.1" class="input input-bordered w-full mb-2">
+                <input type="text" id="weightNotes" placeholder="Notes (optional)" class="input input-bordered w-full mb-2">
+                <button class="btn btn-primary btn-sm" onclick="logWeight()">LOG WEIGHT</button>
+                <div class="mt-4 pt-3 border-t border-base-300">
+                    <div class="text-xs opacity-70">Current Weight</div>
+                    <div class="text-2xl font-bold" id="currentWeight">-- kg</div>
+                    <div class="text-xs" id="weightChangeIndicator"></div>
                 </div>
             </div>
-
-            <!-- Weight Chart -->
-            <div class="add-box">
-                <h3 style="margin-top:0;">Weight Progress</h3>
-                <div style="height:200px;">
-                    <canvas id="weightChart"></canvas>
-                </div>
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Weight Progress</h3>
+                <div style="height:200px;"><canvas id="weightChart"></canvas></div>
             </div>
         </div>
 
         <!-- Workout Templates -->
-        <div class="add-box">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h3 style="margin:0;">Workout Templates</h3>
-                <button class="btn" onclick="showAddTemplateModal()">ADD TEMPLATE</button>
+        <div class="card bg-base-200 shadow p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold">Workout Templates</h3>
+                <button class="btn btn-primary btn-sm" onclick="showAddTemplateModal()">ADD TEMPLATE</button>
             </div>
             <div id="templatesList"></div>
         </div>
 
         <!-- Weekly Plan -->
-        <div class="add-box" style="margin-top:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h3 style="margin:0;">Workout Plans</h3>
-                <button class="btn" onclick="showAddPlanModal()">ADD PLAN</button>
+        <div class="card bg-base-200 shadow p-4 mt-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold">Workout Plans</h3>
+                <button class="btn btn-primary btn-sm" onclick="showAddPlanModal()">ADD PLAN</button>
             </div>
-            <div id="activePlanDisplay" style="margin-bottom:12px;"></div>
+            <div id="activePlanDisplay" class="mb-3"></div>
             <div id="plansList"></div>
         </div>
 
         <!-- Fitness Analytics -->
-        <div class="finance-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
-            <div class="add-box">
-                <h3 style="margin-top:0;">Workouts by Type</h3>
-                <div style="height:200px;">
-                    <canvas id="workoutTypeChart"></canvas>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Workouts by Type</h3>
+                <div style="height:200px;"><canvas id="workoutTypeChart"></canvas></div>
             </div>
-            <div class="add-box">
-                <h3 style="margin-top:0;">Weekly Volume</h3>
-                <div style="height:200px;">
-                    <canvas id="weeklyVolumeChart"></canvas>
-                </div>
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Weekly Volume</h3>
+                <div style="height:200px;"><canvas id="weeklyVolumeChart"></canvas></div>
             </div>
         </div>
 
         <!-- Consistency Score -->
-        <div class="add-box" style="margin-top:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="card bg-base-200 shadow p-4 mt-4">
+            <div class="flex justify-between items-center">
                 <div>
-                    <div style="font-size:12px; opacity:0.7;">Consistency Score</div>
-                    <div style="font-size:24px; font-weight:bold;" id="consistencyScore">0%</div>
-                    <div style="font-size:11px; opacity:0.5;">Weeks with 3+ workouts (last 12 weeks)</div>
+                    <div class="text-xs opacity-70">Consistency Score</div>
+                    <div class="text-2xl font-bold" id="consistencyScore">0%</div>
+                    <div class="text-xs opacity-50">Weeks with 3+ workouts (last 12 weeks)</div>
                 </div>
                 <div>
-                    <div style="font-size:12px; opacity:0.7;">Avg. Workouts/Week</div>
-                    <div style="font-size:24px; font-weight:bold;" id="avgWorkoutsPerWeek">0</div>
+                    <div class="text-xs opacity-70">Avg. Workouts/Week</div>
+                    <div class="text-2xl font-bold" id="avgWorkoutsPerWeek">0</div>
                 </div>
             </div>
         </div>
 
         <!-- Workout History -->
-        <div class="add-box" style="margin-top:16px;">
-            <h3 style="margin-top:0;">Recent Workouts</h3>
+        <div class="card bg-base-200 shadow p-4 mt-4">
+            <h3 class="font-bold mb-2">Recent Workouts</h3>
             <div id="workoutHistoryList"></div>
         </div>
     </div>
 
     <!-- Template Modal -->
-    <div id="templateModal" class="modal-overlay">
-        <div class="modal">
-            <h3 id="templateModalTitle">Add Template</h3>
+    <dialog id="templateModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4" id="templateModalTitle">Add Template</h3>
             <input type="hidden" id="editTemplateId">
-            <input id="templateName" placeholder="Template Name (e.g., Push Day A)" style="margin-bottom:8px;">
-            <select id="templateType" style="margin-bottom:8px;">
-                <option value="PUSH">Push</option>
-                <option value="PULL">Pull</option>
-                <option value="LEGS">Legs</option>
-                <option value="CARDIO">Cardio</option>
-                <option value="FULL_BODY">Full Body</option>
-                <option value="CORE">Core</option>
+            <input id="templateName" placeholder="Template Name (e.g., Push Day A)" class="input input-bordered w-full mb-2">
+            <select id="templateType" class="select select-bordered w-full mb-2">
+                <option value="PUSH">Push</option><option value="PULL">Pull</option><option value="LEGS">Legs</option>
+                <option value="CARDIO">Cardio</option><option value="FULL_BODY">Full Body</option><option value="CORE">Core</option>
             </select>
-            <input type="number" id="templateDuration" placeholder="Estimated Duration (minutes)" style="margin-bottom:8px;">
-            <textarea id="templateNotes" placeholder="Notes / Exercise list" rows="4" style="margin-bottom:8px;"></textarea>
-            <button class="btn" onclick="saveTemplate()">SAVE</button>
-            <button class="btn" onclick="closeModal('templateModal')">CANCEL</button>
+            <input type="number" id="templateDuration" placeholder="Estimated Duration (minutes)" class="input input-bordered w-full mb-2">
+            <textarea id="templateNotes" placeholder="Notes / Exercise list" rows="4" class="textarea textarea-bordered w-full mb-2"></textarea>
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="saveTemplate()">SAVE</button>
+                <button class="btn" onclick="closeModal('templateModal')">CANCEL</button>
+            </div>
         </div>
-    </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <!-- Plan Modal -->
-    <div id="planModal" class="modal-overlay">
-        <div class="modal">
-            <h3 id="planModalTitle">Add Plan</h3>
+    <dialog id="planModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4" id="planModalTitle">Add Plan</h3>
             <input type="hidden" id="editPlanId">
-            <input id="planName" placeholder="Plan Name (e.g., PPL Split)" style="margin-bottom:8px;">
-            <div style="font-size:12px; opacity:0.7; margin-bottom:8px;">Assign templates to days:</div>
-            <div style="display:grid; grid-template-columns:auto 1fr; gap:8px; margin-bottom:12px;">
-                <label>Monday:</label><select id="planMonday"><option value="">Rest</option></select>
-                <label>Tuesday:</label><select id="planTuesday"><option value="">Rest</option></select>
-                <label>Wednesday:</label><select id="planWednesday"><option value="">Rest</option></select>
-                <label>Thursday:</label><select id="planThursday"><option value="">Rest</option></select>
-                <label>Friday:</label><select id="planFriday"><option value="">Rest</option></select>
-                <label>Saturday:</label><select id="planSaturday"><option value="">Rest</option></select>
-                <label>Sunday:</label><select id="planSunday"><option value="">Rest</option></select>
+            <input id="planName" placeholder="Plan Name (e.g., PPL Split)" class="input input-bordered w-full mb-2">
+            <div class="text-xs opacity-70 mb-2">Assign templates to days:</div>
+            <div class="grid grid-cols-[auto_1fr] gap-2 mb-3">
+                <label>Monday:</label><select id="planMonday" class="select select-bordered select-sm"><option value="">Rest</option></select>
+                <label>Tuesday:</label><select id="planTuesday" class="select select-bordered select-sm"><option value="">Rest</option></select>
+                <label>Wednesday:</label><select id="planWednesday" class="select select-bordered select-sm"><option value="">Rest</option></select>
+                <label>Thursday:</label><select id="planThursday" class="select select-bordered select-sm"><option value="">Rest</option></select>
+                <label>Friday:</label><select id="planFriday" class="select select-bordered select-sm"><option value="">Rest</option></select>
+                <label>Saturday:</label><select id="planSaturday" class="select select-bordered select-sm"><option value="">Rest</option></select>
+                <label>Sunday:</label><select id="planSunday" class="select select-bordered select-sm"><option value="">Rest</option></select>
             </div>
-            <label style="margin-bottom:8px; display:block;">
-                <input type="checkbox" id="planActive"> Set as Active Plan
+            <label class="label cursor-pointer justify-start gap-2 mb-2">
+                <input type="checkbox" id="planActive" class="checkbox checkbox-sm"><span class="label-text">Set as Active Plan</span>
             </label>
-            <textarea id="planNotes" placeholder="Notes" rows="2" style="margin-bottom:8px;"></textarea>
-            <button class="btn" onclick="savePlan()">SAVE</button>
-            <button class="btn" onclick="closeModal('planModal')">CANCEL</button>
+            <textarea id="planNotes" placeholder="Notes" rows="2" class="textarea textarea-bordered w-full mb-2"></textarea>
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="savePlan()">SAVE</button>
+                <button class="btn" onclick="closeModal('planModal')">CANCEL</button>
+            </div>
         </div>
-    </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <!-- Today's Workout Modal -->
-    <div id="todaysWorkoutModal" class="modal-overlay">
-        <div class="modal" style="max-width:500px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h3 id="todaysWorkoutModalTitle" style="margin:0;">Today's Workout</h3>
-                <button class="btn" onclick="closeModal('todaysWorkoutModal')" style="min-width:44px; min-height:44px; padding:8px;">✕</button>
+    <dialog id="todaysWorkoutModal" class="modal">
+        <div class="modal-box max-w-lg">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-lg" id="todaysWorkoutModalTitle">Today's Workout</h3>
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('todaysWorkoutModal')">&#10005;</button>
             </div>
-            <div id="todaysWorkoutModalPlan" style="font-size:12px; opacity:0.7; margin-bottom:12px;"></div>
-
-            <div id="todaysExerciseList" style="max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
-                <!-- Exercise checklist will be populated here -->
-            </div>
-
-            <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div id="todaysWorkoutModalPlan" class="text-xs opacity-70 mb-3"></div>
+            <div id="todaysExerciseList" class="max-h-[50vh] overflow-y-auto"></div>
+            <div class="mt-4 pt-3 border-t border-base-300">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
-                        <label style="font-size:12px; display:block; margin-bottom:4px;">Duration (min)</label>
-                        <input type="number" id="todayWorkoutDuration" placeholder="60" inputmode="numeric">
+                        <label class="text-xs block mb-1">Duration (min)</label>
+                        <input type="number" id="todayWorkoutDuration" placeholder="60" inputmode="numeric" class="input input-bordered w-full">
                     </div>
                     <div>
-                        <label style="font-size:12px; display:block; margin-bottom:4px;">Calories</label>
-                        <input type="number" id="todayWorkoutCalories" placeholder="300" inputmode="numeric">
+                        <label class="text-xs block mb-1">Calories</label>
+                        <input type="number" id="todayWorkoutCalories" placeholder="300" inputmode="numeric" class="input input-bordered w-full">
                     </div>
                 </div>
-                <textarea id="todayWorkoutNotes" placeholder="Notes (optional)" rows="2" style="margin-bottom:12px;"></textarea>
+                <textarea id="todayWorkoutNotes" placeholder="Notes (optional)" rows="2" class="textarea textarea-bordered w-full mb-3"></textarea>
             </div>
-
-            <div style="display:grid; grid-template-columns:1fr auto; gap:8px;">
-                <button class="btn" onclick="completeTodaysWorkout()" style="background:#0f0; color:#000; font-weight:bold; min-height:48px;">✓ COMPLETE WORKOUT</button>
-                <button class="btn" onclick="closeModal('todaysWorkoutModal')" style="min-height:48px;">CANCEL</button>
+            <div class="grid grid-cols-[1fr_auto] gap-2">
+                <button class="btn btn-success" onclick="completeTodaysWorkout()">&#10003; COMPLETE WORKOUT</button>
+                <button class="btn" onclick="closeModal('todaysWorkoutModal')">CANCEL</button>
             </div>
         </div>
-    </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <!-- Workout Edit Modal -->
-    <div id="workoutEditModal" class="modal-overlay">
-        <div class="modal">
-            <h3>Edit Workout</h3>
+    <dialog id="workoutEditModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Edit Workout</h3>
             <input type="hidden" id="editWorkoutId">
-            <input type="date" id="editWorkoutDate" style="margin-bottom:8px;">
-            <select id="editWorkoutType" style="margin-bottom:8px;">
-                <option value="PUSH">Push</option>
-                <option value="PULL">Pull</option>
-                <option value="LEGS">Legs</option>
-                <option value="CARDIO">Cardio</option>
-                <option value="FULL_BODY">Full Body</option>
-                <option value="CORE">Core</option>
+            <input type="date" id="editWorkoutDate" class="input input-bordered w-full mb-2">
+            <select id="editWorkoutType" class="select select-bordered w-full mb-2">
+                <option value="PUSH">Push</option><option value="PULL">Pull</option><option value="LEGS">Legs</option>
+                <option value="CARDIO">Cardio</option><option value="FULL_BODY">Full Body</option><option value="CORE">Core</option>
                 <option value="REST">Rest Day</option>
             </select>
-            <input type="number" id="editWorkoutDuration" placeholder="Duration (minutes)" style="margin-bottom:8px;">
-            <input type="number" id="editWorkoutCalories" placeholder="Calories burned" style="margin-bottom:8px;">
-            <textarea id="editWorkoutNotes" placeholder="Notes" rows="2" style="margin-bottom:8px;"></textarea>
-            <label style="margin-bottom:8px; display:block;">
-                <input type="checkbox" id="editWorkoutCompleted"> Completed
+            <input type="number" id="editWorkoutDuration" placeholder="Duration (minutes)" class="input input-bordered w-full mb-2">
+            <input type="number" id="editWorkoutCalories" placeholder="Calories burned" class="input input-bordered w-full mb-2">
+            <textarea id="editWorkoutNotes" placeholder="Notes" rows="2" class="textarea textarea-bordered w-full mb-2"></textarea>
+            <label class="label cursor-pointer justify-start gap-2 mb-2">
+                <input type="checkbox" id="editWorkoutCompleted" class="checkbox checkbox-sm"><span class="label-text">Completed</span>
             </label>
-            <button class="btn" onclick="saveWorkoutEdit()">SAVE</button>
-            <button class="btn" onclick="closeModal('workoutEditModal')">CANCEL</button>
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="saveWorkoutEdit()">SAVE</button>
+                <button class="btn" onclick="closeModal('workoutEditModal')">CANCEL</button>
+            </div>
         </div>
-    </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <script src="shared.js"></script>
     <script src="nav.js"></script>

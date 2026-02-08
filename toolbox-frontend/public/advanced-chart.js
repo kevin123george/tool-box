@@ -42,13 +42,6 @@ let bbMiddleSeries = null;
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[AdvChart] DOMContentLoaded');
 
-    // Add visible debug info to the page
-    const debugInfo = document.createElement('div');
-    debugInfo.id = 'chartDebug';
-    debugInfo.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#333;color:#0f0;padding:10px;font-size:11px;z-index:9999;max-width:300px;font-family:monospace;';
-    debugInfo.innerHTML = 'Chart Debug: Loading...';
-    document.body.appendChild(debugInfo);
-
     loadSymbolsForFilter();
     setupRangeButtons();
 });
@@ -112,7 +105,7 @@ function initializeCharts() {
         return;
     }
 
-    const isDark = !document.body.classList.contains('light');
+    const isDark = isDarkTheme();
 
     // Create main chart
     try {
@@ -625,7 +618,7 @@ async function loadHistoryTable(symbol) {
         }
 
         let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-        html += '<tr style="border-bottom:1px solid var(--border)">';
+        html += '<tr style="border-bottom:1px solid oklch(var(--b3))">';
         html += '<th style="text-align:left;padding:8px">Date</th>';
         html += '<th style="text-align:right;padding:8px">Buy</th>';
         html += '<th style="text-align:right;padding:8px">Current</th>';
@@ -637,7 +630,7 @@ async function loadHistoryTable(symbol) {
             const pct = ((change / r.buyPrice) * 100).toFixed(2);
             const cls = change >= 0 ? 'positive' : 'negative';
 
-            html += `<tr style="border-bottom:1px solid var(--border)">`;
+            html += `<tr style="border-bottom:1px solid oklch(var(--b3))">`;
             html += `<td style="padding:8px">${new Date(r.updatedAt).toLocaleDateString()}</td>`;
             html += `<td style="text-align:right;padding:8px">$${r.buyPrice.toFixed(2)}</td>`;
             html += `<td style="text-align:right;padding:8px">$${r.currentPrice.toFixed(2)}</td>`;

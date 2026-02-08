@@ -29,18 +29,18 @@ function switchInvestmentTab(which) {
     tabs.forEach(t => {
         const btn = document.getElementById('sub' + t.charAt(0).toUpperCase() + t.slice(1));
         if (btn) {
-            btn.classList.toggle('active', t === which);
+            btn.classList.toggle('tab-active', t === which);
             btn.setAttribute('aria-selected', t === which);
         }
     });
 
     // Fix specific IDs
-    document.getElementById('subStocks')?.classList.toggle('active', which === 'stocks');
-    document.getElementById('subStockhistory')?.classList.toggle('active', which === 'stockhistory');
-    document.getElementById('subResearch')?.classList.toggle('active', which === 'research');
-    document.getElementById('subFundamentals')?.classList.toggle('active', which === 'fundamentals');
-    document.getElementById('subDcf')?.classList.toggle('active', which === 'dcf');
-    document.getElementById('subScreener')?.classList.toggle('active', which === 'screener');
+    document.getElementById('subStocks')?.classList.toggle('tab-active', which === 'stocks');
+    document.getElementById('subStockhistory')?.classList.toggle('tab-active', which === 'stockhistory');
+    document.getElementById('subResearch')?.classList.toggle('tab-active', which === 'research');
+    document.getElementById('subFundamentals')?.classList.toggle('tab-active', which === 'fundamentals');
+    document.getElementById('subDcf')?.classList.toggle('tab-active', which === 'dcf');
+    document.getElementById('subScreener')?.classList.toggle('tab-active', which === 'screener');
 
     // Toggle content visibility
     document.getElementById('stocksTabContent')?.classList.toggle('hidden', which !== 'stocks');
@@ -690,7 +690,7 @@ function renderAllocationChart(data) {
             datasets: [{
                 data: data.allocations.map(a => a.percentage),
                 backgroundColor: colors.slice(0, data.allocations.length),
-                borderColor: 'var(--bg)',
+                borderColor: getComputedStyle(document.body).backgroundColor,
                 borderWidth: 2
             }]
         },
@@ -700,7 +700,7 @@ function renderAllocationChart(data) {
             plugins: {
                 legend: {
                     position: 'right',
-                    labels: { color: 'var(--text)' }
+                    labels: { color: getChartTextColor() }
                 }
             }
         }
@@ -886,7 +886,7 @@ function renderPriceChart(dataBySymbol, selectedFilter) {
         historyChart.destroy();
     }
 
-    const isDark = !document.body.classList.contains('light');
+    const isDark = isDarkTheme();
     const textColor = isDark ? '#fff' : '#000';
     const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
@@ -1154,7 +1154,7 @@ function renderHistoryTable(histories) {
     if (!tableEl) return;
 
     if (histories.length === 0) {
-        tableEl.innerHTML = '<div style="padding:12px; border:1px solid var(--border); opacity:0.6;">No history data available</div>';
+        tableEl.innerHTML = '<div style="padding:12px; border:1px solid oklch(var(--b3)); opacity:0.6;">No history data available</div>';
         return;
     }
 
@@ -1357,7 +1357,7 @@ async function generateResearch() {
         console.error('Error generating research:', error);
         if (container) {
             container.innerHTML = `
-                <div style="padding:20px;text-align:center;border:1px solid var(--border);">
+                <div style="padding:20px;text-align:center;border:1px solid oklch(var(--b3));">
                     ERROR: ${error.message}
                 </div>
             `;
