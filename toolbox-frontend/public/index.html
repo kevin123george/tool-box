@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ToolBox</title>
+    <title>ToolBox — Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -12,7 +12,6 @@
 <body>
 
 <div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
-
 <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
     <div class="flex flex-col items-center gap-4">
         <span class="loading loading-spinner loading-lg"></span>
@@ -22,140 +21,211 @@
 
 <div id="nav-placeholder" data-active="home"></div>
 
-<!-- ===== Dashboard content ===== -->
-<h1 class="text-xl font-bold uppercase mb-6">Dashboard</h1>
+<!-- ===== DASHBOARD ===== -->
 
-<!-- Stats row — populated by loadDashboard() -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="statsRow">
-    <!-- Skeleton placeholders while loading -->
-    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
-        <div class="stat-title text-xs uppercase opacity-50">Balance</div>
-        <div class="stat-value text-lg opacity-30">—</div>
+<!-- Page header -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-8">
+    <div>
+        <h1 id="dashGreeting" class="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <p id="dashDate" class="text-sm opacity-40 mt-0.5"></p>
     </div>
-    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
-        <div class="stat-title text-xs uppercase opacity-50">Accounts</div>
-        <div class="stat-value text-lg opacity-30">—</div>
-    </div>
-    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
-        <div class="stat-title text-xs uppercase opacity-50">Net Worth</div>
-        <div class="stat-value text-lg opacity-30">—</div>
-    </div>
-    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
-        <div class="stat-title text-xs uppercase opacity-50">Portfolio</div>
-        <div class="stat-value text-lg opacity-30">—</div>
+    <div class="flex items-center gap-2">
+        <div class="badge badge-success gap-1.5 py-2.5 px-3">
+            <span class="w-1.5 h-1.5 rounded-full bg-success-content inline-block animate-pulse"></span>
+            Live
+        </div>
+        <button onclick="loadDashboard()" title="Refresh" class="btn btn-ghost btn-sm btn-square opacity-40 hover:opacity-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </button>
     </div>
 </div>
 
-<!-- Second row — Finance Summary + Quick Links -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- KPI row -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="statsRow">
+    <div class="card bg-base-200 h-28 animate-pulse"></div>
+    <div class="card bg-base-200 h-28 animate-pulse"></div>
+    <div class="card bg-base-200 h-28 animate-pulse"></div>
+    <div class="card bg-base-200 h-28 animate-pulse"></div>
+</div>
 
-    <div class="card bg-base-200 shadow" id="financeSummaryCard">
-        <div class="card-body">
-            <h2 class="card-title text-sm uppercase mb-3">Finance Summary</h2>
+<!-- Main content row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+    <!-- Finance breakdown — 2 cols -->
+    <div class="lg:col-span-2 card bg-base-200 shadow-sm">
+        <div class="card-body p-5">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="font-semibold text-sm uppercase tracking-widest opacity-60">Finance Breakdown</h2>
+                </div>
+                <a href="/finance.html" class="btn btn-ghost btn-xs gap-1 opacity-50 hover:opacity-100">
+                    View all
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
             <div id="financeSummaryBody">
-                <span class="loading loading-spinner loading-sm"></span>
+                <div class="space-y-3">
+                    <div class="h-3 bg-base-300 rounded animate-pulse w-2/3"></div>
+                    <div class="h-2 bg-base-300 rounded animate-pulse w-full"></div>
+                    <div class="h-2 bg-base-300 rounded animate-pulse w-5/6"></div>
+                    <div class="h-2 bg-base-300 rounded animate-pulse w-3/4"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card bg-base-200 shadow" id="quickLinksCard">
-        <div class="card-body">
-            <h2 class="card-title text-sm uppercase mb-3">Quick Links</h2>
-            <div class="grid grid-cols-2 gap-2">
-                <a href="/memos.html"       class="btn btn-outline btn-sm">📝 Memos</a>
-                <a href="/finance.html"     class="btn btn-outline btn-sm">💳 Finance</a>
-                <a href="/investments.html" class="btn btn-outline btn-sm">📈 Investments</a>
-                <a href="/fitness.html"     class="btn btn-outline btn-sm">🏋️ Fitness</a>
-                <a href="/system.html"      class="btn btn-outline btn-sm">⚙️ System</a>
-            </div>
+    <!-- Sections sidebar card — 1 col -->
+    <div class="card bg-base-200 shadow-sm">
+        <div class="card-body p-5">
+            <h2 class="font-semibold text-sm uppercase tracking-widest opacity-60 mb-4">Navigate</h2>
+            <nav class="flex flex-col gap-0.5" id="sectionLinks"></nav>
         </div>
     </div>
 
 </div>
-<!-- ===== End Dashboard content ===== -->
+
+<!-- Module cards grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="moduleCards"></div>
+
+<!-- ===== END DASHBOARD ===== -->
 
 <script src="shared.js"></script>
 <script src="nav.js"></script>
 <script>
-    /* -------------------------------------------------------
-       Dashboard data loading
-    ------------------------------------------------------- */
+/* ---- Greeting + date ---- */
+(function () {
+    const h = new Date().getHours();
+    const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('dashGreeting').textContent = greet + ', Kevin 👋';
+    document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+})();
 
-    function fmtEur(n) {
-        if (n == null || isNaN(Number(n))) return '—';
-        return new Intl.NumberFormat('en-EU', {
-            style: 'currency',
-            currency: 'EUR',
-            maximumFractionDigits: 0
-        }).format(Number(n));
-    }
+/* ---- Formatters ---- */
+function fmtEur(n) {
+    if (n == null || isNaN(Number(n))) return '—';
+    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(n));
+}
 
-    async function loadDashboard() {
-        /* Track what we've filled so we can build a coherent stats row */
-        const stats = {
-            balance:   null,
-            accounts:  null,
-            netWorth:  null,
-            portfolio: null
-        };
+/* ---- Section nav links ---- */
+const SECTIONS = [
+    { label: 'Finance',     href: '/finance.html',     icon: '💳' },
+    { label: 'Investments', href: '/investments.html',  icon: '📈' },
+    { label: 'Memos',       href: '/memos.html',       icon: '📝' },
+    { label: 'Fitness',     href: '/fitness.html',     icon: '🏋️' },
+    { label: 'System',      href: '/system.html',      icon: '⚙️' },
+];
+document.getElementById('sectionLinks').innerHTML = SECTIONS.map(s => `
+    <a href="${s.href}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-base-300 transition-colors group">
+        <span class="text-base w-6 text-center">${s.icon}</span>
+        <span class="text-sm font-medium flex-1">${s.label}</span>
+        <svg class="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+    </a>
+`).join('');
 
-        /* --- Finance summary --- */
-        try {
-            const r = await fetch('/api/finance/summary');
-            if (r.ok) {
-                const d = await r.json();
-                const totalBalance = d.totalBalance ?? d.total ?? 0;
-                stats.balance  = fmtEur(totalBalance);
-                stats.accounts = d.accounts?.length ?? d.count ?? '—';
-
-                /* Finance summary detail card */
-                const byBank = d.totalByBank || d.byBank || {};
-                const byBankRows = Object.entries(byBank)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([bank, amount]) => `
-                        <div class="flex justify-between items-center py-1 border-b border-base-300 text-sm">
-                            <span class="opacity-80">${bank}</span>
-                            <span class="font-semibold">${fmtEur(amount)}</span>
-                        </div>`)
-                    .join('');
-
-                document.getElementById('financeSummaryBody').innerHTML = `
-                    <div class="text-2xl font-bold mb-1">${fmtEur(totalBalance)}</div>
-                    <div class="text-xs opacity-60 mb-3">Total across all accounts</div>
-                    ${byBankRows || '<div class="text-xs opacity-50">No breakdown available</div>'}
-                    <a href="/finance.html" class="btn btn-primary btn-xs mt-3">View Finance</a>
-                `;
-            }
-        } catch (_) { /* silent — API may not be running */ }
-
-        /* --- Dashboard summary (net worth, portfolio, etc.) --- */
-        try {
-            const r = await fetch('/api/dashboard');
-            if (r.ok) {
-                const d = await r.json();
-                if (d.netWorth   != null) stats.netWorth  = fmtEur(d.netWorth);
-                if (d.portfolioValue != null) stats.portfolio = fmtEur(d.portfolioValue);
-            }
-        } catch (_) { /* silent */ }
-
-        /* --- Render the stats row --- */
-        const statDefs = [
-            { key: 'balance',   label: 'Total Balance', icon: '💰', fallback: '—' },
-            { key: 'accounts',  label: 'Accounts',      icon: '🏦', fallback: '—' },
-            { key: 'netWorth',  label: 'Net Worth',      icon: '📊', fallback: '—' },
-            { key: 'portfolio', label: 'Portfolio',      icon: '📈', fallback: '—' }
-        ];
-
-        document.getElementById('statsRow').innerHTML = statDefs.map(s => `
-            <div class="stat bg-base-200 rounded-box shadow">
-                <div class="stat-figure text-2xl">${s.icon}</div>
-                <div class="stat-title text-xs uppercase">${s.label}</div>
-                <div class="stat-value text-lg">${stats[s.key] ?? s.fallback}</div>
+/* ---- Module cards ---- */
+const MODULES = [
+    { label: 'Finance',     sub: 'Accounts, budget, subscriptions & analytics', href: '/finance.html',     icon: '💳', from: 'from-blue-500/15',   to: 'to-blue-500/5',   ring: 'border-blue-500/20' },
+    { label: 'Investments', sub: 'Stocks, history, DCF, research & screener',   href: '/investments.html',  icon: '📈', from: 'from-emerald-500/15',to: 'to-emerald-500/5', ring: 'border-emerald-500/20' },
+    { label: 'Memos',       sub: 'Rich text notes, categories & search',        href: '/memos.html',       icon: '📝', from: 'from-amber-500/15',  to: 'to-amber-500/5',   ring: 'border-amber-500/20' },
+    { label: 'Fitness',     sub: 'Workouts, weight tracking & weekly plans',    href: '/fitness.html',     icon: '🏋️', from: 'from-rose-500/15',   to: 'to-rose-500/5',    ring: 'border-rose-500/20' },
+    { label: 'System',      sub: 'CPU, memory, disk & push notifications',      href: '/system.html',      icon: '⚙️', from: 'from-violet-500/15', to: 'to-violet-500/5',  ring: 'border-violet-500/20' },
+];
+document.getElementById('moduleCards').innerHTML = MODULES.map(m => `
+    <a href="${m.href}" class="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer">
+        <div class="card-body p-5">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br ${m.from} ${m.to} border ${m.ring} flex items-center justify-center text-2xl shadow-sm">
+                    ${m.icon}
+                </div>
+                <svg class="w-4 h-4 mt-1 opacity-0 group-hover:opacity-30 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
             </div>
-        `).join('');
-    }
+            <p class="font-semibold text-base mb-1">${m.label}</p>
+            <p class="text-xs opacity-40 leading-relaxed">${m.sub}</p>
+        </div>
+    </a>
+`).join('');
 
-    document.addEventListener('DOMContentLoaded', loadDashboard);
+/* ---- KPI card builder ---- */
+function kpiCard(icon, label, value, borderColor) {
+    return `
+    <div class="card bg-base-200 shadow-sm border-t-2 ${borderColor} overflow-hidden">
+        <div class="card-body p-5 gap-1">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-semibold uppercase tracking-widest opacity-40">${label}</span>
+                <span class="text-xl opacity-70">${icon}</span>
+            </div>
+            <div class="text-xl font-bold tabular-nums">${value}</div>
+        </div>
+    </div>`;
+}
+
+/* ---- Progress bar row ---- */
+function financeBar(label, amount, total) {
+    const pct = total > 0 ? Math.min(100, (amount / total) * 100) : 0;
+    return `
+    <div class="mb-4">
+        <div class="flex justify-between items-center mb-1.5">
+            <span class="text-sm opacity-70">${label}</span>
+            <span class="text-sm font-semibold tabular-nums">${fmtEur(amount)}</span>
+        </div>
+        <div class="h-1.5 bg-base-300 rounded-full overflow-hidden">
+            <div class="h-full bg-primary rounded-full transition-all duration-700 ease-out" style="width:${pct.toFixed(1)}%"></div>
+        </div>
+        <div class="text-xs opacity-30 mt-1">${pct.toFixed(1)}%</div>
+    </div>`;
+}
+
+/* ---- Dashboard loader ---- */
+async function loadDashboard() {
+    const stats = { balance: '—', accounts: '—', netWorth: '—', portfolio: '—' };
+
+    try {
+        const r = await fetch('/api/finance/summary');
+        if (r.ok) {
+            const d = await r.json();
+            const total = d.totalBalance ?? d.total ?? 0;
+            stats.balance  = fmtEur(total);
+            stats.accounts = String(d.accounts?.length ?? d.count ?? '—');
+
+            const byBank = d.totalByBank || d.byBank || {};
+            const entries = Object.entries(byBank).sort((a, b) => b[1] - a[1]);
+            document.getElementById('financeSummaryBody').innerHTML = `
+                <div class="flex items-baseline gap-2 mb-6">
+                    <span class="text-3xl font-bold tabular-nums">${fmtEur(total)}</span>
+                    <span class="text-xs opacity-30 font-medium">total balance</span>
+                </div>
+                ${entries.map(([bank, amt]) => financeBar(bank, amt, total)).join('')}
+                ${entries.length === 0 ? '<p class="text-sm opacity-30 text-center py-6">No account data</p>' : ''}
+            `;
+        }
+    } catch (_) {}
+
+    try {
+        const r = await fetch('/api/dashboard');
+        if (r.ok) {
+            const d = await r.json();
+            if (d.netWorth      != null) stats.netWorth  = fmtEur(d.netWorth);
+            if (d.portfolioValue != null) stats.portfolio = fmtEur(d.portfolioValue);
+        }
+    } catch (_) {}
+
+    document.getElementById('statsRow').innerHTML = [
+        kpiCard('💰', 'Total Balance', stats.balance,  'border-primary'),
+        kpiCard('🏦', 'Accounts',      stats.accounts, 'border-secondary'),
+        kpiCard('📊', 'Net Worth',      stats.netWorth, 'border-success'),
+        kpiCard('📈', 'Portfolio',      stats.portfolio,'border-warning'),
+    ].join('');
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboard);
 </script>
 </body>
 </html>

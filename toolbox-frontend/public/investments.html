@@ -27,10 +27,15 @@
 
 <div id="nav-placeholder" data-active="investments"></div>
 
-<h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight">Investments</h1>
+        <p class="text-sm opacity-40 mt-0.5">Stocks, research, DCF &amp; screener</p>
+    </div>
+</div>
 
 <!-- Sub-tabs -->
-<div class="tabs tabs-bordered mb-4" role="tablist">
+<div class="tabs tabs-box mb-6 flex-wrap" role="tablist">
     <button class="tab tab-active" id="subStocks" role="tab" onclick="switchInvestmentTab('stocks')">Stocks</button>
     <button class="tab" id="subStockhistory" role="tab" onclick="switchInvestmentTab('stockhistory')">Stock History</button>
     <button class="tab" id="subResearch" role="tab" onclick="switchInvestmentTab('research')">Research</button>
@@ -41,24 +46,20 @@
 
 <!-- =================== STOCKS TAB =================== -->
 <div id="stocksTabContent">
-    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Portfolio Tracker</h2>
+    <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Portfolio Tracker</div>
 
-    <div class="stats shadow w-full mb-4">
-        <div class="stat">
-            <div class="stat-title">Total Invested</div>
-            <div class="stat-value text-lg" id="statInvested">€0.00</div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div class="card bg-base-200 shadow-sm border-t-2 border-primary">
+            <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">💰 Invested</div><div class="text-xl font-bold tabular-nums" id="statInvested">€0.00</div></div>
         </div>
-        <div class="stat">
-            <div class="stat-title">Current Value</div>
-            <div class="stat-value text-lg" id="statValue">€0.00</div>
+        <div class="card bg-base-200 shadow-sm border-t-2 border-secondary">
+            <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">📊 Current Value</div><div class="text-xl font-bold tabular-nums" id="statValue">€0.00</div></div>
         </div>
-        <div class="stat">
-            <div class="stat-title">Total Profit</div>
-            <div class="stat-value text-lg" id="statProfit">€0.00</div>
+        <div class="card bg-base-200 shadow-sm border-t-2 border-success">
+            <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">📈 Total Profit</div><div class="text-xl font-bold tabular-nums" id="statProfit">€0.00</div></div>
         </div>
-        <div class="stat">
-            <div class="stat-title">Return %</div>
-            <div class="stat-value text-lg" id="statReturn">0.00%</div>
+        <div class="card bg-base-200 shadow-sm border-t-2 border-warning">
+            <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">⚡ Return</div><div class="text-xl font-bold tabular-nums" id="statReturn">0.00%</div></div>
         </div>
     </div>
 
@@ -142,7 +143,7 @@
 
 <!-- =================== STOCK HISTORY TAB =================== -->
 <div id="stockHistoryTabContent" class="hidden">
-    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Advanced Stock Analysis</h2>
+    <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Advanced Stock Analysis</div>
 
     <div class="card bg-base-200 shadow p-4 mb-4">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
@@ -311,7 +312,7 @@
 
 <!-- =================== RESEARCH TAB =================== -->
 <div id="researchTabContent" class="hidden">
-    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Stock Research & Analysis</h2>
+    <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Stock Research & Analysis</div>
 
     <div class="flex gap-4 mb-5 flex-wrap">
         <button class="btn btn-primary btn-sm" onclick="generateResearch()" id="generateBtn">
@@ -348,7 +349,7 @@
 
 <!-- =================== FUNDAMENTALS TAB =================== -->
 <div id="fundamentalsTabContent" class="hidden" role="tabpanel">
-    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Fundamental Analysis</h2>
+    <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Fundamental Analysis</div>
 
     <div class="card bg-base-200 shadow p-4 mb-4">
         <div class="flex gap-2 items-center flex-wrap">
@@ -433,7 +434,7 @@
 
 <!-- =================== DCF TAB =================== -->
 <div id="dcfTabContent" class="hidden" role="tabpanel">
-    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">DCF Calculator</h2>
+    <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">DCF Calculator</div>
 
     <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
         <div class="card bg-base-200 shadow p-4">
@@ -501,7 +502,7 @@
 
 <!-- =================== SCREENER TAB =================== -->
 <div id="screenerTabContent" class="hidden" role="tabpanel">
-    <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Stock Screener</h2>
+    <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Stock Screener</div>
 
     <div class="card bg-base-200 shadow p-4 mb-4">
         <div class="flex gap-2 items-center mb-3">

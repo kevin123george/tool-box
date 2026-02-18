@@ -17,11 +17,17 @@
         <div class="flex flex-col items-center gap-4"><span class="loading loading-spinner loading-lg"></span><span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span></div>
     </div>
     <div id="nav-placeholder" data-active="fitness"></div>
-    <h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">Fitness</h1>
+            <p class="text-sm opacity-40 mt-0.5">Workouts, weight &amp; weekly plans</p>
+        </div>
+    </div>
 
     <!-- =================== FITNESS TAB =================== -->
     <div id="fitnessTabContent" role="tabpanel" aria-labelledby="tabFitness">
-        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Fitness Tracker</h2>
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Fitness Tracker</div>
 
         <!-- Today's Workout Banner -->
         <div id="todaysWorkoutBanner" class="card bg-base-200 shadow p-4 mb-5 border-l-4 border-success">
@@ -40,22 +46,18 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="stats shadow w-full mb-5">
-            <div class="stat">
-                <div class="stat-title">Current Streak</div>
-                <div class="stat-value text-success text-lg" id="fitnessCurrentStreak">0 days</div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <div class="card bg-base-200 shadow-sm border-t-2 border-success">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">🔥 Current Streak</div><div class="text-xl font-bold text-success" id="fitnessCurrentStreak">0 days</div></div>
             </div>
-            <div class="stat">
-                <div class="stat-title">Longest Streak</div>
-                <div class="stat-value text-lg" id="fitnessLongestStreak">0 days</div>
+            <div class="card bg-base-200 shadow-sm border-t-2 border-primary">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">🏆 Longest Streak</div><div class="text-xl font-bold" id="fitnessLongestStreak">0 days</div></div>
             </div>
-            <div class="stat">
-                <div class="stat-title">This Week</div>
-                <div class="stat-value text-lg" id="fitnessThisWeek">0 workouts</div>
+            <div class="card bg-base-200 shadow-sm border-t-2 border-warning">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">📅 This Week</div><div class="text-xl font-bold" id="fitnessThisWeek">0 workouts</div></div>
             </div>
-            <div class="stat">
-                <div class="stat-title">Total Workouts</div>
-                <div class="stat-value text-lg" id="fitnessTotalWorkouts">0</div>
+            <div class="card bg-base-200 shadow-sm border-t-2 border-info">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">💪 Total Workouts</div><div class="text-xl font-bold" id="fitnessTotalWorkouts">0</div></div>
             </div>
         </div>
 

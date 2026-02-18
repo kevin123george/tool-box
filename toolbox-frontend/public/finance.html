@@ -17,10 +17,16 @@
         <div class="flex flex-col items-center gap-4"><span class="loading loading-spinner loading-lg"></span><span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span></div>
     </div>
     <div id="nav-placeholder" data-active="finance"></div>
-    <h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">Finance</h1>
+            <p class="text-sm opacity-40 mt-0.5">Accounts, budget &amp; analytics</p>
+        </div>
+    </div>
 
     <!-- Sub-Tab Navigation -->
-    <div class="tabs tabs-bordered mb-4" role="tablist">
+    <div class="tabs tabs-box mb-6" role="tablist">
         <button class="tab tab-active" onclick="switchFinanceTab('accounts')">Accounts</button>
         <button class="tab" onclick="switchFinanceTab('budget')">Budget</button>
         <button class="tab" onclick="switchFinanceTab('subscriptions')">Subscriptions</button>
@@ -30,7 +36,7 @@
 
     <!-- =================== ACCOUNTS SUB-TAB =================== -->
     <div id="financeAccountsContent">
-        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Finance Accounts</h2>
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Finance Accounts</div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div class="card bg-base-200 shadow p-4">
@@ -158,7 +164,7 @@
 
     <!-- =================== BUDGET SUB-TAB =================== -->
     <div id="financeBudgetContent" class="hidden">
-        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Monthly Budget Tracker</h2>
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Monthly Budget Tracker</div>
 
         <div class="card bg-base-200 shadow p-4 mb-4">
             <h3 class="font-bold mb-2">Select Month</h3>
@@ -254,15 +260,9 @@
                 <h3 class="font-bold">Recurring Transactions</h3>
                 <button class="btn btn-primary btn-sm" onclick="showAddRecurringModal()">ADD RECURRING</button>
             </div>
-            <div class="stats shadow w-full mb-3">
-                <div class="stat">
-                    <div class="stat-title">Monthly Recurring Cost</div>
-                    <div class="stat-value text-error text-lg" id="recurringMonthlyCost">&#8364;0.00</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-title">Monthly Recurring Income</div>
-                    <div class="stat-value text-success text-lg" id="recurringMonthlyIncome">&#8364;0.00</div>
-                </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="card bg-base-200 border-t-2 border-error shadow-sm"><div class="card-body p-4"><div class="text-xs opacity-50 font-semibold uppercase tracking-wide mb-1">Monthly Cost</div><div class="text-lg font-bold text-error tabular-nums" id="recurringMonthlyCost">€0.00</div></div></div>
+                <div class="card bg-base-200 border-t-2 border-success shadow-sm"><div class="card-body p-4"><div class="text-xs opacity-50 font-semibold uppercase tracking-wide mb-1">Monthly Income</div><div class="text-lg font-bold text-success tabular-nums" id="recurringMonthlyIncome">€0.00</div></div></div>
             </div>
             <div id="recurringTransactionsList"></div>
         </div>
@@ -293,19 +293,16 @@
 
     <!-- =================== SUBSCRIPTIONS SUB-TAB =================== -->
     <div id="financeSubscriptionsContent" class="hidden">
-        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Subscription Manager</h2>
-        <div class="stats shadow w-full mb-5">
-            <div class="stat">
-                <div class="stat-title">Monthly Cost</div>
-                <div class="stat-value text-error text-lg" id="subsTotalMonthly">&#8364;0.00</div>
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Subscription Manager</div>
+        <div class="grid grid-cols-3 gap-4 mb-5">
+            <div class="card bg-base-200 shadow-sm border-t-2 border-error">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">Monthly Cost</div><div class="text-xl font-bold text-error tabular-nums" id="subsTotalMonthly">€0.00</div></div>
             </div>
-            <div class="stat">
-                <div class="stat-title">Annual Cost</div>
-                <div class="stat-value text-error text-lg" id="subsTotalAnnual">&#8364;0.00</div>
+            <div class="card bg-base-200 shadow-sm border-t-2 border-warning">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">Annual Cost</div><div class="text-xl font-bold text-warning tabular-nums" id="subsTotalAnnual">€0.00</div></div>
             </div>
-            <div class="stat">
-                <div class="stat-title">Active Subscriptions</div>
-                <div class="stat-value text-lg" id="subsActiveCount">0</div>
+            <div class="card bg-base-200 shadow-sm border-t-2 border-info">
+                <div class="card-body p-4"><div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-1">Active</div><div class="text-xl font-bold tabular-nums" id="subsActiveCount">0</div></div>
             </div>
         </div>
         <div class="card bg-base-200 shadow p-4 mb-4">
@@ -316,7 +313,7 @@
 
     <!-- =================== CALENDAR SUB-TAB =================== -->
     <div id="financeCalendarContent" class="hidden">
-        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Financial Calendar</h2>
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Financial Calendar</div>
         <div class="card bg-base-200 shadow p-4 mb-4">
             <div class="flex justify-between items-center">
                 <button class="btn btn-sm" onclick="prevMonth()">PREV</button>
@@ -337,7 +334,7 @@
 
     <!-- =================== ANALYTICS SUB-TAB =================== -->
     <div id="financeAnalyticsContent" class="hidden">
-        <h2 class="text-lg font-bold uppercase border-b border-base-300 pb-2 mb-4">Expense Analytics</h2>
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Expense Analytics</div>
         <div class="card bg-base-200 shadow p-4 mb-5">
             <h3 class="font-bold mb-2">Spending Anomalies</h3>
             <div id="anomaliesList"></div>
