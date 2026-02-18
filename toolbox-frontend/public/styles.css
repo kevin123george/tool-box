@@ -1152,3 +1152,88 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         color: black;
     }
 }
+
+/* ========================= DRAWER SIDEBAR ========================= */
+
+/* Remove body-level padding when inside drawer layout */
+body:has(#drawerRoot) {
+    padding: 0;
+}
+
+/* Sidebar width — expanded state */
+.sidebar-aside {
+    width: 240px;
+    min-width: 240px;
+    transition: width 0.25s ease, min-width 0.25s ease;
+}
+
+/* Sidebar width — collapsed (icon-only) state */
+.is-drawer-close .sidebar-aside {
+    width: 64px;
+    min-width: 64px;
+}
+
+/* Hide text labels when collapsed */
+.menu-label-text {
+    transition: opacity 0.2s ease, width 0.2s ease, max-width 0.2s ease;
+    overflow: hidden;
+    white-space: nowrap;
+    display: inline-block;
+}
+.is-drawer-close .menu-label-text {
+    opacity: 0;
+    width: 0 !important;
+    max-width: 0;
+    pointer-events: none;
+}
+
+/* Hide group label rows when collapsed */
+.sidebar-group-label {
+    transition: opacity 0.2s ease, height 0.2s ease;
+}
+.is-drawer-close .sidebar-group-label {
+    opacity: 0;
+    pointer-events: none;
+    height: 0 !important;
+    overflow: hidden;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Hide brand text when collapsed */
+.is-drawer-close .sidebar-brand {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+/* Center icons when sidebar is collapsed */
+.is-drawer-close .menu li a,
+.is-drawer-close .menu li summary {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Hide child menus when collapsed — prevents half-visible state */
+.is-drawer-close details > ul {
+    display: none !important;
+}
+
+/* Hide details marker arrow when collapsed */
+.is-drawer-close details > summary::after,
+.is-drawer-close details > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Icon sizing — consistent in both states */
+.sidebar-icon {
+    font-size: 1.1rem;
+    min-width: 1.25rem;
+    text-align: center;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

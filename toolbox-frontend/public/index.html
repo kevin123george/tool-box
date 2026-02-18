@@ -22,47 +22,140 @@
 
 <div id="nav-placeholder" data-active="home"></div>
 
-<h1 class="text-xl font-bold uppercase mb-4">Hey Kevin!!!</h1>
+<!-- ===== Dashboard content ===== -->
+<h1 class="text-xl font-bold uppercase mb-6">Dashboard</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <a href="/memos.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
-        <div class="card-body">
-            <div class="text-3xl mb-2">&#128221;</div>
-            <h2 class="card-title text-sm uppercase">Memos</h2>
-            <p class="text-xs opacity-70">Rich text notes, search &amp; categories</p>
-        </div>
-    </a>
-    <a href="/finance.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
-        <div class="card-body">
-            <div class="text-3xl mb-2">&#128176;</div>
-            <h2 class="card-title text-sm uppercase">Finance</h2>
-            <p class="text-xs opacity-70">Accounts, budget, subscriptions, calendar &amp; analytics</p>
-        </div>
-    </a>
-    <a href="/investments.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
-        <div class="card-body">
-            <div class="text-3xl mb-2">&#128200;</div>
-            <h2 class="card-title text-sm uppercase">Investments</h2>
-            <p class="text-xs opacity-70">Stocks, history, research, fundamentals, DCF &amp; screener</p>
-        </div>
-    </a>
-    <a href="/fitness.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
-        <div class="card-body">
-            <div class="text-3xl mb-2">&#127947;</div>
-            <h2 class="card-title text-sm uppercase">Fitness</h2>
-            <p class="text-xs opacity-70">Workouts, weight tracking, plans &amp; analytics</p>
-        </div>
-    </a>
-    <a href="/system.html" class="card bg-base-200 shadow hover:bg-base-300 transition-colors cursor-pointer">
-        <div class="card-body">
-            <div class="text-3xl mb-2">&#128187;</div>
-            <h2 class="card-title text-sm uppercase">System</h2>
-            <p class="text-xs opacity-70">CPU, memory &amp; disk monitoring, push notifications</p>
-        </div>
-    </a>
+<!-- Stats row — populated by loadDashboard() -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="statsRow">
+    <!-- Skeleton placeholders while loading -->
+    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
+        <div class="stat-title text-xs uppercase opacity-50">Balance</div>
+        <div class="stat-value text-lg opacity-30">—</div>
+    </div>
+    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
+        <div class="stat-title text-xs uppercase opacity-50">Accounts</div>
+        <div class="stat-value text-lg opacity-30">—</div>
+    </div>
+    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
+        <div class="stat-title text-xs uppercase opacity-50">Net Worth</div>
+        <div class="stat-value text-lg opacity-30">—</div>
+    </div>
+    <div class="stat bg-base-200 rounded-box shadow animate-pulse">
+        <div class="stat-title text-xs uppercase opacity-50">Portfolio</div>
+        <div class="stat-value text-lg opacity-30">—</div>
+    </div>
 </div>
+
+<!-- Second row — Finance Summary + Quick Links -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div class="card bg-base-200 shadow" id="financeSummaryCard">
+        <div class="card-body">
+            <h2 class="card-title text-sm uppercase mb-3">Finance Summary</h2>
+            <div id="financeSummaryBody">
+                <span class="loading loading-spinner loading-sm"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-200 shadow" id="quickLinksCard">
+        <div class="card-body">
+            <h2 class="card-title text-sm uppercase mb-3">Quick Links</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <a href="/memos.html"       class="btn btn-outline btn-sm">📝 Memos</a>
+                <a href="/finance.html"     class="btn btn-outline btn-sm">💳 Finance</a>
+                <a href="/investments.html" class="btn btn-outline btn-sm">📈 Investments</a>
+                <a href="/fitness.html"     class="btn btn-outline btn-sm">🏋️ Fitness</a>
+                <a href="/system.html"      class="btn btn-outline btn-sm">⚙️ System</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- ===== End Dashboard content ===== -->
 
 <script src="shared.js"></script>
 <script src="nav.js"></script>
+<script>
+    /* -------------------------------------------------------
+       Dashboard data loading
+    ------------------------------------------------------- */
+
+    function fmtEur(n) {
+        if (n == null || isNaN(Number(n))) return '—';
+        return new Intl.NumberFormat('en-EU', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0
+        }).format(Number(n));
+    }
+
+    async function loadDashboard() {
+        /* Track what we've filled so we can build a coherent stats row */
+        const stats = {
+            balance:   null,
+            accounts:  null,
+            netWorth:  null,
+            portfolio: null
+        };
+
+        /* --- Finance summary --- */
+        try {
+            const r = await fetch('/api/finance/summary');
+            if (r.ok) {
+                const d = await r.json();
+                const totalBalance = d.totalBalance ?? d.total ?? 0;
+                stats.balance  = fmtEur(totalBalance);
+                stats.accounts = d.accounts?.length ?? d.count ?? '—';
+
+                /* Finance summary detail card */
+                const byBank = d.totalByBank || d.byBank || {};
+                const byBankRows = Object.entries(byBank)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([bank, amount]) => `
+                        <div class="flex justify-between items-center py-1 border-b border-base-300 text-sm">
+                            <span class="opacity-80">${bank}</span>
+                            <span class="font-semibold">${fmtEur(amount)}</span>
+                        </div>`)
+                    .join('');
+
+                document.getElementById('financeSummaryBody').innerHTML = `
+                    <div class="text-2xl font-bold mb-1">${fmtEur(totalBalance)}</div>
+                    <div class="text-xs opacity-60 mb-3">Total across all accounts</div>
+                    ${byBankRows || '<div class="text-xs opacity-50">No breakdown available</div>'}
+                    <a href="/finance.html" class="btn btn-primary btn-xs mt-3">View Finance</a>
+                `;
+            }
+        } catch (_) { /* silent — API may not be running */ }
+
+        /* --- Dashboard summary (net worth, portfolio, etc.) --- */
+        try {
+            const r = await fetch('/api/dashboard');
+            if (r.ok) {
+                const d = await r.json();
+                if (d.netWorth   != null) stats.netWorth  = fmtEur(d.netWorth);
+                if (d.portfolioValue != null) stats.portfolio = fmtEur(d.portfolioValue);
+            }
+        } catch (_) { /* silent */ }
+
+        /* --- Render the stats row --- */
+        const statDefs = [
+            { key: 'balance',   label: 'Total Balance', icon: '💰', fallback: '—' },
+            { key: 'accounts',  label: 'Accounts',      icon: '🏦', fallback: '—' },
+            { key: 'netWorth',  label: 'Net Worth',      icon: '📊', fallback: '—' },
+            { key: 'portfolio', label: 'Portfolio',      icon: '📈', fallback: '—' }
+        ];
+
+        document.getElementById('statsRow').innerHTML = statDefs.map(s => `
+            <div class="stat bg-base-200 rounded-box shadow">
+                <div class="stat-figure text-2xl">${s.icon}</div>
+                <div class="stat-title text-xs uppercase">${s.label}</div>
+                <div class="stat-value text-lg">${stats[s.key] ?? s.fallback}</div>
+            </div>
+        `).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
 </body>
 </html>
