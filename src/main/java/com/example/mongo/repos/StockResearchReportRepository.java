@@ -11,9 +11,16 @@ public interface StockResearchReportRepository
   // Find reports by date range
   List<StockResearchReport> findByGeneratedAtBetween(LocalDateTime start, LocalDateTime end);
 
-  // Find latest report
+  // Find latest report (global — unused after auth)
   StockResearchReport findFirstByOrderByGeneratedAtDesc();
 
   // Find reports by sentiment
   List<StockResearchReport> findByOverallSentiment(String sentiment);
+
+  // User-scoped queries
+  List<StockResearchReport> findAllByUserId(String userId);
+
+  StockResearchReport findFirstByUserIdOrderByGeneratedAtDesc(String userId);
+
+  StockResearchReport findByIdAndUserId(String id, String userId);
 }

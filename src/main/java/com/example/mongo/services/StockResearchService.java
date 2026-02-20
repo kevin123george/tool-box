@@ -29,8 +29,8 @@ public class StockResearchService {
   private final RestTemplate restTemplate = new RestTemplate();
 
   /** Main method to generate research report for user's portfolio */
-  public StockResearchReport generateResearchReport() {
-    List<StockHoldingHistory> holdings = getLatestHoldings();
+  public StockResearchReport generateResearchReport(String userId) {
+    List<StockHoldingHistory> holdings = getLatestHoldings(userId);
     Map<String, StockAnalysis> analyses = new HashMap<>();
 
     log.info("=== GENERATING RESEARCH REPORT ===");
@@ -83,6 +83,7 @@ public class StockResearchService {
     log.info("Overall sentiment: {}", calculateOverallSentiment(analyses));
 
     StockResearchReport report = new StockResearchReport();
+    report.setUserId(userId);
     report.setGeneratedAt(LocalDateTime.now());
     report.setHoldings(holdings);
     report.setAnalyses(analyses);
@@ -97,9 +98,9 @@ public class StockResearchService {
     return saved;
   }
 
-  /** Get latest holding for each unique symbol */
-  private List<StockHoldingHistory> getLatestHoldings() {
-    List<StockHoldingHistory> allHoldings = (List<StockHoldingHistory>) holdingRepository.findAll();
+  /** Get latest holding for each unique symbol scoped to a user */
+  private List<StockHoldingHistory> getLatestHoldings(String userId) {
+    List<StockHoldingHistory> allHoldings = holdingRepository.findAllByUserId(userId);
 
     Map<String, StockHoldingHistory> latestBySymbol = new HashMap<>();
     for (StockHoldingHistory holding : allHoldings) {

@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class StockResearchReport {
   @Id private String id;
 
+  private String userId;
   private LocalDateTime generatedAt;
   private List<StockHoldingHistory> holdings;
   private Map<String, StockResearchService.StockAnalysis> analyses;
