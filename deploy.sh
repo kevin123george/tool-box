@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+# Load environment variables from .env in same directory as this script
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+    echo "✓ Loaded environment from .env"
+else
+    echo "⚠️  No .env file found at $SCRIPT_DIR/.env — secrets must already be in environment"
+fi
+
 JAR_NAME="mongo-0.0.1-SNAPSHOT.jar"
 BACKEND_LOG="backend.log"
 FRONTEND_LOG="frontend.log"
@@ -105,7 +116,13 @@ fi
 ### Start backend
 echo "▶️ Starting backend..."
 cd build/libs
-nohup java -jar $JAR_NAME > ../../$BACKEND_LOG 2>&1 &
+nohup java \
+    -DJWT_SECRET="${JWT_SECRET}" \
+    -DKEVIN_NAME="${KEVIN_NAME}" \
+    -DKEVIN_EMAIL="${KEVIN_EMAIL}" \
+    -DKEVIN_PASSWORD="${KEVIN_PASSWORD}" \
+    -DALPHA_VANTAGE_API_KEY="${ALPHA_VANTAGE_API_KEY}" \
+    -jar $JAR_NAME > ../../$BACKEND_LOG 2>&1 &
 cd ../..
 echo "Backend started. Logs: $BACKEND_LOG"
 
