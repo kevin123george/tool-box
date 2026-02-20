@@ -120,7 +120,8 @@
 (function () {
     const h = new Date().getHours();
     const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-    document.getElementById('dashGreeting').textContent = greet + ', Kevin 👋';
+    const userName = localStorage.getItem('userName') || '';
+    document.getElementById('dashGreeting').textContent = greet + (userName ? `, ${userName}` : '');
     document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
@@ -132,42 +133,51 @@ function fmtEur(n) {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(n));
 }
 
+/* ---- SVG icons for dashboard ---- */
+const DASH_ICONS = {
+    finance:     `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg>`,
+    investments: `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"/></svg>`,
+    memos:       `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>`,
+    fitness:     `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>`,
+    system:      `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>`,
+    wallet:      `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3"/></svg>`,
+    building:    `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z"/></svg>`,
+    chartBar:    `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg>`,
+    arrowRight:  `<svg fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>`
+};
+
 /* ---- Section nav links ---- */
 const SECTIONS = [
-    { label: 'Finance',     href: '/finance.html',     icon: '💳' },
-    { label: 'Investments', href: '/investments.html',  icon: '📈' },
-    { label: 'Memos',       href: '/memos.html',       icon: '📝' },
-    { label: 'Fitness',     href: '/fitness.html',     icon: '🏋️' },
-    { label: 'System',      href: '/system.html',      icon: '⚙️' },
+    { label: 'Finance',     href: '/finance.html',     icon: 'finance',     color: 'text-blue-500' },
+    { label: 'Investments', href: '/investments.html',  icon: 'investments', color: 'text-emerald-500' },
+    { label: 'Memos',       href: '/memos.html',       icon: 'memos',       color: 'text-amber-500' },
+    { label: 'Fitness',     href: '/fitness.html',     icon: 'fitness',     color: 'text-rose-500' },
+    { label: 'System',      href: '/system.html',      icon: 'system',      color: 'text-violet-500' },
 ];
 document.getElementById('sectionLinks').innerHTML = SECTIONS.map(s => `
     <a href="${s.href}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-base-300 transition-colors group">
-        <span class="text-base w-6 text-center">${s.icon}</span>
+        <span class="${s.color} opacity-70 group-hover:opacity-100 transition-opacity">${DASH_ICONS[s.icon]}</span>
         <span class="text-sm font-medium flex-1">${s.label}</span>
-        <svg class="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-        </svg>
+        <span class="opacity-0 group-hover:opacity-35 transition-opacity">${DASH_ICONS.arrowRight}</span>
     </a>
 `).join('');
 
 /* ---- Module cards ---- */
 const MODULES = [
-    { label: 'Finance',     sub: 'Accounts, budget, subscriptions & analytics', href: '/finance.html',     icon: '💳', from: 'from-blue-500/15',   to: 'to-blue-500/5',   ring: 'border-blue-500/20' },
-    { label: 'Investments', sub: 'Stocks, history, DCF, research & screener',   href: '/investments.html',  icon: '📈', from: 'from-emerald-500/15',to: 'to-emerald-500/5', ring: 'border-emerald-500/20' },
-    { label: 'Memos',       sub: 'Rich text notes, categories & search',        href: '/memos.html',       icon: '📝', from: 'from-amber-500/15',  to: 'to-amber-500/5',   ring: 'border-amber-500/20' },
-    { label: 'Fitness',     sub: 'Workouts, weight tracking & weekly plans',    href: '/fitness.html',     icon: '🏋️', from: 'from-rose-500/15',   to: 'to-rose-500/5',    ring: 'border-rose-500/20' },
-    { label: 'System',      sub: 'CPU, memory, disk & push notifications',      href: '/system.html',      icon: '⚙️', from: 'from-violet-500/15', to: 'to-violet-500/5',  ring: 'border-violet-500/20' },
+    { label: 'Finance',     sub: 'Accounts, budget, subscriptions & analytics', href: '/finance.html',     icon: 'finance',     from: 'from-blue-500/15',    to: 'to-blue-500/5',    ring: 'border-blue-500/20',    ic: 'text-blue-500' },
+    { label: 'Investments', sub: 'Stocks, history, DCF, research & screener',   href: '/investments.html',  icon: 'investments', from: 'from-emerald-500/15', to: 'to-emerald-500/5', ring: 'border-emerald-500/20', ic: 'text-emerald-500' },
+    { label: 'Memos',       sub: 'Rich text notes, categories & search',        href: '/memos.html',       icon: 'memos',       from: 'from-amber-500/15',   to: 'to-amber-500/5',   ring: 'border-amber-500/20',   ic: 'text-amber-500' },
+    { label: 'Fitness',     sub: 'Workouts, weight tracking & weekly plans',    href: '/fitness.html',     icon: 'fitness',     from: 'from-rose-500/15',    to: 'to-rose-500/5',    ring: 'border-rose-500/20',    ic: 'text-rose-500' },
+    { label: 'System',      sub: 'CPU, memory, disk & push notifications',      href: '/system.html',      icon: 'system',      from: 'from-violet-500/15',  to: 'to-violet-500/5',  ring: 'border-violet-500/20',  ic: 'text-violet-500' },
 ];
 document.getElementById('moduleCards').innerHTML = MODULES.map(m => `
     <a href="${m.href}" class="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer">
         <div class="card-body p-5">
             <div class="flex items-start justify-between mb-4">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br ${m.from} ${m.to} border ${m.ring} flex items-center justify-center text-2xl shadow-sm">
-                    ${m.icon}
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br ${m.from} ${m.to} border ${m.ring} flex items-center justify-center ${m.ic} shadow-sm">
+                    ${DASH_ICONS[m.icon]}
                 </div>
-                <svg class="w-4 h-4 mt-1 opacity-0 group-hover:opacity-30 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
+                <span class="opacity-0 group-hover:opacity-30 transition-opacity mt-1">${DASH_ICONS.arrowRight}</span>
             </div>
             <p class="font-semibold text-base mb-1">${m.label}</p>
             <p class="text-xs opacity-40 leading-relaxed">${m.sub}</p>
@@ -176,15 +186,15 @@ document.getElementById('moduleCards').innerHTML = MODULES.map(m => `
 `).join('');
 
 /* ---- KPI card builder ---- */
-function kpiCard(icon, label, value, borderColor) {
+function kpiCard(iconKey, label, value, borderColor) {
     return `
     <div class="card bg-base-200 shadow-sm border-t-2 ${borderColor} overflow-hidden">
         <div class="card-body p-5 gap-1">
-            <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-widest opacity-40">${label}</span>
-                <span class="text-xl opacity-70">${icon}</span>
+                <span class="opacity-30">${DASH_ICONS[iconKey]}</span>
             </div>
-            <div class="text-xl font-bold tabular-nums">${value}</div>
+            <div class="text-2xl font-bold tabular-nums">${value}</div>
         </div>
     </div>`;
 }
@@ -240,10 +250,10 @@ async function loadDashboard() {
     } catch (_) {}
 
     document.getElementById('statsRow').innerHTML = [
-        kpiCard('💰', 'Total Balance', stats.balance,  'border-primary'),
-        kpiCard('🏦', 'Accounts',      stats.accounts, 'border-secondary'),
-        kpiCard('📊', 'Net Worth',      stats.netWorth, 'border-success'),
-        kpiCard('📈', 'Portfolio',      stats.portfolio,'border-warning'),
+        kpiCard('wallet',      'Total Balance', stats.balance,  'border-primary'),
+        kpiCard('building',    'Accounts',      stats.accounts, 'border-secondary'),
+        kpiCard('chartBar',    'Net Worth',     stats.netWorth, 'border-success'),
+        kpiCard('investments', 'Portfolio',     stats.portfolio,'border-warning'),
     ].join('');
 }
 

@@ -1059,28 +1059,17 @@ body:has(#drawerRoot) {
     padding: 0;
 }
 
-/* Sidebar menu items — no border radius, clean lines */
+/* Sidebar: hide native <details> triangle marker */
+.menu li > details > summary::-webkit-details-marker,
+.menu li > details > summary::marker {
+    display: none;
+    content: '';
+}
+
+/* Sidebar menu items — transitions only, border-radius from Tailwind classes */
 .menu li > a,
 .menu li > details > summary {
-    border-radius: 0 !important;
     transition: background 0.15s ease, color 0.15s ease;
-}
-
-/* Active item — primary accent */
-.menu li > a.menu-active,
-.menu li > details > summary.menu-active {
-    background: oklch(var(--p) / 0.15) !important;
-    color: oklch(var(--p)) !important;
-    font-weight: 600;
-    border-left: 2px solid oklch(var(--p));
-}
-
-/* Collapsed state — center icons */
-.is-drawer-close .menu li > a,
-.is-drawer-close .menu li > details > summary {
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
 }
 
 /* Responsive page padding */

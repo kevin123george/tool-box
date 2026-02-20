@@ -651,20 +651,22 @@ async function loadWorkoutHistory() {
         }
 
         container.innerHTML = workouts.map(w => `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px;">
-                <div>
-                    <div style="font-weight:bold;">${w.workoutDate || 'No date'}</div>
-                    <div style="font-size:12px; opacity:0.7;">
-                        ${w.exerciseType ? w.exerciseType.replace('_', ' ') : 'Unknown'}
-                        ${w.durationMinutes ? `• ${w.durationMinutes} min` : ''}
-                        ${w.caloriesBurned ? `• ${w.caloriesBurned} cal` : ''}
+            <div class="card bg-base-200 shadow-sm mb-2">
+                <div class="card-body p-3 flex-row items-center justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-sm">${w.workoutDate || 'No date'}</div>
+                        <div class="text-xs opacity-60 mt-0.5">
+                            ${w.exerciseType ? w.exerciseType.replace(/_/g, ' ') : 'Unknown'}
+                            ${w.durationMinutes ? `<span class="opacity-40 mx-1">•</span>${w.durationMinutes} min` : ''}
+                            ${w.caloriesBurned ? `<span class="opacity-40 mx-1">•</span>${w.caloriesBurned} kcal` : ''}
+                        </div>
+                        ${w.notes ? `<div class="text-xs opacity-40 mt-1 truncate">${w.notes}</div>` : ''}
                     </div>
-                    ${w.notes ? `<div style="font-size:11px; opacity:0.5; margin-top:4px;">${w.notes}</div>` : ''}
-                </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <span style="color:${w.completed ? '#0f0' : '#f90'};">${w.completed ? '✓' : '○'}</span>
-                    <button class="btn" onclick="editWorkout('${w.id}')" style="padding:4px 8px; font-size:11px;">EDIT</button>
-                    <button class="btn" onclick="deleteWorkout('${w.id}')" style="padding:4px 8px; font-size:11px;">DEL</button>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="badge badge-sm ${w.completed ? 'badge-success' : 'badge-warning'}">${w.completed ? 'Done' : 'Pending'}</span>
+                        <button class="btn btn-ghost btn-xs" onclick="editWorkout('${w.id}')">Edit</button>
+                        <button class="btn btn-ghost btn-xs text-error" onclick="deleteWorkout('${w.id}')">Del</button>
+                    </div>
                 </div>
             </div>
         `).join('');
