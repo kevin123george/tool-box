@@ -342,7 +342,9 @@
 
     /* -------------------------------------------------------
        Same-page tab switching — no full reload
-       Maps page pathname → global tab-switch function name
+       Maps page pathname → global tab-switch function name.
+       Intercepts when the function is already loaded (i.e. we
+       are on that page), otherwise lets normal navigation happen.
     ------------------------------------------------------- */
     const TAB_FN_MAP = {
         '/finance.html':     'switchFinanceTab',
@@ -356,18 +358,16 @@
         const tab = link.dataset.navTab;
         if (!tab) return;
 
-        const linkPath = new URL(link.href).pathname;
-        const curPath  = window.location.pathname;
+        // Derive function name from the link's target page
+        const fnName = TAB_FN_MAP[link.pathname];
 
-        // Only intercept if we're already on that page
-        if (linkPath !== curPath) return;
-
-        const fnName = TAB_FN_MAP[linkPath];
+        // If the function is defined, we're already on that page — intercept
         if (fnName && typeof window[fnName] === 'function') {
             e.preventDefault();
             window[fnName](tab);
             history.pushState({}, '', link.href);
         }
+        // Otherwise let the browser navigate normally
     });
 
     // Close mobile drawer on Escape
