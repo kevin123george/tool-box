@@ -3,159 +3,205 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ToolBox — Login</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5/dist/full.min.css" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/shared.js"></script>
+  <title>ToolBox — Sign In</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { margin: 0; min-height: 100vh; font-size: 14px; }
+    .fade-in { animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-base-100">
+<body class="min-h-screen bg-base-100 flex">
 
-  <div class="card w-full max-w-sm shadow-2xl bg-base-200">
-    <div class="card-body gap-4">
-      <!-- Brand -->
-      <div class="flex items-center gap-2 justify-center mb-2">
-        <span class="text-3xl">🧰</span>
+  <!-- Left panel — branding -->
+  <div class="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-base-200 border-r border-base-300 p-10">
+    <div>
+      <div class="flex items-center gap-3 mb-12">
+        <span class="text-4xl">🧰</span>
         <span class="text-2xl font-bold tracking-tight">ToolBox</span>
       </div>
+      <h2 class="text-2xl font-semibold leading-snug mb-3">Your personal<br/>finance & fitness hub</h2>
+      <p class="opacity-50 text-sm leading-relaxed mb-10">Everything in one place — investments, budgets, workouts, and more.</p>
 
-      <!-- Login form (default) -->
-      <div id="loginForm">
-        <h2 class="text-center text-lg font-semibold mb-4">Sign In</h2>
-        <div class="form-control mb-3">
-          <label class="label"><span class="label-text">Email</span></label>
-          <input id="loginEmail" type="email" class="input input-bordered" placeholder="you@example.com" />
+      <div class="flex flex-col gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+          </div>
+          <div>
+            <p class="font-medium">Finance tracking</p>
+            <p class="text-xs opacity-50">Bank accounts, budgets, recurring transactions</p>
+          </div>
         </div>
-        <div class="form-control mb-4">
-          <label class="label"><span class="label-text">Password</span></label>
-          <input id="loginPassword" type="password" class="input input-bordered" placeholder="••••••••" />
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          </div>
+          <div>
+            <p class="font-medium">Investments</p>
+            <p class="text-xs opacity-50">Portfolio, watchlist, dividends, capital gains</p>
+          </div>
         </div>
-        <button id="loginBtn" class="btn btn-primary w-full" onclick="doLogin()">Sign In</button>
-        <p class="text-center text-sm mt-4 opacity-70">
-          Don't have an account?
-          <a class="link link-primary" onclick="toggleForm()">Register</a>
-        </p>
-        <div id="loginError" class="alert alert-error mt-3 hidden text-sm"></div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          </div>
+          <div>
+            <p class="font-medium">Fitness</p>
+            <p class="text-xs opacity-50">Workout logs, plans, weight tracking</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <p class="font-medium">Memos</p>
+            <p class="text-xs opacity-50">Rich notes with pinning and categories</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-xs opacity-25">Self-hosted · Your data stays yours</p>
+  </div>
+
+  <!-- Right panel — form -->
+  <div class="flex-1 flex items-center justify-center p-6">
+    <div class="w-full max-w-sm">
+
+      <!-- Mobile brand -->
+      <div class="flex items-center gap-2 justify-center mb-8 lg:hidden">
+        <span class="text-3xl">🧰</span>
+        <span class="text-xl font-bold tracking-tight">ToolBox</span>
       </div>
 
-      <!-- Register form (hidden) -->
-      <div id="registerForm" class="hidden">
-        <h2 class="text-center text-lg font-semibold mb-4">Create Account</h2>
-        <div class="form-control mb-3">
-          <label class="label"><span class="label-text">Name</span></label>
-          <input id="regName" type="text" class="input input-bordered" placeholder="Your name" />
-        </div>
-        <div class="form-control mb-3">
-          <label class="label"><span class="label-text">Email</span></label>
-          <input id="regEmail" type="email" class="input input-bordered" placeholder="you@example.com" />
-        </div>
-        <div class="form-control mb-4">
-          <label class="label"><span class="label-text">Password</span></label>
-          <input id="regPassword" type="password" class="input input-bordered" placeholder="••••••••" />
-        </div>
-        <button id="registerBtn" class="btn btn-primary w-full" onclick="doRegister()">Create Account</button>
-        <p class="text-center text-sm mt-4 opacity-70">
-          Already have an account?
-          <a class="link link-primary" onclick="toggleForm()">Sign In</a>
-        </p>
-        <div id="registerError" class="alert alert-error mt-3 hidden text-sm"></div>
+      <!-- Tab switcher -->
+      <div class="flex rounded-xl bg-base-200 p-1 mb-7">
+        <button id="tabLogin" onclick="showTab('login')"
+          class="flex-1 btn btn-sm rounded-lg btn-primary">Sign In</button>
+        <button id="tabRegister" onclick="showTab('register')"
+          class="flex-1 btn btn-sm rounded-lg btn-ghost">Register</button>
       </div>
+
+      <!-- Login form -->
+      <div id="loginForm" class="fade-in flex flex-col gap-4">
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-medium uppercase tracking-wide opacity-60">Email</span></label>
+          <input id="loginEmail" type="email" class="input input-bordered w-full" placeholder="you@example.com" />
+        </div>
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-medium uppercase tracking-wide opacity-60">Password</span></label>
+          <label class="input input-bordered flex items-center gap-2 w-full">
+            <input id="loginPassword" type="password" class="grow" placeholder="••••••••" />
+            <button type="button" onclick="togglePw('loginPassword', this)" class="opacity-40 hover:opacity-100 transition-opacity">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </label>
+        </div>
+        <div id="loginError" class="alert alert-error text-sm hidden py-2 px-3"></div>
+        <button id="loginBtn" onclick="doLogin()" class="btn btn-primary w-full mt-1">Sign In</button>
+      </div>
+
+      <!-- Register form -->
+      <div id="registerForm" class="fade-in flex-col gap-4 hidden">
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-medium uppercase tracking-wide opacity-60">Name</span></label>
+          <input id="regName" type="text" class="input input-bordered w-full" placeholder="Your name" />
+        </div>
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-medium uppercase tracking-wide opacity-60">Email</span></label>
+          <input id="regEmail" type="email" class="input input-bordered w-full" placeholder="you@example.com" />
+        </div>
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-medium uppercase tracking-wide opacity-60">Password</span></label>
+          <label class="input input-bordered flex items-center gap-2 w-full">
+            <input id="regPassword" type="password" class="grow" placeholder="••••••••" />
+            <button type="button" onclick="togglePw('regPassword', this)" class="opacity-40 hover:opacity-100 transition-opacity">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </label>
+        </div>
+        <div id="registerError" class="alert alert-error text-sm hidden py-2 px-3"></div>
+        <button id="registerBtn" onclick="doRegister()" class="btn btn-primary w-full mt-1">Create Account</button>
+      </div>
+
+      <p class="text-center text-xs opacity-30 mt-8">Self-hosted · Your data stays yours</p>
     </div>
   </div>
 
   <script>
-    // If already logged in, redirect to home
-    if (localStorage.getItem('authToken')) {
-      window.location.href = '/';
+    if (localStorage.getItem('authToken')) window.location.href = '/';
+
+    function showTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+      document.getElementById('loginForm').classList.toggle('flex', isLogin);
+      document.getElementById('registerForm').classList.toggle('hidden', isLogin);
+      document.getElementById('registerForm').classList.toggle('flex', !isLogin);
+      document.getElementById('tabLogin').className  = `flex-1 btn btn-sm rounded-lg ${isLogin  ? 'btn-primary' : 'btn-ghost'}`;
+      document.getElementById('tabRegister').className = `flex-1 btn btn-sm rounded-lg ${!isLogin ? 'btn-primary' : 'btn-ghost'}`;
     }
 
-    function toggleForm() {
-      document.getElementById('loginForm').classList.toggle('hidden');
-      document.getElementById('registerForm').classList.toggle('hidden');
+    function togglePw(inputId, btn) {
+      const input = document.getElementById(inputId);
+      input.type = input.type === 'password' ? 'text' : 'password';
     }
 
     async function doLogin() {
-      const email = document.getElementById('loginEmail').value.trim();
+      const email    = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
-      const errEl = document.getElementById('loginError');
-      const btn = document.getElementById('loginBtn');
-
+      const errEl    = document.getElementById('loginError');
+      const btn      = document.getElementById('loginBtn');
       errEl.classList.add('hidden');
       btn.disabled = true;
-      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
-
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Signing in…';
       try {
         const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        if (!res.ok) {
-          const msg = await res.text();
-          errEl.textContent = msg || 'Invalid credentials';
-          errEl.classList.remove('hidden');
-          return;
-        }
+        if (!res.ok) { errEl.textContent = await res.text() || 'Invalid credentials'; errEl.classList.remove('hidden'); return; }
         const data = await res.json();
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.userId);
-        localStorage.setItem('userName', data.name);
-        localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('authToken',  data.token);
+        localStorage.setItem('userId',     data.userId);
+        localStorage.setItem('userName',   data.name);
+        localStorage.setItem('userEmail',  data.email);
         window.location.href = '/';
-      } catch (e) {
-        errEl.textContent = 'Connection error. Is the server running?';
-        errEl.classList.remove('hidden');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
-      }
+      } catch { errEl.textContent = 'Connection error. Is the server running?'; errEl.classList.remove('hidden'); }
+      finally   { btn.disabled = false; btn.textContent = 'Sign In'; }
     }
 
     async function doRegister() {
-      const name = document.getElementById('regName').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
+      const name     = document.getElementById('regName').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
-      const errEl = document.getElementById('registerError');
-      const btn = document.getElementById('registerBtn');
-
+      const errEl    = document.getElementById('registerError');
+      const btn      = document.getElementById('registerBtn');
       errEl.classList.add('hidden');
       btn.disabled = true;
-      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
-
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Creating…';
       try {
         const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password })
         });
-        if (!res.ok) {
-          const msg = await res.text();
-          errEl.textContent = msg || 'Registration failed';
-          errEl.classList.remove('hidden');
-          return;
-        }
+        if (!res.ok) { errEl.textContent = await res.text() || 'Registration failed'; errEl.classList.remove('hidden'); return; }
         const data = await res.json();
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.userId);
-        localStorage.setItem('userName', data.name);
-        localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('authToken',  data.token);
+        localStorage.setItem('userId',     data.userId);
+        localStorage.setItem('userName',   data.name);
+        localStorage.setItem('userEmail',  data.email);
         window.location.href = '/';
-      } catch (e) {
-        errEl.textContent = 'Connection error. Is the server running?';
-        errEl.classList.remove('hidden');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Create Account';
-      }
+      } catch { errEl.textContent = 'Connection error. Is the server running?'; errEl.classList.remove('hidden'); }
+      finally   { btn.disabled = false; btn.textContent = 'Create Account'; }
     }
 
-    // Allow Enter key on password fields
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('loginPassword').addEventListener('keydown', e => {
-        if (e.key === 'Enter') doLogin();
-      });
-      document.getElementById('regPassword').addEventListener('keydown', e => {
-        if (e.key === 'Enter') doRegister();
-      });
+      document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+      document.getElementById('regPassword').addEventListener('keydown',   e => { if (e.key === 'Enter') doRegister(); });
     });
   </script>
 </body>
