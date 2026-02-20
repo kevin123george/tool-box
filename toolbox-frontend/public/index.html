@@ -135,6 +135,17 @@
             </div>
         </div>
 
+        <!-- Savings Goals -->
+        <div class="card bg-base-200 shadow-sm" id="savingsGoalsCard" style="display:none">
+            <div class="card-body p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-sm uppercase tracking-widest opacity-50">Savings Goals</h2>
+                    <a href="/finance.html?tab=accounts" class="btn btn-ghost btn-xs opacity-50 hover:opacity-100">View →</a>
+                </div>
+                <div id="savingsGoalsBody"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -204,27 +215,30 @@ async function loadDashboard() {
     if (dashRes.status === 'fulfilled'    && dashRes.value.ok)    dash    = await dashRes.value.json();
 
     /* ---- KPI row ---- */
-    const netWorth    = dash?.netWorth      ?? summary?.totalBalance ?? null;
-    const savings     = dash?.budgetSavings ?? null;
-    const portReturn  = dash?.portfolioReturn ?? null;
-    const streak      = dash?.fitnessCurrentStreak ?? null;
+    const netWorth   = dash?.netWorth        ?? summary?.totalBalance ?? null;
+    const savings    = dash?.budgetSavings   ?? null;
+    const income     = dash?.budgetIncome    ?? 0;
+    const savRate    = income > 0 && savings != null ? (savings / income * 100) : null;
+    const portReturn = dash?.portfolioReturn ?? null;
+    const subMonthly = dash?.subscriptionMonthly ?? null;
 
     document.getElementById('statsRow').innerHTML = [
         kpiCard('Net Worth',        fmtEur(netWorth),
                 dash?.totalCash != null ? `Cash ${fmtEur(dash.totalCash)}` : null,
                 'border-primary'),
-        kpiCard('Monthly Savings',  fmtEur(savings),
-                dash?.budgetIncome != null ? `of ${fmtEur(dash.budgetIncome)} income` : null,
+        kpiCard('Savings Rate',
+                savRate != null ? savRate.toFixed(1) + '%' : '—',
+                savings != null ? `${fmtEur(savings)} saved` : null,
                 'border-success',
-                savings >= 0 ? 'text-success opacity-60' : 'text-error opacity-60'),
+                savRate != null ? (savRate >= 0 ? 'text-success opacity-60' : 'text-error opacity-60') : ''),
         kpiCard('Portfolio Return', fmtPct(portReturn),
                 dash?.portfolioValue != null ? fmtEur(dash.portfolioValue) : null,
                 'border-warning',
                 portReturn != null ? signClass(portReturn) + ' opacity-80 font-semibold' : ''),
-        kpiCard('Workout Streak',
-                streak != null ? `${streak} day${streak !== 1 ? 's' : ''}` : '—',
-                dash?.fitnessThisWeek != null ? `${dash.fitnessThisWeek} this week` : null,
-                'border-rose-500/60'),
+        kpiCard('Subscriptions',
+                subMonthly != null ? fmtEur(subMonthly) + '/mo' : '—',
+                dash?.subscriptionCount != null ? `${dash.subscriptionCount} active` : null,
+                'border-violet-500/60'),
     ].join('');
 
     /* ---- Bank accounts ---- */
@@ -278,9 +292,14 @@ async function loadDashboard() {
                 </div>
             </div>
             ${adherence != null ? `
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center mb-2">
                 <span class="text-xs opacity-40">Budget adherence</span>
                 <span class="badge badge-sm ${adherence >= 80 ? 'badge-success' : adherence >= 60 ? 'badge-warning' : 'badge-error'}">${adherence.toFixed(0)}%</span>
+            </div>` : ''}
+            ${dash.subscriptionMonthly > 0 ? `
+            <div class="flex justify-between items-center">
+                <span class="text-xs opacity-40">Subscriptions</span>
+                <span class="text-xs font-semibold">${fmtEur(dash.subscriptionMonthly)}/mo <span class="opacity-40">(${dash.subscriptionCount} active)</span></span>
             </div>` : ''}
         `;
     } else {
@@ -353,6 +372,25 @@ async function loadDashboard() {
             <div class="text-xs opacity-40 mb-3">${pct.toFixed(1)}% to target${dash.goalFireAge ? ` · FIRE at ${dash.goalFireAge}` : ''}</div>
             <div class="h-2.5 bg-base-300 rounded-full overflow-hidden">
                 <div class="h-full bg-warning rounded-full transition-all duration-700" style="width:${pct.toFixed(1)}%"></div>
+            </div>
+        `;
+    }
+
+    /* ---- Savings Goals ---- */
+    if (dash?.savingsGoalsCount > 0) {
+        document.getElementById('savingsGoalsCard').style.display = '';
+        const saved  = dash.savingsGoalsSaved  ?? 0;
+        const target = dash.savingsGoalsTarget ?? 0;
+        const pct    = target > 0 ? Math.min(100, saved / target * 100) : 0;
+        const remaining = Math.max(0, target - saved);
+        document.getElementById('savingsGoalsBody').innerHTML = `
+            <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-xl font-bold tabular-nums">${fmtEur(saved)}</span>
+                <span class="text-xs opacity-30">/ ${fmtEur(target)}</span>
+            </div>
+            <div class="text-xs opacity-40 mb-3">${pct.toFixed(1)}% across ${dash.savingsGoalsCount} goal${dash.savingsGoalsCount !== 1 ? 's' : ''}${remaining > 0 ? ` · ${fmtEur(remaining)} to go` : ''}</div>
+            <div class="h-2.5 bg-base-300 rounded-full overflow-hidden">
+                <div class="h-full bg-success rounded-full transition-all duration-700" style="width:${pct.toFixed(1)}%"></div>
             </div>
         `;
     }

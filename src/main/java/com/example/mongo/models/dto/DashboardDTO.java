@@ -33,4 +33,13 @@ public class DashboardDTO {
   private int fitnessThisWeek;
   private Double currentWeight;
   private Double weightChange;
+
+  // Subscriptions
+  private double subscriptionMonthly;
+  private int subscriptionCount;
+
+  // Savings Goals
+  private double savingsGoalsSaved;
+  private double savingsGoalsTarget;
+  private int savingsGoalsCount;
 }

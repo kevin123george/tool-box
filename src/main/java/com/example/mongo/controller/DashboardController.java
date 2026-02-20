@@ -7,11 +7,14 @@ import com.example.mongo.models.dto.DashboardDTO;
 import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.models.dto.FitnessStats;
 import com.example.mongo.models.dto.PortfolioStats;
+import com.example.mongo.models.dto.SubscriptionSummaryDTO;
 import com.example.mongo.repos.FinancialGoalRepository;
 import com.example.mongo.services.BankAccountService;
 import com.example.mongo.services.FitnessService;
 import com.example.mongo.services.MonthlyBudgetService;
+import com.example.mongo.services.SavingsGoalService;
 import com.example.mongo.services.StockService;
+import com.example.mongo.services.SubscriptionService;
 import java.time.YearMonth;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +32,8 @@ public class DashboardController {
   private final FinancialGoalRepository goalRepository;
   private final FitnessService fitnessService;
   private final AuthUtils authUtils;
+  private final SubscriptionService subscriptionService;
+  private final SavingsGoalService savingsGoalService;
 
   public DashboardController(
       BankAccountService bankAccountService,
@@ -36,13 +41,17 @@ public class DashboardController {
       MonthlyBudgetService budgetService,
       FinancialGoalRepository goalRepository,
       FitnessService fitnessService,
-      AuthUtils authUtils) {
+      AuthUtils authUtils,
+      SubscriptionService subscriptionService,
+      SavingsGoalService savingsGoalService) {
     this.bankAccountService = bankAccountService;
     this.stockService = stockService;
     this.budgetService = budgetService;
     this.goalRepository = goalRepository;
     this.fitnessService = fitnessService;
     this.authUtils = authUtils;
+    this.subscriptionService = subscriptionService;
+    this.savingsGoalService = savingsGoalService;
   }
 
   @GetMapping
@@ -86,6 +95,14 @@ public class DashboardController {
     // Calculate net worth
     double netWorth = totalCash + portfolioValue;
 
+    // Get subscriptions
+    SubscriptionSummaryDTO subSummary = subscriptionService.getSummary();
+
+    // Get savings goals
+    double savingsGoalsSaved  = savingsGoalService.getTotalSaved();
+    double savingsGoalsTarget = savingsGoalService.getTotalTarget();
+    int savingsGoalsCount     = savingsGoalService.getAllGoals().size();
+
     // Get fitness stats
     FitnessStats fitnessStats = fitnessService.calculateStats();
     Double currentWeight = fitnessService.getLatestWeight().map(w -> w.getWeight()).orElse(null);
@@ -109,6 +126,11 @@ public class DashboardController {
             .fitnessThisWeek(fitnessStats.getThisWeekWorkouts())
             .currentWeight(currentWeight)
             .weightChange(fitnessStats.getWeightChange())
+            .subscriptionMonthly(subSummary.getTotalMonthly())
+            .subscriptionCount(subSummary.getActiveCount())
+            .savingsGoalsSaved(savingsGoalsSaved)
+            .savingsGoalsTarget(savingsGoalsTarget)
+            .savingsGoalsCount(savingsGoalsCount)
             .build();
 
     return ResponseEntity.ok(dashboard);
