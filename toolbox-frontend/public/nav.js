@@ -110,6 +110,7 @@
         },
         {
             group: 'Admin',
+            adminOnly: true,
             items: [
                 { key: 'system', label: 'System', href: '/system.html', icon: 'system' }
             ]
@@ -120,9 +121,11 @@
        Build sidebar menu HTML
     ------------------------------------------------------- */
     function buildMenuHTML(activeKey) {
+        const isAdmin = (localStorage.getItem('userRole') || '').toUpperCase() === 'ADMIN';
         let html = '<ul class="menu menu-sm w-full p-0 gap-0.5">';
 
-        MENU_GROUPS.forEach(({ group, items }) => {
+        MENU_GROUPS.forEach(({ group, adminOnly, items }) => {
+            if (adminOnly && !isAdmin) return;
             if (group) {
                 html += `
                 <li class="is-drawer-close:hidden mt-3 mb-0.5 px-3">

@@ -169,6 +169,7 @@
         localStorage.setItem('userId',     data.userId);
         localStorage.setItem('userName',   data.name);
         localStorage.setItem('userEmail',  data.email);
+        localStorage.setItem('userRole',   data.role);
         window.location.href = '/';
       } catch { errEl.textContent = 'Connection error. Is the server running?'; errEl.classList.remove('hidden'); }
       finally   { btn.disabled = false; btn.textContent = 'Sign In'; }
@@ -194,6 +195,7 @@
         localStorage.setItem('userId',     data.userId);
         localStorage.setItem('userName',   data.name);
         localStorage.setItem('userEmail',  data.email);
+        localStorage.setItem('userRole',   data.role);
         window.location.href = '/';
       } catch { errEl.textContent = 'Connection error. Is the server running?'; errEl.classList.remove('hidden'); }
       finally   { btn.disabled = false; btn.textContent = 'Create Account'; }
