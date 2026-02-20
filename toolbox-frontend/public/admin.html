@@ -44,6 +44,43 @@
     </div>
 </div>
 
+<!-- Edit user modal -->
+<dialog id="editModal" class="modal">
+    <div class="modal-box max-w-md">
+        <h3 class="font-bold text-lg mb-4">Edit User</h3>
+        <input type="hidden" id="editUserId">
+        <div class="flex flex-col gap-3">
+            <div>
+                <label class="label py-1"><span class="label-text text-xs opacity-60">Name</span></label>
+                <input id="editName" type="text" class="input input-bordered input-sm w-full" placeholder="Full name">
+            </div>
+            <div>
+                <label class="label py-1"><span class="label-text text-xs opacity-60">Email</span></label>
+                <input id="editEmail" type="email" class="input input-bordered input-sm w-full" placeholder="email@example.com">
+            </div>
+            <div>
+                <label class="label py-1">
+                    <span class="label-text text-xs opacity-60">Role</span>
+                </label>
+                <select id="editRole" class="select select-bordered select-sm w-full">
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+            </div>
+            <div class="divider my-0 text-xs opacity-40">Password Reset</div>
+            <div>
+                <label class="label py-1"><span class="label-text text-xs opacity-60">New Password <span class="opacity-50">(leave blank to keep current)</span></span></label>
+                <input id="editPassword" type="password" class="input input-bordered input-sm w-full" placeholder="Min 6 characters" autocomplete="new-password">
+            </div>
+        </div>
+        <div class="modal-action mt-5">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('editModal').close()">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="editSaveBtn" onclick="saveEdit()">Save Changes</button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
 <!-- Delete confirm modal -->
 <dialog id="deleteModal" class="modal">
     <div class="modal-box">

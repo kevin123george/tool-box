@@ -100,6 +100,12 @@ function renderUsers(users) {
             ? `<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-success rounded-full border-2 border-base-200"></span>`
             : '';
 
+        const editBtn = `
+            <button class="btn btn-ghost btn-xs"
+                    onclick="openEditModal('${u.id}', '${escapeHtml(u.name)}', '${escapeHtml(u.email)}', '${u.role}', ${isSelf})">
+                Edit
+            </button>`;
+
         const toggleBtn = isSelf ? '' : `
             <button class="btn btn-ghost btn-xs" onclick="toggleRole('${u.id}', '${u.role}')">
                 ${isAdmin ? 'Demote' : 'Promote'}
@@ -153,6 +159,7 @@ function renderUsers(users) {
             </td>
             <td class="text-right">
                 <div class="flex gap-1 justify-end">
+                    ${editBtn}
                     ${toggleBtn}
                     ${deleteBtn}
                 </div>
@@ -181,6 +188,53 @@ function renderUsers(users) {
                 <div class="px-4 pb-3 pt-1 text-xs opacity-40">${users.length} user${users.length !== 1 ? 's' : ''} total</div>
             </div>
         </div>`;
+}
+
+/* -------------------------------------------------------
+   Edit user
+------------------------------------------------------- */
+function openEditModal(userId, name, email, role, isSelf) {
+    document.getElementById('editUserId').value  = userId;
+    document.getElementById('editName').value    = name;
+    document.getElementById('editEmail').value   = email;
+    document.getElementById('editRole').value    = role;
+    document.getElementById('editPassword').value = '';
+    // Can't change own role
+    document.getElementById('editRole').disabled = isSelf;
+    document.getElementById('editModal').showModal();
+}
+
+async function saveEdit() {
+    const userId = document.getElementById('editUserId').value;
+    const name   = document.getElementById('editName').value.trim();
+    const email  = document.getElementById('editEmail').value.trim();
+    const role   = document.getElementById('editRole').value;
+    const pass   = document.getElementById('editPassword').value;
+
+    if (!name) { showToast('Name cannot be empty', 'error'); return; }
+    if (!email) { showToast('Email cannot be empty', 'error'); return; }
+
+    const body = { name, email, role };
+    if (pass) body.newPassword = pass;
+
+    const btn = document.getElementById('editSaveBtn');
+    setButtonLoading(btn, true);
+    try {
+        const res = await authFetch(`${API}/api/system/users/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to save');
+        document.getElementById('editModal').close();
+        showToast('User updated', 'success');
+        loadUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        setButtonLoading(btn, false);
+    }
 }
 
 /* -------------------------------------------------------

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +19,7 @@ public class SystemStatsController {
   @Autowired private SystemStatsService statsService;
   @Autowired private UserRepo userRepo;
   @Autowired private AuthUtils authUtils;
+  @Autowired private BCryptPasswordEncoder passwordEncoder;
 
   @GetMapping("/stats")
   public ResponseEntity<SystemStatsDTO> getStats() {
@@ -59,6 +61,49 @@ public class SystemStatsController {
               return ResponseEntity.ok(Map.of("id", id, "role", newRole));
             })
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PatchMapping("/users/{id}")
+  public ResponseEntity<?> editUser(@PathVariable String id, @RequestBody Map<String, String> body) {
+    String currentUserId = authUtils.getCurrentUserId();
+
+    return userRepo.findById(id).map(user -> {
+      String name = body.get("name");
+      String email = body.get("email");
+      String newPassword = body.get("newPassword");
+      String role = body.get("role");
+
+      if (name != null && !name.isBlank()) user.setName(name.trim());
+
+      if (email != null && !email.isBlank() && !email.equalsIgnoreCase(user.getEmail())) {
+        if (userRepo.existsByEmail(email.trim())) {
+          return ResponseEntity.badRequest().body(Map.of("error", "Email already in use"));
+        }
+        user.setEmail(email.trim());
+      }
+
+      if (newPassword != null && !newPassword.isBlank()) {
+        if (newPassword.length() < 6) {
+          return ResponseEntity.badRequest().body(Map.of("error", "Password must be at least 6 characters"));
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+      }
+
+      if (role != null && !role.equals(user.getRole())) {
+        if (!role.equals("USER") && !role.equals("ADMIN")) {
+          return ResponseEntity.badRequest().body(Map.of("error", "role must be USER or ADMIN"));
+        }
+        if (id.equals(currentUserId)) {
+          return ResponseEntity.badRequest().body(Map.of("error", "Cannot change your own role"));
+        }
+        user.setRole(role);
+      }
+
+      userRepo.save(user);
+      return ResponseEntity.ok(new UserSummaryDTO(
+          user.getId(), user.getName(), user.getEmail(), user.getRole(),
+          user.getCreatedAt(), user.getLastLoginAt(), user.getLastSeenAt()));
+    }).orElse(ResponseEntity.notFound().build());
   }
 
   @DeleteMapping("/users/{id}")
