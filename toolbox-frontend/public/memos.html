@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ToolBox - Memos</title>
+    <title>ToolBox — Memos</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -17,107 +17,154 @@
     </div>
     <div id="nav-placeholder" data-active="memos"></div>
 
-    <div class="flex items-center justify-between mb-6">
+    <!-- Page header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Memos</h1>
             <p class="text-sm opacity-40 mt-0.5">Notes, ideas &amp; journal</p>
         </div>
-    </div>
-
-    <!-- =================== MEMOS =================== -->
-    <div id="memoTabContent">
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start memo-layout">
-            <!-- LEFT: ADD MEMO FORM -->
-            <div class="card bg-base-200 shadow p-4 md:sticky md:top-5">
-                <h3 class="font-bold mb-2">Add Memo</h3>
-                <input id="memoTitle" placeholder="Title" class="input input-bordered w-full mb-2">
-                <div id="memoContent" style="height: 150px;"></div>
-                <select id="memoCategory" class="select select-bordered w-full mb-2 mt-2">
-                    <option value="personal">personal</option>
-                    <option value="work">work</option>
-                    <option value="ideas">ideas</option>
-                    <option value="journal">journal</option>
-                </select>
-                <label class="label cursor-pointer justify-start gap-2 mb-2">
-                    <input type="checkbox" id="memoPinned" class="checkbox checkbox-sm">
-                    <span class="label-text">Pin?</span>
-                </label>
-                <input type="file" id="memoFile" accept="image/*" class="file-input file-input-bordered w-full mb-2">
-                <button class="btn btn-primary" onclick="addMemo()">ADD MEMO</button>
-            </div>
-
-            <!-- RIGHT: MEMO LIST -->
-            <div>
-                <!-- Pagination Controls -->
-                <div id="memoPagination" class="flex flex-wrap items-center justify-between gap-2 p-3 bg-base-200 rounded-box mb-3">
-                    <div class="text-xs opacity-80" id="memoPageInfo"></div>
-                    <div class="join">
-                        <button class="btn btn-sm join-item" id="memoFirstBtn" onclick="memoGoToPage(0)">FIRST</button>
-                        <button class="btn btn-sm join-item" id="memoPrevBtn" onclick="memoPrevPage()">PREV</button>
-                        <span class="btn btn-sm join-item btn-disabled">Page</span>
-                        <input type="number" id="memoPageInput" min="1" value="1" class="input input-bordered input-sm w-16 join-item" onchange="memoGoToInput()">
-                        <span class="btn btn-sm join-item btn-disabled" id="memoTotalPagesSpan"></span>
-                        <button class="btn btn-sm join-item" id="memoNextBtn" onclick="memoNextPage()">NEXT</button>
-                        <button class="btn btn-sm join-item" id="memoLastBtn" onclick="memoGoToLastPage()">LAST</button>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="text-xs">Show</span>
-                        <select id="memoPageSize" class="select select-bordered select-sm w-20" onchange="memoChangePageSize()">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="30">30</option>
-                            <option value="40">40</option>
-                            <option value="50">50</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="memoList"></div>
-            </div>
+        <div class="flex items-center gap-2">
+            <span id="memoCountBadge" class="badge badge-neutral badge-lg font-mono">—</span>
         </div>
     </div>
 
-    <!-- ============= MEMO VIEW MODAL ============= -->
-    <dialog id="memoViewModal" class="modal">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg mb-4">Memo Details</h3>
-            <div class="text-xs opacity-70 mb-1">Title</div>
-            <div id="viewMemoTitle" class="p-3 bg-base-300 rounded mb-3"></div>
-            <div class="text-xs opacity-70 mb-1">Content</div>
-            <div id="viewMemoContent" class="memo-content-view mb-3"></div>
-            <div class="text-xs opacity-70 mb-1">Meta</div>
-            <div id="viewMemoMeta" class="p-3 bg-base-300 rounded mb-3"></div>
-            <div id="viewMemoImageWrapper" class="hidden">
-                <div class="text-xs opacity-70 mb-1">Media</div>
-                <img id="viewMemoImage" class="max-w-full border border-base-300 rounded">
+    <!-- Category filter tabs -->
+    <div class="flex flex-wrap gap-2 mb-6" id="memoCategoryFilter">
+        <button class="btn btn-sm btn-primary" data-cat="" onclick="filterMemosByCategory(this)">All</button>
+        <button class="btn btn-sm btn-ghost" data-cat="personal"  onclick="filterMemosByCategory(this)">Personal</button>
+        <button class="btn btn-sm btn-ghost" data-cat="work"      onclick="filterMemosByCategory(this)">Work</button>
+        <button class="btn btn-sm btn-ghost" data-cat="ideas"     onclick="filterMemosByCategory(this)">Ideas</button>
+        <button class="btn btn-sm btn-ghost" data-cat="journal"   onclick="filterMemosByCategory(this)">Journal</button>
+    </div>
+
+    <!-- Main 2-col layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+        <!-- LEFT: New memo form (sticky) -->
+        <div class="card bg-base-200 shadow-sm lg:sticky lg:top-[72px]">
+            <div class="card-body p-5 gap-3">
+                <h2 class="font-semibold text-sm uppercase tracking-widest opacity-50 mb-1">New Memo</h2>
+
+                <input id="memoTitle" placeholder="Title" class="input input-bordered w-full">
+
+                <div>
+                    <label class="label py-0 mb-1"><span class="label-text text-xs opacity-50">Content</span></label>
+                    <div id="memoContent" style="height:160px;"></div>
+                </div>
+
+                <select id="memoCategory" class="select select-bordered w-full mt-1">
+                    <option value="personal">Personal</option>
+                    <option value="work">Work</option>
+                    <option value="ideas">Ideas</option>
+                    <option value="journal">Journal</option>
+                </select>
+
+                <div class="flex items-center gap-6">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="memoPinned" class="checkbox checkbox-sm checkbox-primary">
+                        <span class="text-sm">Pin to top</span>
+                    </label>
+                </div>
+
+                <label class="form-control w-full">
+                    <div class="label py-0 mb-1"><span class="label-text text-xs opacity-50">Attach image (optional)</span></div>
+                    <input type="file" id="memoFile" accept="image/*" class="file-input file-input-bordered file-input-sm w-full">
+                </label>
+
+                <button class="btn btn-primary w-full mt-1" onclick="addMemo()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    Add Memo
+                </button>
             </div>
-            <div class="modal-action">
-                <button class="btn" onclick="closeMemoViewModal()">CLOSE</button>
+        </div>
+
+        <!-- RIGHT: Memo list + pagination -->
+        <div class="lg:col-span-2 flex flex-col gap-3">
+
+            <!-- Pagination top -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="text-xs opacity-40" id="memoPageInfo"></div>
+                <div class="flex items-center gap-2">
+                    <select id="memoPageSize" class="select select-bordered select-xs w-20" onchange="memoChangePageSize()">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                    </select>
+                    <div class="join">
+                        <button class="join-item btn btn-xs btn-ghost" id="memoPrevBtn" onclick="memoPrevPage()">‹ Prev</button>
+                        <span class="join-item btn btn-xs btn-disabled no-animation" id="memoTotalPagesSpan"></span>
+                        <button class="join-item btn btn-xs btn-ghost" id="memoNextBtn" onclick="memoNextPage()">Next ›</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memo cards -->
+            <div id="memoList" class="flex flex-col gap-3">
+                <!-- populated by JS -->
+            </div>
+
+            <!-- Pagination bottom -->
+            <div class="flex justify-center mt-2" id="memoPaginationBottom"></div>
+
+        </div>
+    </div>
+
+    <!-- ===== VIEW MODAL ===== -->
+    <dialog id="memoViewModal" class="modal">
+        <div class="modal-box max-w-2xl">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 id="viewMemoTitle" class="font-bold text-xl leading-tight"></h3>
+                    <div id="viewMemoMeta" class="flex items-center gap-2 mt-2"></div>
+                </div>
+                <button class="btn btn-ghost btn-sm btn-square" onclick="closeMemoViewModal()">✕</button>
+            </div>
+            <div class="divider my-2"></div>
+            <div id="viewMemoContent" class="memo-content-view prose prose-sm max-w-none min-h-[80px]"></div>
+            <div id="viewMemoImageWrapper" class="hidden mt-4">
+                <img id="viewMemoImage" class="max-w-full rounded-xl border border-base-300">
+            </div>
+            <div class="modal-action mt-4">
+                <button class="btn btn-ghost" onclick="closeMemoViewModal()">Close</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>
 
-    <!-- ============= MEMO EDIT MODAL ============= -->
+    <!-- ===== EDIT MODAL ===== -->
     <dialog id="memoModal" class="modal">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg mb-4">Edit Memo</h3>
-            <input id="editMemoTitle" placeholder="Title" class="input input-bordered w-full mb-2">
-            <div id="editMemoContent" style="height: 200px;"></div>
-            <select id="editMemoCategory" class="select select-bordered w-full mb-2 mt-2">
-                <option value="personal">personal</option>
-                <option value="work">work</option>
-                <option value="ideas">ideas</option>
-                <option value="journal">journal</option>
-            </select>
-            <label class="label cursor-pointer justify-start gap-2 mb-2">
-                <input type="checkbox" id="editMemoPinned" class="checkbox checkbox-sm">
-                <span class="label-text">Pin?</span>
-            </label>
-            <input type="file" id="editMemoFile" accept="image/*" class="file-input file-input-bordered w-full mb-2">
-            <div class="modal-action">
-                <button class="btn btn-primary" onclick="saveMemoEdit()">SAVE</button>
-                <button class="btn" onclick="closeMemoModal()">CANCEL</button>
+        <div class="modal-box max-w-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg">Edit Memo</h3>
+                <button class="btn btn-ghost btn-sm btn-square" onclick="closeMemoModal()">✕</button>
+            </div>
+            <div class="flex flex-col gap-3">
+                <input id="editMemoTitle" placeholder="Title" class="input input-bordered w-full">
+                <div>
+                    <label class="label py-0 mb-1"><span class="label-text text-xs opacity-50">Content</span></label>
+                    <div id="editMemoContent" style="height:220px;"></div>
+                </div>
+                <select id="editMemoCategory" class="select select-bordered w-full mt-1">
+                    <option value="personal">Personal</option>
+                    <option value="work">Work</option>
+                    <option value="ideas">Ideas</option>
+                    <option value="journal">Journal</option>
+                </select>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="editMemoPinned" class="checkbox checkbox-sm checkbox-primary">
+                    <span class="text-sm">Pin to top</span>
+                </label>
+                <label class="form-control w-full">
+                    <div class="label py-0 mb-1"><span class="label-text text-xs opacity-50">Replace image (optional)</span></div>
+                    <input type="file" id="editMemoFile" accept="image/*" class="file-input file-input-bordered file-input-sm w-full">
+                </label>
+            </div>
+            <div class="modal-action mt-4">
+                <button class="btn btn-ghost" onclick="closeMemoModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveMemoEdit()">Save changes</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop"><button>close</button></form>
