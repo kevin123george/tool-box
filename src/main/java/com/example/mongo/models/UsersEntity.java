@@ -23,5 +23,8 @@ public class UsersEntity {
   private Instant lastLoginAt;
   private Instant lastSeenAt;
 
+  private String resetToken;
+  private Instant resetTokenExpiry;
+
   @CreatedDate private Instant createdAt;
 }

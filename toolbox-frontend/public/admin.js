@@ -106,6 +106,12 @@ function renderUsers(users) {
                 Edit
             </button>`;
 
+        const resetBtn = isSelf ? '' : `
+            <button class="btn btn-ghost btn-xs text-warning"
+                    onclick="generateResetLink('${u.id}', '${escapeHtml(u.name)}')">
+                Reset PW
+            </button>`;
+
         const toggleBtn = isSelf ? '' : `
             <button class="btn btn-ghost btn-xs" onclick="toggleRole('${u.id}', '${u.role}')">
                 ${isAdmin ? 'Demote' : 'Promote'}
@@ -158,8 +164,9 @@ function renderUsers(users) {
                 <div class="text-xs opacity-40">${u.createdAt ? fmtDate(u.createdAt) : '—'}</div>
             </td>
             <td class="text-right">
-                <div class="flex gap-1 justify-end">
+                <div class="flex gap-1 justify-end flex-wrap">
                     ${editBtn}
+                    ${resetBtn}
                     ${toggleBtn}
                     ${deleteBtn}
                 </div>
@@ -188,6 +195,30 @@ function renderUsers(users) {
                 <div class="px-4 pb-3 pt-1 text-xs opacity-40">${users.length} user${users.length !== 1 ? 's' : ''} total</div>
             </div>
         </div>`;
+}
+
+/* -------------------------------------------------------
+   Password reset link
+------------------------------------------------------- */
+async function generateResetLink(userId, name) {
+    try {
+        const res = await authFetch(`${API}/api/system/users/${userId}/reset-link`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to generate link');
+        document.getElementById('resetLinkUser').textContent = name;
+        document.getElementById('resetLinkInput').value = data.resetUrl;
+        document.getElementById('resetLinkCopied').classList.add('hidden');
+        document.getElementById('resetLinkModal').showModal();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+function copyResetLink() {
+    const input = document.getElementById('resetLinkInput');
+    navigator.clipboard.writeText(input.value).then(() => {
+        document.getElementById('resetLinkCopied').classList.remove('hidden');
+    });
 }
 
 /* -------------------------------------------------------

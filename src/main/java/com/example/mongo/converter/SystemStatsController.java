@@ -5,8 +5,11 @@ import com.example.mongo.models.dto.SystemStatsDTO;
 import com.example.mongo.models.dto.UserSummaryDTO;
 import com.example.mongo.repos.UserRepo;
 import com.example.mongo.services.SystemStatsService;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -103,6 +106,22 @@ public class SystemStatsController {
       return ResponseEntity.ok(new UserSummaryDTO(
           user.getId(), user.getName(), user.getEmail(), user.getRole(),
           user.getCreatedAt(), user.getLastLoginAt(), user.getLastSeenAt()));
+    }).orElse(ResponseEntity.notFound().build());
+  }
+
+  @PostMapping("/users/{id}/reset-link")
+  public ResponseEntity<?> generateResetLink(@PathVariable String id, HttpServletRequest request) {
+    return userRepo.findById(id).map(user -> {
+      String token = UUID.randomUUID().toString();
+      user.setResetToken(token);
+      user.setResetTokenExpiry(Instant.now().plusSeconds(86400)); // 24h
+      userRepo.save(user);
+
+      String baseUrl = request.getScheme() + "://" + request.getServerName()
+          + (request.getServerPort() != 80 && request.getServerPort() != 443
+              ? ":" + request.getServerPort() : "");
+      String resetUrl = baseUrl + "/reset-password.html?token=" + token;
+      return ResponseEntity.ok(Map.of("resetUrl", resetUrl, "expiresIn", "24 hours"));
     }).orElse(ResponseEntity.notFound().build());
   }
 

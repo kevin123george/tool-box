@@ -9,6 +9,7 @@ import com.example.mongo.models.dto.RegisterRequest;
 import com.example.mongo.repos.UserRepo;
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -52,6 +53,33 @@ public class AuthController {
     String token = jwtUtil.generateToken(user);
     return ResponseEntity.ok(
         new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
+  }
+
+  @GetMapping("/reset-password/validate")
+  public ResponseEntity<?> validateResetToken(@org.springframework.web.bind.annotation.RequestParam String token) {
+    return userRepo.findByResetToken(token)
+        .filter(u -> u.getResetTokenExpiry() != null && Instant.now().isBefore(u.getResetTokenExpiry()))
+        .map(u -> ResponseEntity.ok(Map.of("valid", true, "name", u.getName(), "email", u.getEmail())))
+        .orElse(ResponseEntity.badRequest().body(Map.of("valid", false, "error", "Reset link is invalid or has expired")));
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+    String token    = body.get("token");
+    String password = body.get("newPassword");
+    if (token == null || password == null || password.length() < 6) {
+      return ResponseEntity.badRequest().body("Password must be at least 6 characters");
+    }
+    return userRepo.findByResetToken(token)
+        .filter(u -> u.getResetTokenExpiry() != null && Instant.now().isBefore(u.getResetTokenExpiry()))
+        .map(u -> {
+          u.setPasswordHash(passwordEncoder.encode(password));
+          u.setResetToken(null);
+          u.setResetTokenExpiry(null);
+          userRepo.save(u);
+          return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
+        })
+        .orElse(ResponseEntity.badRequest().body(Map.of("error", "Reset link is invalid or has expired")));
   }
 
   @GetMapping("/me")
