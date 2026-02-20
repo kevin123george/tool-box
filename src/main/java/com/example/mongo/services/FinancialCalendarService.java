@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.DividendRecord;
 import com.example.mongo.models.RecurringTransaction;
 import com.example.mongo.models.Subscription;
@@ -22,6 +23,7 @@ public class FinancialCalendarService {
   @Autowired private DividendService dividendService;
 
   @Autowired private WorkoutLogRepository workoutLogRepository;
+  @Autowired private AuthUtils authUtils;
 
   public List<CalendarEventDTO> getEventsForMonth(int year, int month) {
     List<CalendarEventDTO> events = new ArrayList<>();
@@ -80,7 +82,7 @@ public class FinancialCalendarService {
     }
 
     // Add workouts
-    List<WorkoutLog> workouts = workoutLogRepository.findByWorkoutDateBetween(start, end);
+    List<WorkoutLog> workouts = workoutLogRepository.findByWorkoutDateBetweenAndUserId(start, end, authUtils.getCurrentUserId());
     for (WorkoutLog workout : workouts) {
       if (workout.getWorkoutDate() != null) {
         String exerciseType =
