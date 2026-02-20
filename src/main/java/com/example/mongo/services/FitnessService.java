@@ -67,7 +67,8 @@ public class FitnessService {
   }
 
   public List<WorkoutLog> getRecentWorkouts() {
-    return workoutLogRepository.findTop30ByUserIdOrderByWorkoutDateDesc(authUtils.getCurrentUserId());
+    return workoutLogRepository.findTop30ByUserIdOrderByWorkoutDateDesc(
+        authUtils.getCurrentUserId());
   }
 
   public WorkoutLog updateWorkout(String id, WorkoutLog workoutDetails) {
@@ -95,9 +96,12 @@ public class FitnessService {
 
   public void deleteWorkout(String id) {
     String userId = authUtils.getCurrentUserId();
-    workoutLogRepository.findById(id).ifPresent(w -> {
-      if (userId.equals(w.getUserId())) workoutLogRepository.deleteById(id);
-    });
+    workoutLogRepository
+        .findById(id)
+        .ifPresent(
+            w -> {
+              if (userId.equals(w.getUserId())) workoutLogRepository.deleteById(id);
+            });
   }
 
   // ===== WEIGHT METHODS =====
@@ -106,7 +110,8 @@ public class FitnessService {
     String userId = authUtils.getCurrentUserId();
     entry.setUserId(userId);
     // If an entry exists for this date, update it
-    Optional<WeightEntry> existing = weightEntryRepository.findByDateAndUserId(entry.getDate(), userId);
+    Optional<WeightEntry> existing =
+        weightEntryRepository.findByDateAndUserId(entry.getDate(), userId);
     if (existing.isPresent()) {
       WeightEntry existingEntry = existing.get();
       existingEntry.setWeight(entry.getWeight());
@@ -133,9 +138,12 @@ public class FitnessService {
 
   public void deleteWeightEntry(String id) {
     String userId = authUtils.getCurrentUserId();
-    weightEntryRepository.findById(id).ifPresent(w -> {
-      if (userId.equals(w.getUserId())) weightEntryRepository.deleteById(id);
-    });
+    weightEntryRepository
+        .findById(id)
+        .ifPresent(
+            w -> {
+              if (userId.equals(w.getUserId())) weightEntryRepository.deleteById(id);
+            });
   }
 
   // ===== STATS METHODS =====
@@ -145,7 +153,8 @@ public class FitnessService {
     FitnessStats stats = new FitnessStats();
 
     // Get all completed workouts sorted by date
-    List<WorkoutLog> completedWorkouts = workoutLogRepository.findByCompletedTrueAndUserIdOrderByWorkoutDateDesc(userId);
+    List<WorkoutLog> completedWorkouts =
+        workoutLogRepository.findByCompletedTrueAndUserIdOrderByWorkoutDateDesc(userId);
 
     // Total workouts
     stats.setTotalWorkouts(completedWorkouts.size());
@@ -284,9 +293,12 @@ public class FitnessService {
 
   public void deleteTemplate(String id) {
     String userId = authUtils.getCurrentUserId();
-    workoutTemplateRepository.findById(id).ifPresent(t -> {
-      if (userId.equals(t.getUserId())) workoutTemplateRepository.deleteById(id);
-    });
+    workoutTemplateRepository
+        .findById(id)
+        .ifPresent(
+            t -> {
+              if (userId.equals(t.getUserId())) workoutTemplateRepository.deleteById(id);
+            });
   }
 
   // ===== PLAN METHODS =====
@@ -348,13 +360,17 @@ public class FitnessService {
 
   public void deletePlan(String id) {
     String userId = authUtils.getCurrentUserId();
-    workoutPlanRepository.findById(id).ifPresent(p -> {
-      if (userId.equals(p.getUserId())) workoutPlanRepository.deleteById(id);
-    });
+    workoutPlanRepository
+        .findById(id)
+        .ifPresent(
+            p -> {
+              if (userId.equals(p.getUserId())) workoutPlanRepository.deleteById(id);
+            });
   }
 
   private void deactivateAllPlans() {
-    List<WorkoutPlan> allPlans = workoutPlanRepository.findAllByUserId(authUtils.getCurrentUserId());
+    List<WorkoutPlan> allPlans =
+        workoutPlanRepository.findAllByUserId(authUtils.getCurrentUserId());
     for (WorkoutPlan plan : allPlans) {
       if (plan.isActive()) {
         plan.setActive(false);
@@ -389,7 +405,8 @@ public class FitnessService {
   // ===== TODAY'S WORKOUT =====
 
   public WorkoutTemplate getTodaysScheduledWorkout() {
-    Optional<WorkoutPlan> activePlanOpt = workoutPlanRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId());
+    Optional<WorkoutPlan> activePlanOpt =
+        workoutPlanRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId());
     if (activePlanOpt.isEmpty()) {
       return null;
     }
@@ -453,7 +470,8 @@ public class FitnessService {
         if (vol != null) {
           vol.setWorkoutCount(vol.getWorkoutCount() + 1);
           vol.setTotalMinutes(
-              vol.getTotalMinutes() + (w.getDurationMinutes() != null ? w.getDurationMinutes() : 0));
+              vol.getTotalMinutes()
+                  + (w.getDurationMinutes() != null ? w.getDurationMinutes() : 0));
         }
       }
     }
@@ -465,8 +483,7 @@ public class FitnessService {
     analytics.setAverageWorkoutsPerWeek(Math.round(avgPerWeek * 10) / 10.0);
 
     // Consistency score (percentage of weeks with at least 3 workouts)
-    long goodWeeks =
-        weeklyMap.values().stream().filter(v -> v.getWorkoutCount() >= 3).count();
+    long goodWeeks = weeklyMap.values().stream().filter(v -> v.getWorkoutCount() >= 3).count();
     int consistency = weeks > 0 ? (int) ((goodWeeks * 100) / weeks) : 0;
     analytics.setConsistencyScore(consistency);
 
@@ -474,7 +491,9 @@ public class FitnessService {
   }
 
   public Map<String, Integer> getWorkoutsByType() {
-    List<WorkoutLog> workouts = workoutLogRepository.findByCompletedTrueAndUserIdOrderByWorkoutDateDesc(authUtils.getCurrentUserId());
+    List<WorkoutLog> workouts =
+        workoutLogRepository.findByCompletedTrueAndUserIdOrderByWorkoutDateDesc(
+            authUtils.getCurrentUserId());
     Map<String, Integer> byType = new HashMap<>();
     for (WorkoutLog w : workouts) {
       if (w.getExerciseType() != null) {

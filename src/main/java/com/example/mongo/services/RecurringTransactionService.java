@@ -6,7 +6,6 @@ import com.example.mongo.models.ExpenseRecord;
 import com.example.mongo.models.IncomeCategory;
 import com.example.mongo.models.IncomeRecord;
 import com.example.mongo.models.RecurringTransaction;
-import com.example.mongo.models.TransactionFrequency;
 import com.example.mongo.repos.RecurringTransactionRepository;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -35,8 +34,10 @@ public class RecurringTransactionService {
 
   public RecurringTransaction getById(String id) {
     String userId = authUtils.getCurrentUserId();
-    RecurringTransaction tx = recurringRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Recurring transaction not found: " + id));
+    RecurringTransaction tx =
+        recurringRepository
+            .findById(id)
+            .orElseThrow(() -> new RuntimeException("Recurring transaction not found: " + id));
     if (!userId.equals(tx.getUserId())) throw new RuntimeException("Access denied");
     return tx;
   }
@@ -60,9 +61,12 @@ public class RecurringTransactionService {
 
   public void delete(String id) {
     String userId = authUtils.getCurrentUserId();
-    recurringRepository.findById(id).ifPresent(tx -> {
-      if (userId.equals(tx.getUserId())) recurringRepository.deleteById(id);
-    });
+    recurringRepository
+        .findById(id)
+        .ifPresent(
+            tx -> {
+              if (userId.equals(tx.getUserId())) recurringRepository.deleteById(id);
+            });
   }
 
   public void processDueTransactions() {
@@ -81,8 +85,7 @@ public class RecurringTransactionService {
         if ("INCOME".equalsIgnoreCase(transaction.getCategory())) {
           IncomeCategory category = IncomeCategory.valueOf(transaction.getCategoryType());
           IncomeRecord record =
-              new IncomeRecord(
-                  category, transaction.getAmount(), "Auto: " + transaction.getName());
+              new IncomeRecord(category, transaction.getAmount(), "Auto: " + transaction.getName());
           budgetService.addIncome(month, record, userId);
         } else {
           ExpenseCategory category = ExpenseCategory.valueOf(transaction.getCategoryType());
@@ -98,7 +101,8 @@ public class RecurringTransactionService {
 
         log.info("Processed recurring transaction: {}", transaction.getName());
       } catch (Exception e) {
-        log.error("Failed to process recurring transaction {}: {}", transaction.getId(), e.getMessage());
+        log.error(
+            "Failed to process recurring transaction {}: {}", transaction.getId(), e.getMessage());
       }
     }
   }
@@ -136,10 +140,11 @@ public class RecurringTransactionService {
     LocalDate end = start.plusMonths(1).minusDays(1);
 
     return recurringRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId()).stream()
-        .filter(t -> {
-          LocalDate due = t.getNextDueDate();
-          return due != null && !due.isBefore(start) && !due.isAfter(end);
-        })
+        .filter(
+            t -> {
+              LocalDate due = t.getNextDueDate();
+              return due != null && !due.isBefore(start) && !due.isAfter(end);
+            })
         .toList();
   }
 }

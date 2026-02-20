@@ -7,7 +7,8 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RecurringTransactionRepository extends MongoRepository<RecurringTransaction, String> {
+public interface RecurringTransactionRepository
+    extends MongoRepository<RecurringTransaction, String> {
 
   List<RecurringTransaction> findByActiveTrue();
 
@@ -19,5 +20,6 @@ public interface RecurringTransactionRepository extends MongoRepository<Recurrin
 
   List<RecurringTransaction> findByActiveTrueAndUserId(String userId);
 
-  List<RecurringTransaction> findByNextDueDateLessThanEqualAndActiveTrueAndUserId(java.time.LocalDate date, String userId);
+  List<RecurringTransaction> findByNextDueDateLessThanEqualAndActiveTrueAndUserId(
+      java.time.LocalDate date, String userId);
 }

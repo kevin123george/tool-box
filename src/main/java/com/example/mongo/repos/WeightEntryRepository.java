@@ -22,7 +22,8 @@ public interface WeightEntryRepository extends MongoRepository<WeightEntry, Stri
 
   List<WeightEntry> findAllByOrderByDateDesc();
 
-  List<WeightEntry> findByDateBetweenAndUserId(java.time.LocalDate start, java.time.LocalDate end, String userId);
+  List<WeightEntry> findByDateBetweenAndUserId(
+      java.time.LocalDate start, java.time.LocalDate end, String userId);
 
   Optional<WeightEntry> findTopByUserIdOrderByDateDesc(String userId);
 

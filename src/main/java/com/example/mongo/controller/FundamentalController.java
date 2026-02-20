@@ -38,8 +38,7 @@ public class FundamentalController {
 
   @GetMapping("/{symbol}/income")
   public ResponseEntity<List<FinancialStatement>> getIncomeStatement(
-      @PathVariable String symbol,
-      @RequestParam(defaultValue = "annual") String period) {
+      @PathVariable String symbol, @RequestParam(defaultValue = "annual") String period) {
     List<FinancialStatement> statements = alphaVantageService.fetchIncomeStatement(symbol);
     if ("quarterly".equals(period)) {
       statements =
@@ -51,8 +50,7 @@ public class FundamentalController {
 
   @GetMapping("/{symbol}/balance-sheet")
   public ResponseEntity<List<FinancialStatement>> getBalanceSheet(
-      @PathVariable String symbol,
-      @RequestParam(defaultValue = "annual") String period) {
+      @PathVariable String symbol, @RequestParam(defaultValue = "annual") String period) {
     List<FinancialStatement> statements = alphaVantageService.fetchBalanceSheet(symbol);
     if ("quarterly".equals(period)) {
       statements =
@@ -64,8 +62,7 @@ public class FundamentalController {
 
   @GetMapping("/{symbol}/cash-flow")
   public ResponseEntity<List<FinancialStatement>> getCashFlow(
-      @PathVariable String symbol,
-      @RequestParam(defaultValue = "annual") String period) {
+      @PathVariable String symbol, @RequestParam(defaultValue = "annual") String period) {
     List<FinancialStatement> statements = alphaVantageService.fetchCashFlow(symbol);
     if ("quarterly".equals(period)) {
       statements =
@@ -77,8 +74,7 @@ public class FundamentalController {
 
   @GetMapping("/{symbol}/earnings")
   public ResponseEntity<List<EarningsData>> getEarnings(
-      @PathVariable String symbol,
-      @RequestParam(defaultValue = "quarterly") String period) {
+      @PathVariable String symbol, @RequestParam(defaultValue = "quarterly") String period) {
     List<EarningsData> earnings = alphaVantageService.fetchEarnings(symbol);
     return ResponseEntity.ok(earnings);
   }

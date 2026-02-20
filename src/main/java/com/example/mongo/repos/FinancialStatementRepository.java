@@ -9,6 +9,5 @@ public interface FinancialStatementRepository extends MongoRepository<FinancialS
   List<FinancialStatement> findBySymbolAndStatementTypeAndPeriod(
       String symbol, String statementType, String period);
 
-  void deleteBySymbolAndStatementTypeAndPeriod(
-      String symbol, String statementType, String period);
+  void deleteBySymbolAndStatementTypeAndPeriod(String symbol, String statementType, String period);
 }

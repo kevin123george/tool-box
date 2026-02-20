@@ -55,8 +55,7 @@ public class DCFService {
     defaults.put("discountRate", 0.10); // 10% WACC default
     defaults.put("terminalGrowthRate", 0.03); // 3% perpetuity growth
     defaults.put("projectionYears", 10);
-    defaults.put(
-        "sharesOutstanding", overview != null ? overview.getSharesOutstanding() : null);
+    defaults.put("sharesOutstanding", overview != null ? overview.getSharesOutstanding() : null);
     defaults.put("currentPrice", overview != null ? overview.getCurrentPrice() : null);
     defaults.put("name", overview != null ? overview.getName() : null);
 
@@ -128,7 +127,8 @@ public class DCFService {
     result.setSymbol(request.getSymbol());
     result.setIntrinsicValue(Math.round(intrinsicValue * 100.0) / 100.0);
     result.setCurrentPrice(currentPrice);
-    result.setMarginOfSafety(marginOfSafety != null ? Math.round(marginOfSafety * 100.0) / 100.0 : null);
+    result.setMarginOfSafety(
+        marginOfSafety != null ? Math.round(marginOfSafety * 100.0) / 100.0 : null);
     result.setVerdict(verdict);
     result.setTotalPresentValue((double) Math.round(totalPV));
     result.setTerminalValue((double) Math.round(terminalValue));

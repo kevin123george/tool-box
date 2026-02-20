@@ -23,7 +23,8 @@ public class NetWorthSnapshotCron {
         snapshotService.captureSnapshot(user.getId());
         log.info("Net worth snapshot captured for user {}", user.getId());
       } catch (Exception e) {
-        log.error("Failed to capture net worth snapshot for user {}: {}", user.getId(), e.getMessage());
+        log.error(
+            "Failed to capture net worth snapshot for user {}: {}", user.getId(), e.getMessage());
       }
     }
   }

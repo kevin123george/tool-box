@@ -22,7 +22,8 @@ public class RecurringTransaction {
   private String name;
   private double amount;
   private String category; // "INCOME" or "EXPENSE"
-  private String categoryType; // The specific category enum value as string (e.g., "SALARY", "RENT")
+  private String
+      categoryType; // The specific category enum value as string (e.g., "SALARY", "RENT")
   private TransactionFrequency frequency;
   private LocalDate nextDueDate;
   private boolean active = true;
@@ -31,7 +32,12 @@ public class RecurringTransaction {
   @LastModifiedDate private Instant lastModified;
 
   public RecurringTransaction(
-      String name, double amount, String category, String categoryType, TransactionFrequency frequency, LocalDate nextDueDate) {
+      String name,
+      double amount,
+      String category,
+      String categoryType,
+      TransactionFrequency frequency,
+      LocalDate nextDueDate) {
     this.name = name;
     this.amount = amount;
     this.category = category;

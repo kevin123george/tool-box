@@ -29,7 +29,8 @@ public class AuthController {
       return ResponseEntity.status(401).body("Invalid credentials");
     }
     String token = jwtUtil.generateToken(user);
-    return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
+    return ResponseEntity.ok(
+        new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
   }
 
   @PostMapping("/register")
@@ -44,7 +45,8 @@ public class AuthController {
     user.setRole("USER");
     user = userRepo.save(user);
     String token = jwtUtil.generateToken(user);
-    return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
+    return ResponseEntity.ok(
+        new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
   }
 
   @GetMapping("/me")
@@ -54,6 +56,7 @@ public class AuthController {
     if (user == null) {
       return ResponseEntity.status(404).body("User not found");
     }
-    return ResponseEntity.ok(new AuthResponse(null, user.getId(), user.getName(), user.getEmail(), user.getRole()));
+    return ResponseEntity.ok(
+        new AuthResponse(null, user.getId(), user.getName(), user.getEmail(), user.getRole()));
   }
 }

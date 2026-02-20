@@ -33,12 +33,28 @@ public class DataMigrationService implements CommandLineRunner {
   private String kevinPassword;
 
   private static final String[] PERSONAL_COLLECTIONS = {
-    "bank_accounts", "memos", "monthly_budgets", "recurring_transactions",
-    "savings_goals", "financial_goals", "price_alerts", "push_subscriptions",
-    "net_worth_snapshots", "portfolio_targets", "stock_watches", "stock_holdings",
-    "stock_holding_histories", "stock_price_entries", "subscriptions",
-    "dividend_records", "weight_entries", "workout_logs", "workout_plans",
-    "workout_templates", "expense_records", "income_records"
+    "bank_accounts",
+    "memos",
+    "monthly_budgets",
+    "recurring_transactions",
+    "savings_goals",
+    "financial_goals",
+    "price_alerts",
+    "push_subscriptions",
+    "net_worth_snapshots",
+    "portfolio_targets",
+    "stock_watches",
+    "stock_holdings",
+    "stock_holding_histories",
+    "stock_price_entries",
+    "subscriptions",
+    "dividend_records",
+    "weight_entries",
+    "workout_logs",
+    "workout_plans",
+    "workout_templates",
+    "expense_records",
+    "income_records"
   };
 
   @Override
@@ -68,10 +84,16 @@ public class DataMigrationService implements CommandLineRunner {
         Update update = new Update().set("userId", kevinId);
         var result = mongoTemplate.updateMulti(query, update, collection);
         if (result.getModifiedCount() > 0) {
-          log.info("DataMigrationService: Migrated {} docs in '{}'", result.getModifiedCount(), collection);
+          log.info(
+              "DataMigrationService: Migrated {} docs in '{}'",
+              result.getModifiedCount(),
+              collection);
         }
       } catch (Exception e) {
-        log.warn("DataMigrationService: Could not migrate collection '{}': {}", collection, e.getMessage());
+        log.warn(
+            "DataMigrationService: Could not migrate collection '{}': {}",
+            collection,
+            e.getMessage());
       }
     }
 

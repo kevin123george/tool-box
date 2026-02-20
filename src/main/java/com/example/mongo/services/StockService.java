@@ -78,9 +78,12 @@ public class StockService {
 
   public void deleteStock(String id) {
     String userId = authUtils.getCurrentUserId();
-    stockRepository.findById(id).ifPresent(stock -> {
-      if (userId.equals(stock.getUserId())) stockRepository.deleteById(id);
-    });
+    stockRepository
+        .findById(id)
+        .ifPresent(
+            stock -> {
+              if (userId.equals(stock.getUserId())) stockRepository.deleteById(id);
+            });
   }
 
   public PortfolioStats getPortfolioStats() {
@@ -173,7 +176,8 @@ public class StockService {
   }
 
   public CapitalGainsSummaryDTO getCapitalGains() {
-    List<StockHolding> holdings = stockRepository.findByUserIdAndSoldFalse(authUtils.getCurrentUserId());
+    List<StockHolding> holdings =
+        stockRepository.findByUserIdAndSoldFalse(authUtils.getCurrentUserId());
 
     List<CapitalGainsDTO> gains = new ArrayList<>();
     double totalUnrealizedGain = 0;
@@ -246,9 +250,12 @@ public class StockService {
       if (alloc.getTargetPercentage() > 0) {
         double diff = alloc.getDifference();
         if (diff > 5) {
-          suggestions.put(alloc.getSymbol(), String.format("Consider selling (%.1f%% over target)", diff));
+          suggestions.put(
+              alloc.getSymbol(), String.format("Consider selling (%.1f%% over target)", diff));
         } else if (diff < -5) {
-          suggestions.put(alloc.getSymbol(), String.format("Consider buying (%.1f%% under target)", Math.abs(diff)));
+          suggestions.put(
+              alloc.getSymbol(),
+              String.format("Consider buying (%.1f%% under target)", Math.abs(diff)));
         }
       }
     }

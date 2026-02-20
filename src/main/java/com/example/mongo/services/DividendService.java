@@ -1,12 +1,10 @@
 package com.example.mongo.services;
 
 import com.example.mongo.config.AuthUtils;
-import com.example.mongo.models.DividendFrequency;
 import com.example.mongo.models.DividendRecord;
 import com.example.mongo.models.dto.DividendSummaryDTO;
 import com.example.mongo.repos.DividendRecordRepository;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,8 +23,10 @@ public class DividendService {
 
   public DividendRecord getDividendById(String id) {
     String userId = authUtils.getCurrentUserId();
-    DividendRecord record = dividendRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Dividend record not found: " + id));
+    DividendRecord record =
+        dividendRepository
+            .findById(id)
+            .orElseThrow(() -> new RuntimeException("Dividend record not found: " + id));
     if (!userId.equals(record.getUserId())) throw new RuntimeException("Access denied");
     return record;
   }
@@ -66,14 +66,16 @@ public class DividendService {
         all.stream()
             .collect(
                 Collectors.groupingBy(
-                    DividendRecord::getStockSymbol, Collectors.summingDouble(DividendRecord::getAmount)));
+                    DividendRecord::getStockSymbol,
+                    Collectors.summingDouble(DividendRecord::getAmount)));
 
     Map<Integer, Double> dividendsByYear =
         all.stream()
             .filter(d -> d.getPaymentDate() != null)
             .collect(
                 Collectors.groupingBy(
-                    d -> d.getPaymentDate().getYear(), Collectors.summingDouble(DividendRecord::getAmount)));
+                    d -> d.getPaymentDate().getYear(),
+                    Collectors.summingDouble(DividendRecord::getAmount)));
 
     double annualProjection = calculateAnnualProjection(all);
 
@@ -100,6 +102,7 @@ public class DividendService {
   public List<DividendRecord> getDividendsForMonth(int year, int month) {
     LocalDate start = LocalDate.of(year, month, 1);
     LocalDate end = start.plusMonths(1).minusDays(1);
-    return dividendRepository.findByPaymentDateBetweenAndUserIdOrderByPaymentDateAsc(start, end, authUtils.getCurrentUserId());
+    return dividendRepository.findByPaymentDateBetweenAndUserIdOrderByPaymentDateAsc(
+        start, end, authUtils.getCurrentUserId());
   }
 }

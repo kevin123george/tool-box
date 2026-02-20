@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,8 +36,10 @@ public class PriceAlertService {
 
   public PriceAlert getAlertById(String id) {
     String userId = authUtils.getCurrentUserId();
-    PriceAlert alert = alertRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Price alert not found: " + id));
+    PriceAlert alert =
+        alertRepository
+            .findById(id)
+            .orElseThrow(() -> new RuntimeException("Price alert not found: " + id));
     if (!userId.equals(alert.getUserId())) throw new RuntimeException("Access denied");
     return alert;
   }
@@ -63,9 +64,12 @@ public class PriceAlertService {
 
   public void deleteAlert(String id) {
     String userId = authUtils.getCurrentUserId();
-    alertRepository.findById(id).ifPresent(alert -> {
-      if (userId.equals(alert.getUserId())) alertRepository.deleteById(id);
-    });
+    alertRepository
+        .findById(id)
+        .ifPresent(
+            alert -> {
+              if (userId.equals(alert.getUserId())) alertRepository.deleteById(id);
+            });
   }
 
   public void checkAlerts() {

@@ -19,5 +19,6 @@ public interface SubscriptionRepository extends MongoRepository<Subscription, St
 
   List<Subscription> findByActiveTrueAndUserId(String userId);
 
-  List<Subscription> findByNextBillingDateBetweenAndActiveTrueAndUserId(java.time.LocalDate start, java.time.LocalDate end, String userId);
+  List<Subscription> findByNextBillingDateBetweenAndActiveTrueAndUserId(
+      java.time.LocalDate start, java.time.LocalDate end, String userId);
 }

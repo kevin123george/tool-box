@@ -23,7 +23,10 @@ public class RecurringTransactionCron {
         recurringService.processDueTransactions(user.getId());
         log.info("Processed recurring transactions for user {}", user.getId());
       } catch (Exception e) {
-        log.error("Failed to process recurring transactions for user {}: {}", user.getId(), e.getMessage());
+        log.error(
+            "Failed to process recurring transactions for user {}: {}",
+            user.getId(),
+            e.getMessage());
       }
     }
   }

@@ -39,12 +39,14 @@ public class MonthlyBudgetService {
   }
 
   public MonthlyBudget getOrCreateBudget(YearMonth month, String userId) {
-    return monthlyBudgetRepository.findByMonthAndUserId(month, userId)
-        .orElseGet(() -> {
-          MonthlyBudget b = new MonthlyBudget(month);
-          b.setUserId(userId);
-          return monthlyBudgetRepository.save(b);
-        });
+    return monthlyBudgetRepository
+        .findByMonthAndUserId(month, userId)
+        .orElseGet(
+            () -> {
+              MonthlyBudget b = new MonthlyBudget(month);
+              b.setUserId(userId);
+              return monthlyBudgetRepository.save(b);
+            });
   }
 
   public MonthlyBudget getBudget(YearMonth month) {
@@ -52,7 +54,8 @@ public class MonthlyBudgetService {
   }
 
   public MonthlyBudget getBudget(YearMonth month, String userId) {
-    return monthlyBudgetRepository.findByMonthAndUserId(month, userId)
+    return monthlyBudgetRepository
+        .findByMonthAndUserId(month, userId)
         .orElseThrow(() -> new RuntimeException("Budget not found for month: " + month));
   }
 

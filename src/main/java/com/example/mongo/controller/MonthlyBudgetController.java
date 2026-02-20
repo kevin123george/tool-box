@@ -154,9 +154,7 @@ public class MonthlyBudgetController {
   // Confirm import
   @PostMapping("/{year}/{month}/import/confirm")
   public ResponseEntity<MonthlyBudget> confirmImport(
-      @PathVariable int year,
-      @PathVariable int month,
-      @RequestBody List<ImportPreviewDTO> items) {
+      @PathVariable int year, @PathVariable int month, @RequestBody List<ImportPreviewDTO> items) {
     YearMonth yearMonth = YearMonth.of(year, month);
     importService.confirmImport(year, month, items);
     return ResponseEntity.ok(budgetService.getOrCreateBudget(yearMonth));

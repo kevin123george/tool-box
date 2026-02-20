@@ -63,8 +63,11 @@ public class MemoService {
 
   public void deleteMemo(String id) {
     String userId = authUtils.getCurrentUserId();
-    memoRepository.findById(id).ifPresent(memo -> {
-      if (userId.equals(memo.getUserId())) memoRepository.deleteById(id);
-    });
+    memoRepository
+        .findById(id)
+        .ifPresent(
+            memo -> {
+              if (userId.equals(memo.getUserId())) memoRepository.deleteById(id);
+            });
   }
 }

@@ -112,8 +112,10 @@ public class FinancialGoalService {
 
   public void delete(String id) {
     String userId = authUtils.getCurrentUserId();
-    repo.findById(id).ifPresent(goal -> {
-      if (userId.equals(goal.getUserId())) repo.deleteById(id);
-    });
+    repo.findById(id)
+        .ifPresent(
+            goal -> {
+              if (userId.equals(goal.getUserId())) repo.deleteById(id);
+            });
   }
 }

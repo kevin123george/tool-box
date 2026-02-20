@@ -5,7 +5,6 @@ import com.example.mongo.models.Subscription;
 import com.example.mongo.models.dto.SubscriptionSummaryDTO;
 import com.example.mongo.repos.SubscriptionRepository;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,8 +32,10 @@ public class SubscriptionService {
 
   public Subscription getById(String id) {
     String userId = authUtils.getCurrentUserId();
-    Subscription sub = subscriptionRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Subscription not found: " + id));
+    Subscription sub =
+        subscriptionRepository
+            .findById(id)
+            .orElseThrow(() -> new RuntimeException("Subscription not found: " + id));
     if (!userId.equals(sub.getUserId())) throw new RuntimeException("Access denied");
     return sub;
   }
@@ -60,9 +61,12 @@ public class SubscriptionService {
 
   public void delete(String id) {
     String userId = authUtils.getCurrentUserId();
-    subscriptionRepository.findById(id).ifPresent(sub -> {
-      if (userId.equals(sub.getUserId())) subscriptionRepository.deleteById(id);
-    });
+    subscriptionRepository
+        .findById(id)
+        .ifPresent(
+            sub -> {
+              if (userId.equals(sub.getUserId())) subscriptionRepository.deleteById(id);
+            });
   }
 
   public SubscriptionSummaryDTO getSummary() {
@@ -92,7 +96,8 @@ public class SubscriptionService {
     LocalDate threeDaysFromNow = today.plusDays(3);
 
     List<Subscription> upcomingRenewals =
-        subscriptionRepository.findByNextBillingDateBetweenAndActiveTrueAndUserId(today, threeDaysFromNow, userId);
+        subscriptionRepository.findByNextBillingDateBetweenAndActiveTrueAndUserId(
+            today, threeDaysFromNow, userId);
 
     for (Subscription sub : upcomingRenewals) {
       String title = "Subscription Renewal Reminder";
@@ -118,6 +123,7 @@ public class SubscriptionService {
     String userId = authUtils.getCurrentUserId();
     LocalDate start = LocalDate.of(year, month, 1);
     LocalDate end = start.plusMonths(1).minusDays(1);
-    return subscriptionRepository.findByNextBillingDateBetweenAndActiveTrueAndUserId(start, end, userId);
+    return subscriptionRepository.findByNextBillingDateBetweenAndActiveTrueAndUserId(
+        start, end, userId);
   }
 }

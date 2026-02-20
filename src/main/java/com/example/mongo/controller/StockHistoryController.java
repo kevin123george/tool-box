@@ -46,7 +46,8 @@ public class StockHistoryController {
   /** Get history for specific symbol */
   @GetMapping("/symbol/{symbol}")
   public List<StockHoldingHistory> getHistoryBySymbol(@PathVariable String symbol) {
-    return repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
+    return repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(
+        symbol, authUtils.getCurrentUserId());
   }
 
   /** Get aggregated stats - OPTIMIZED */
@@ -206,7 +207,8 @@ public class StockHistoryController {
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to) {
 
-    List<StockHoldingHistory> histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
+    List<StockHoldingHistory> histories =
+        repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
 
     // Apply date filters
     if (from != null) {
@@ -275,7 +277,8 @@ public class StockHistoryController {
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to) {
 
-    List<StockHoldingHistory> histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
+    List<StockHoldingHistory> histories =
+        repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
 
     // Apply date filters
     if (from != null) {
@@ -419,7 +422,8 @@ public class StockHistoryController {
   /** Get buy points for annotations on chart */
   @GetMapping("/buypoints/{symbol}")
   public List<Map<String, Object>> getBuyPoints(@PathVariable String symbol) {
-    List<StockHoldingHistory> histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
+    List<StockHoldingHistory> histories =
+        repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
 
     // Get unique buy dates with their prices
     Map<String, Map<String, Object>> buyPoints = new LinkedHashMap<>();

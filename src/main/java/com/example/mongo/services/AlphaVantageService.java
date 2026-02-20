@@ -87,7 +87,8 @@ public class AlphaVantageService {
       }
       return result;
     } catch (Exception e) {
-      log.error("[yfinance] Exception calling Python for {} {}: {}", symbol, command, e.getMessage());
+      log.error(
+          "[yfinance] Exception calling Python for {} {}: {}", symbol, command, e.getMessage());
       return Collections.emptyMap();
     }
   }
@@ -98,7 +99,8 @@ public class AlphaVantageService {
     // Clean up duplicates if any exist
     List<CompanyOverview> allCached = overviewRepo.findAllBySymbol(upper);
     if (allCached.size() > 1) {
-      log.warn("[yfinance] Found {} duplicate overviews for {}, cleaning up", allCached.size(), upper);
+      log.warn(
+          "[yfinance] Found {} duplicate overviews for {}, cleaning up", allCached.size(), upper);
       overviewRepo.deleteBySymbol(upper);
       overviewRepo.save(allCached.get(0));
       allCached = List.of(allCached.get(0));
@@ -187,8 +189,7 @@ public class AlphaVantageService {
       return cached;
     }
 
-    List<Map<String, Object>> annualReports =
-        (List<Map<String, Object>>) data.get("annualReports");
+    List<Map<String, Object>> annualReports = (List<Map<String, Object>>) data.get("annualReports");
     List<Map<String, Object>> quarterlyReports =
         (List<Map<String, Object>>) data.get("quarterlyReports");
 

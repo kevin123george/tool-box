@@ -31,7 +31,8 @@ public class RecurringTransactionController {
   }
 
   @PostMapping
-  public ResponseEntity<RecurringTransaction> create(@RequestBody RecurringTransaction transaction) {
+  public ResponseEntity<RecurringTransaction> create(
+      @RequestBody RecurringTransaction transaction) {
     return ResponseEntity.status(HttpStatus.CREATED).body(recurringService.create(transaction));
   }
 

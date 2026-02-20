@@ -84,8 +84,7 @@ public class DashboardController {
 
     // Get fitness stats
     FitnessStats fitnessStats = fitnessService.calculateStats();
-    Double currentWeight =
-        fitnessService.getLatestWeight().map(w -> w.getWeight()).orElse(null);
+    Double currentWeight = fitnessService.getLatestWeight().map(w -> w.getWeight()).orElse(null);
 
     DashboardDTO dashboard =
         DashboardDTO.builder()

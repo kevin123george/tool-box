@@ -40,7 +40,8 @@ public class FitnessDataInitializer implements CommandLineRunner {
     WorkoutPlan pplPlan = new WorkoutPlan();
     pplPlan.setName("Home Workout Plan");
     pplPlan.setActive(true);
-    pplPlan.setNotes("6-day home workout plan. Mon-Push, Tue-Pull, Wed-Legs, Thu-Cardio, Fri-Core, Sat-Rest. Sunday is full rest.");
+    pplPlan.setNotes(
+        "6-day home workout plan. Mon-Push, Tue-Pull, Wed-Legs, Thu-Cardio, Fri-Core, Sat-Rest. Sunday is full rest.");
 
     Map<DayOfWeek, String> schedule = new HashMap<>();
     schedule.put(DayOfWeek.MONDAY, pushDay.getId());

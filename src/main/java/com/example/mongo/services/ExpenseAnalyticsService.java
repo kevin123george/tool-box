@@ -70,7 +70,8 @@ public class ExpenseAnalyticsService {
 
   public List<AnomalyDTO> getAnomalies() {
     List<AnomalyDTO> anomalies = new ArrayList<>();
-    List<MonthlyBudget> budgets = getRecentBudgets(4, authUtils.getCurrentUserId()); // Current + 3 months for average
+    List<MonthlyBudget> budgets =
+        getRecentBudgets(4, authUtils.getCurrentUserId()); // Current + 3 months for average
 
     if (budgets.size() < 2) return anomalies;
 

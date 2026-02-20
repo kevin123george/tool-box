@@ -33,12 +33,15 @@ public class BankAccountService {
 
     String userId = authUtils.getCurrentUserId();
     List<BankAccount> all = repo.findAllByUserId(userId);
-    all.sort(Comparator.comparing(BankAccount::getLastModified, Comparator.nullsLast(Comparator.reverseOrder())));
+    all.sort(
+        Comparator.comparing(
+            BankAccount::getLastModified, Comparator.nullsLast(Comparator.reverseOrder())));
     int start = (int) sortedPageable.getOffset();
     int end = Math.min(start + sortedPageable.getPageSize(), all.size());
     return new PageImpl<>(
         start < all.size() ? all.subList(start, end) : Collections.emptyList(),
-        sortedPageable, all.size());
+        sortedPageable,
+        all.size());
   }
 
   public BankAccount getById(String id) {
@@ -68,9 +71,11 @@ public class BankAccountService {
 
   public void delete(String id) {
     String userId = authUtils.getCurrentUserId();
-    repo.findById(id).ifPresent(account -> {
-      if (userId.equals(account.getUserId())) repo.deleteById(id);
-    });
+    repo.findById(id)
+        .ifPresent(
+            account -> {
+              if (userId.equals(account.getUserId())) repo.deleteById(id);
+            });
   }
 
   public FinanceSummaryDTO getSummary() {

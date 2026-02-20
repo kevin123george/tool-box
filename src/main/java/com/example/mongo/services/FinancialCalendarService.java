@@ -107,7 +107,8 @@ public class FinancialCalendarService {
     return events;
   }
 
-  private LocalDate findFirstOccurrenceInMonth(RecurringTransaction rt, LocalDate start, LocalDate end) {
+  private LocalDate findFirstOccurrenceInMonth(
+      RecurringTransaction rt, LocalDate start, LocalDate end) {
     LocalDate nextDue = rt.getNextDueDate();
     if (nextDue == null) return null;
 
@@ -116,11 +117,12 @@ public class FinancialCalendarService {
       // Calculate backwards to see if there's an occurrence in this month
       LocalDate candidate = nextDue;
       while (candidate.isAfter(end)) {
-        candidate = switch (rt.getFrequency()) {
-          case WEEKLY -> candidate.minusWeeks(1);
-          case MONTHLY -> candidate.minusMonths(1);
-          case YEARLY -> candidate.minusYears(1);
-        };
+        candidate =
+            switch (rt.getFrequency()) {
+              case WEEKLY -> candidate.minusWeeks(1);
+              case MONTHLY -> candidate.minusMonths(1);
+              case YEARLY -> candidate.minusYears(1);
+            };
       }
       if (!candidate.isBefore(start)) {
         return candidate;
@@ -130,11 +132,12 @@ public class FinancialCalendarService {
 
     // If next due is before the month start, advance until we're in range
     while (nextDue.isBefore(start)) {
-      nextDue = switch (rt.getFrequency()) {
-        case WEEKLY -> nextDue.plusWeeks(1);
-        case MONTHLY -> nextDue.plusMonths(1);
-        case YEARLY -> nextDue.plusYears(1);
-      };
+      nextDue =
+          switch (rt.getFrequency()) {
+            case WEEKLY -> nextDue.plusWeeks(1);
+            case MONTHLY -> nextDue.plusMonths(1);
+            case YEARLY -> nextDue.plusYears(1);
+          };
     }
 
     if (!nextDue.isAfter(end)) {
@@ -145,11 +148,12 @@ public class FinancialCalendarService {
   }
 
   private LocalDate getNextOccurrence(RecurringTransaction rt, LocalDate current, LocalDate end) {
-    LocalDate next = switch (rt.getFrequency()) {
-      case WEEKLY -> current.plusWeeks(1);
-      case MONTHLY -> current.plusMonths(1);
-      case YEARLY -> current.plusYears(1);
-    };
+    LocalDate next =
+        switch (rt.getFrequency()) {
+          case WEEKLY -> current.plusWeeks(1);
+          case MONTHLY -> current.plusMonths(1);
+          case YEARLY -> current.plusYears(1);
+        };
 
     if (next.isAfter(end)) {
       return null;

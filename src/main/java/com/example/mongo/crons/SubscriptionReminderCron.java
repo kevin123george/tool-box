@@ -23,7 +23,8 @@ public class SubscriptionReminderCron {
         subscriptionService.checkRenewalReminders(user.getId());
         log.info("Subscription reminders checked for user {}", user.getId());
       } catch (Exception e) {
-        log.error("Failed to check subscription reminders for user {}: {}", user.getId(), e.getMessage());
+        log.error(
+            "Failed to check subscription reminders for user {}: {}", user.getId(), e.getMessage());
       }
     }
   }

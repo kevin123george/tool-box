@@ -49,11 +49,13 @@ public class NetWorthSnapshotService {
   }
 
   public List<NetWorthSnapshot> getHistoryBetween(LocalDate start, LocalDate end) {
-    return snapshotRepository.findByDateBetweenAndUserIdOrderByDateAsc(start, end, authUtils.getCurrentUserId());
+    return snapshotRepository.findByDateBetweenAndUserIdOrderByDateAsc(
+        start, end, authUtils.getCurrentUserId());
   }
 
   public Optional<NetWorthSnapshot> getLatestSnapshot() {
-    List<NetWorthSnapshot> all = snapshotRepository.findAllByUserIdOrderByDateDesc(authUtils.getCurrentUserId());
+    List<NetWorthSnapshot> all =
+        snapshotRepository.findAllByUserIdOrderByDateDesc(authUtils.getCurrentUserId());
     return all.isEmpty() ? Optional.empty() : Optional.of(all.get(0));
   }
 }

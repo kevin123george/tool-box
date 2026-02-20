@@ -189,8 +189,7 @@ public class MarketDataService {
         return Collections.emptyList();
       }
 
-      List<Map<String, Object>> results =
-          (List<Map<String, Object>>) result.get("results");
+      List<Map<String, Object>> results = (List<Map<String, Object>>) result.get("results");
       return results != null ? results : Collections.emptyList();
     } catch (Exception e) {
       log.error("[MarketData] Exception searching tickers for '{}': {}", query, e.getMessage());
