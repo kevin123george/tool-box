@@ -12,5 +12,7 @@ public interface MemoRepository extends MongoRepository<Memo, String> {
 
   Page<Memo> findAllByUserId(String userId, Pageable pageable);
 
+  Page<Memo> findAllByUserIdAndCategory(String userId, Memo.Category category, Pageable pageable);
+
   List<Memo> findAllByUserId(String userId);
 }

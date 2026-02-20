@@ -17,7 +17,7 @@ public class MemoService {
   @Autowired private MemoRepository memoRepository;
   @Autowired private AuthUtils authUtils;
 
-  public Page<Memo> getAllMemos(Pageable pageable) {
+  public Page<Memo> getAllMemos(Pageable pageable, Memo.Category category) {
     String userId = authUtils.getCurrentUserId();
     Pageable sortedPageable =
         PageRequest.of(
@@ -27,6 +27,9 @@ public class MemoService {
                 Sort.Order.desc("pinned"),
                 Sort.Order.desc("updatedAt"),
                 Sort.Order.desc("createdAt")));
+    if (category != null) {
+      return memoRepository.findAllByUserIdAndCategory(userId, category, sortedPageable);
+    }
     return memoRepository.findAllByUserId(userId, sortedPageable);
   }
 
