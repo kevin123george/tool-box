@@ -745,18 +745,22 @@ function displayIncomeRecords(records) {
     records.forEach((rec, idx) => {
         const date = new Date(rec.recordDate).toLocaleDateString();
         html += `
-        <div class="card" style="margin-bottom:6px;">
-            <div class="card-main">
-                <div style="font-weight:bold; font-size:12px;">${rec.category}</div>
-                <div style="font-size:11px; opacity:0.7;">\u20AC${rec.amount.toFixed(2)}</div>
-                <div style="font-size:10px; opacity:0.5;">${rec.description}</div>
-                <div style="font-size:9px; opacity:0.4;">${date}</div>
+        <div class="card bg-base-300 shadow-sm mb-2">
+            <div class="card-body p-3 flex-row items-center justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-sm">${rec.category}</span>
+                        <span class="badge badge-sm badge-success tabular-nums">\u20AC${rec.amount.toFixed(2)}</span>
+                    </div>
+                    ${rec.description ? `<div class="text-xs opacity-50 mt-0.5 truncate">${rec.description}</div>` : ''}
+                    <div class="text-xs opacity-35 mt-0.5">${date}</div>
+                </div>
+                <button class="btn btn-ghost btn-xs text-error shrink-0" onclick="deleteIncomeRecord(${idx})">Del</button>
             </div>
-            <button class="btn" onclick="deleteIncomeRecord(${idx})">DEL</button>
         </div>`;
     });
 
-    document.getElementById('incomeRecordsList').innerHTML = html || '<div style="opacity:0.5; font-size:11px;">No income records yet</div>';
+    document.getElementById('incomeRecordsList').innerHTML = html || '<p class="text-xs opacity-40 py-2">No income records yet</p>';
 }
 
 function displayExpenseRecords(records) {
@@ -765,18 +769,22 @@ function displayExpenseRecords(records) {
     records.forEach((rec, idx) => {
         const date = new Date(rec.recordDate).toLocaleDateString();
         html += `
-        <div class="card" style="margin-bottom:6px;">
-            <div class="card-main">
-                <div style="font-weight:bold; font-size:12px;">${rec.category}</div>
-                <div style="font-size:11px; opacity:0.7;">\u20AC${rec.amount.toFixed(2)}</div>
-                <div style="font-size:10px; opacity:0.5;">${rec.description}</div>
-                <div style="font-size:9px; opacity:0.4;">${date}</div>
+        <div class="card bg-base-300 shadow-sm mb-2">
+            <div class="card-body p-3 flex-row items-center justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-sm">${rec.category}</span>
+                        <span class="badge badge-sm badge-error tabular-nums">\u20AC${rec.amount.toFixed(2)}</span>
+                    </div>
+                    ${rec.description ? `<div class="text-xs opacity-50 mt-0.5 truncate">${rec.description}</div>` : ''}
+                    <div class="text-xs opacity-35 mt-0.5">${date}</div>
+                </div>
+                <button class="btn btn-ghost btn-xs text-error shrink-0" onclick="deleteExpenseRecord(${idx})">Del</button>
             </div>
-            <button class="btn" onclick="deleteExpenseRecord(${idx})">DEL</button>
         </div>`;
     });
 
-    document.getElementById('expenseRecordsList').innerHTML = html || '<div style="opacity:0.5; font-size:11px;">No expense records yet</div>';
+    document.getElementById('expenseRecordsList').innerHTML = html || '<p class="text-xs opacity-40 py-2">No expense records yet</p>';
 }
 
 async function saveBudgetPlan() {
