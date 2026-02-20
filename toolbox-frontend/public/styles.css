@@ -94,46 +94,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* =========================
-   VIEW BLOCK / LABEL
-   ========================= */
-
-.view-label {
-    font-size: 12px;
-    opacity: .7;
-    margin-bottom: 4px;
-}
-
-/* =========================
    JS-GENERATED COMPONENTS
    ========================= */
 
 .positive { color: oklch(var(--su)); }
 .negative { color: oklch(var(--er)); }
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-}
-
-.stat-card {
-    background: oklch(var(--b2));
-    border: 1px solid oklch(var(--b3));
-    padding: 12px;
-    border-radius: var(--rounded-box, 1rem);
-}
-
-.stat-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    opacity: 0.7;
-    margin-bottom: 4px;
-}
-
-.stat-value {
-    font-size: 16px;
-    font-weight: bold;
-}
 
 .stock-row {
     display: grid;
@@ -191,33 +156,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-state-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
 .empty-state-message { font-size: 13px; opacity: 0.7; margin-bottom: 16px; }
-
-.portfolio-summary {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.summary-card {
-    background: oklch(var(--b2));
-    border: 1px solid oklch(var(--b3));
-    padding: 16px;
-    text-align: center;
-    border-radius: var(--rounded-box, 1rem);
-}
-
-.summary-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    opacity: 0.7;
-    margin-bottom: 8px;
-}
-
-.summary-value {
-    font-size: 18px;
-    font-weight: bold;
-}
 
 .stock-metrics {
     display: grid;
@@ -416,40 +354,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
 }
 
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-}
-
-.metric-card {
-    background: oklch(var(--b2));
-    border: 1px solid oklch(var(--b3));
-    padding: 12px;
-    text-align: center;
-    border-radius: var(--rounded-box, 1rem);
-}
-
-.metric-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    opacity: 0.6;
-    margin-bottom: 4px;
-}
-
-.metric-value {
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.metric-value.positive {
-    color: oklch(var(--su));
-}
-
-.metric-value.negative {
-    color: oklch(var(--er));
-}
-
 .indicator-toggle {
     display: inline-flex;
     align-items: center;
@@ -479,11 +383,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .range-btn {
     transition: all 0.2s;
-}
-
-.range-btn.active {
-    background: oklch(var(--p));
-    color: oklch(var(--pc));
 }
 
 .chart-container {

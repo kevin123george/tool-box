@@ -130,13 +130,9 @@ function setupFundRangeButtons() {
     document.querySelectorAll('.fund-range-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.fund-range-btn').forEach(b => {
-                b.style.background = '';
-                b.style.color = '';
-                b.classList.remove('active');
+                b.classList.remove('btn-primary');
             });
-            btn.style.background = '#39f';
-            btn.style.color = '#000';
-            btn.classList.add('active');
+            btn.classList.add('btn-primary');
 
             fundCurrentPeriod = btn.dataset.period;
             fundCurrentInterval = btn.dataset.interval;

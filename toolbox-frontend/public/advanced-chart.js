@@ -653,8 +653,8 @@ async function loadHistoryTable(symbol) {
 function setupRangeButtons() {
     document.querySelectorAll('.range-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('btn-primary'));
+            btn.classList.add('btn-primary');
             currentRange = btn.dataset.range;
             loadAdvancedChart();
         });
@@ -726,15 +726,15 @@ function loadStockHistory() {
 
 function clearDateFilter() {
     currentRange = 'all';
-    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.range-btn[data-range="all"]')?.classList.add('active');
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('btn-primary'));
+    document.querySelector('.range-btn[data-range="all"]')?.classList.add('btn-primary');
     loadAdvancedChart();
 }
 
 function setChartTimeRange(range) {
     currentRange = range;
-    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.range-btn[data-range="${range}"]`)?.classList.add('active');
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('btn-primary'));
+    document.querySelector(`.range-btn[data-range="${range}"]`)?.classList.add('btn-primary');
     loadAdvancedChart();
 }
 
