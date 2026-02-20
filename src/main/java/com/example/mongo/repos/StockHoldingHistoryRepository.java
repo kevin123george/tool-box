@@ -22,4 +22,12 @@ public interface StockHoldingHistoryRepository
   List<StockHoldingHistory> findByUpdatedAtBetween(LocalDateTime from, LocalDateTime to);
 
   List<StockHoldingHistory> findAllByUserId(String userId);
+
+  List<StockHoldingHistory> findAllByUserIdOrderByUpdatedAtDesc(String userId);
+
+  List<StockHoldingHistory> findAllByUserIdOrderByUpdatedAtAsc(String userId);
+
+  List<StockHoldingHistory> findBySymbolAndUserIdOrderByUpdatedAtAsc(String symbol, String userId);
+
+  List<StockHoldingHistory> findBySymbolAndUserIdOrderByUpdatedAtDesc(String symbol, String userId);
 }

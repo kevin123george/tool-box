@@ -66,8 +66,10 @@ public class StockService {
   }
 
   public StockHolding updatePrice(String id, StockRequest req) {
+    String userId = authUtils.getCurrentUserId();
     StockHolding stock =
         stockRepository.findById(id).orElseThrow(() -> new RuntimeException("Stock not found"));
+    if (!userId.equals(stock.getUserId())) throw new RuntimeException("Access denied");
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setQuantity(req.getQuantity());
     stock.setBuyPrice(req.getBuyPrice());
@@ -75,7 +77,10 @@ public class StockService {
   }
 
   public void deleteStock(String id) {
-    stockRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    stockRepository.findById(id).ifPresent(stock -> {
+      if (userId.equals(stock.getUserId())) stockRepository.deleteById(id);
+    });
   }
 
   public PortfolioStats getPortfolioStats() {
@@ -157,6 +162,7 @@ public class StockService {
     // Save history
     StockHoldingHistory history = new StockHoldingHistory();
     history.setStockHoldingId(holding.getId());
+    history.setUserId(holding.getUserId());
     history.setSymbol(holding.getSymbol());
     history.setQuantity(holding.getQuantity());
     history.setBuyPrice(holding.getBuyPrice());

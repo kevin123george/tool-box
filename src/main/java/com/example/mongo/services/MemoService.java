@@ -31,7 +31,8 @@ public class MemoService {
   }
 
   public Optional<Memo> getMemoById(String id) {
-    return memoRepository.findById(id);
+    String userId = authUtils.getCurrentUserId();
+    return memoRepository.findById(id).filter(memo -> userId.equals(memo.getUserId()));
   }
 
   public Memo createMemo(Memo memo) {
@@ -40,8 +41,10 @@ public class MemoService {
   }
 
   public Memo updateMemo(String id, Memo memoDetails) {
+    String userId = authUtils.getCurrentUserId();
     return memoRepository
         .findById(id)
+        .filter(memo -> userId.equals(memo.getUserId()))
         .map(
             memo -> {
               memo.setTitle(memoDetails.getTitle());
@@ -54,10 +57,14 @@ public class MemoService {
   }
 
   public void deleteAllMemos() {
-    memoRepository.deleteAll();
+    String userId = authUtils.getCurrentUserId();
+    memoRepository.deleteAll(memoRepository.findAllByUserId(userId));
   }
 
   public void deleteMemo(String id) {
-    memoRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    memoRepository.findById(id).ifPresent(memo -> {
+      if (userId.equals(memo.getUserId())) memoRepository.deleteById(id);
+    });
   }
 }

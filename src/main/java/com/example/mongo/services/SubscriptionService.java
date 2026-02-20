@@ -32,9 +32,11 @@ public class SubscriptionService {
   }
 
   public Subscription getById(String id) {
-    return subscriptionRepository
-        .findById(id)
+    String userId = authUtils.getCurrentUserId();
+    Subscription sub = subscriptionRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Subscription not found: " + id));
+    if (!userId.equals(sub.getUserId())) throw new RuntimeException("Access denied");
+    return sub;
   }
 
   public Subscription create(Subscription subscription) {
@@ -57,7 +59,10 @@ public class SubscriptionService {
   }
 
   public void delete(String id) {
-    subscriptionRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    subscriptionRepository.findById(id).ifPresent(sub -> {
+      if (userId.equals(sub.getUserId())) subscriptionRepository.deleteById(id);
+    });
   }
 
   public SubscriptionSummaryDTO getSummary() {

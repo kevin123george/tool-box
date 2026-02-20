@@ -1,5 +1,6 @@
 package com.example.mongo.controller;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.StockHoldingHistory;
 import com.example.mongo.models.dto.OHLCData;
 import com.example.mongo.models.dto.PerformanceMetrics;
@@ -11,7 +12,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,18 +19,19 @@ import org.springframework.web.bind.annotation.*;
 public class StockHistoryController {
 
   @Autowired private StockHoldingHistoryRepository repository;
+  @Autowired private AuthUtils authUtils;
 
   /** Get all histories - original endpoint */
   @GetMapping
   public Iterable<StockHoldingHistory> getAllHistories() {
-    return repository.findAll();
+    return repository.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   /** Get latest entry per symbol - OPTIMIZED */
   @GetMapping("/latest")
   public List<StockHoldingHistory> getLatestPerSymbol() {
     List<StockHoldingHistory> allHistories =
-        repository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
+        repository.findAllByUserIdOrderByUpdatedAtDesc(authUtils.getCurrentUserId());
 
     Map<String, StockHoldingHistory> latestBySymbol = new HashMap<>();
     for (StockHoldingHistory history : allHistories) {
@@ -45,7 +46,7 @@ public class StockHistoryController {
   /** Get history for specific symbol */
   @GetMapping("/symbol/{symbol}")
   public List<StockHoldingHistory> getHistoryBySymbol(@PathVariable String symbol) {
-    return repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+    return repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
   }
 
   /** Get aggregated stats - OPTIMIZED */
@@ -55,13 +56,13 @@ public class StockHistoryController {
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to) {
 
+    String userId = authUtils.getCurrentUserId();
     List<StockHoldingHistory> histories;
 
     if (symbol != null && !symbol.equals("all")) {
-      histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+      histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, userId);
     } else {
-      histories =
-          (List<StockHoldingHistory>) repository.findAll(Sort.by(Sort.Direction.ASC, "updatedAt"));
+      histories = repository.findAllByUserIdOrderByUpdatedAtAsc(userId);
     }
 
     // Apply date filters
@@ -132,13 +133,13 @@ public class StockHistoryController {
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to) {
 
+    String userId = authUtils.getCurrentUserId();
     List<StockHoldingHistory> histories;
 
     if (symbol != null && !symbol.equals("all")) {
-      histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+      histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, userId);
     } else {
-      histories =
-          (List<StockHoldingHistory>) repository.findAll(Sort.by(Sort.Direction.ASC, "updatedAt"));
+      histories = repository.findAllByUserIdOrderByUpdatedAtAsc(userId);
     }
 
     // Apply date filters
@@ -183,13 +184,14 @@ public class StockHistoryController {
       @RequestParam(required = false, defaultValue = "20") int limit,
       @RequestParam(required = false) String symbol) {
 
+    String userId = authUtils.getCurrentUserId();
     if (symbol != null && !symbol.equals("all")) {
-      return repository.findBySymbolOrderByUpdatedAtDesc(symbol).stream()
+      return repository.findBySymbolAndUserIdOrderByUpdatedAtDesc(symbol, userId).stream()
           .limit(limit)
           .collect(Collectors.toList());
     }
 
-    return repository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
+    return repository.findAllByUserIdOrderByUpdatedAtDesc(userId).stream()
         .limit(limit)
         .collect(Collectors.toList());
   }
@@ -204,7 +206,7 @@ public class StockHistoryController {
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to) {
 
-    List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+    List<StockHoldingHistory> histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
 
     // Apply date filters
     if (from != null) {
@@ -273,7 +275,7 @@ public class StockHistoryController {
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to) {
 
-    List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+    List<StockHoldingHistory> histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
 
     // Apply date filters
     if (from != null) {
@@ -417,7 +419,7 @@ public class StockHistoryController {
   /** Get buy points for annotations on chart */
   @GetMapping("/buypoints/{symbol}")
   public List<Map<String, Object>> getBuyPoints(@PathVariable String symbol) {
-    List<StockHoldingHistory> histories = repository.findBySymbolOrderByUpdatedAtAsc(symbol);
+    List<StockHoldingHistory> histories = repository.findBySymbolAndUserIdOrderByUpdatedAtAsc(symbol, authUtils.getCurrentUserId());
 
     // Get unique buy dates with their prices
     Map<String, Map<String, Object>> buyPoints = new LinkedHashMap<>();

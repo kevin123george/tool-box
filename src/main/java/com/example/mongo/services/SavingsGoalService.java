@@ -18,9 +18,11 @@ public class SavingsGoalService {
   }
 
   public SavingsGoal getGoalById(String id) {
-    return savingsGoalRepository
-        .findById(id)
+    String userId = authUtils.getCurrentUserId();
+    SavingsGoal goal = savingsGoalRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Savings goal not found: " + id));
+    if (!userId.equals(goal.getUserId())) throw new RuntimeException("Access denied");
+    return goal;
   }
 
   public SavingsGoal createGoal(SavingsGoal goal) {
@@ -47,7 +49,10 @@ public class SavingsGoalService {
   }
 
   public void deleteGoal(String id) {
-    savingsGoalRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    savingsGoalRepository.findById(id).ifPresent(goal -> {
+      if (userId.equals(goal.getUserId())) savingsGoalRepository.deleteById(id);
+    });
   }
 
   public double getTotalSaved() {

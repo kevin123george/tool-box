@@ -20,4 +20,6 @@ public interface DividendRecordRepository extends MongoRepository<DividendRecord
   List<DividendRecord> findAllByUserIdOrderByPaymentDateDesc(String userId);
 
   List<DividendRecord> findByStockSymbolAndUserId(String stockSymbol, String userId);
+
+  List<DividendRecord> findByPaymentDateBetweenAndUserIdOrderByPaymentDateAsc(LocalDate start, LocalDate end, String userId);
 }

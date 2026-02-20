@@ -42,7 +42,10 @@ public class BankAccountService {
   }
 
   public BankAccount getById(String id) {
-    return repo.findById(id).orElse(null);
+    String userId = authUtils.getCurrentUserId();
+    BankAccount account = repo.findById(id).orElse(null);
+    if (account == null || !userId.equals(account.getUserId())) return null;
+    return account;
   }
 
   public BankAccount create(BankAccount bank) {
@@ -51,8 +54,9 @@ public class BankAccountService {
   }
 
   public BankAccount update(String id, BankAccount updated) {
+    String userId = authUtils.getCurrentUserId();
     BankAccount existing = repo.findById(id).orElse(null);
-    if (existing == null) return null;
+    if (existing == null || !userId.equals(existing.getUserId())) return null;
 
     existing.setBank(updated.getBank());
     existing.setBalance(updated.getBalance());
@@ -63,7 +67,10 @@ public class BankAccountService {
   }
 
   public void delete(String id) {
-    repo.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    repo.findById(id).ifPresent(account -> {
+      if (userId.equals(account.getUserId())) repo.deleteById(id);
+    });
   }
 
   public FinanceSummaryDTO getSummary() {

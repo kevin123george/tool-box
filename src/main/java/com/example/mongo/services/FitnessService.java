@@ -49,7 +49,8 @@ public class FitnessService {
   }
 
   public Optional<WorkoutLog> getWorkoutById(String id) {
-    return workoutLogRepository.findById(id);
+    String userId = authUtils.getCurrentUserId();
+    return workoutLogRepository.findById(id).filter(w -> userId.equals(w.getUserId()));
   }
 
   public List<WorkoutLog> getWorkoutsForWeek(LocalDate dateInWeek) {
@@ -70,8 +71,10 @@ public class FitnessService {
   }
 
   public WorkoutLog updateWorkout(String id, WorkoutLog workoutDetails) {
+    String userId = authUtils.getCurrentUserId();
     return workoutLogRepository
         .findById(id)
+        .filter(w -> userId.equals(w.getUserId()))
         .map(
             workout -> {
               workout.setWorkoutDate(workoutDetails.getWorkoutDate());
@@ -91,7 +94,10 @@ public class FitnessService {
   }
 
   public void deleteWorkout(String id) {
-    workoutLogRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    workoutLogRepository.findById(id).ifPresent(w -> {
+      if (userId.equals(w.getUserId())) workoutLogRepository.deleteById(id);
+    });
   }
 
   // ===== WEIGHT METHODS =====
@@ -126,7 +132,10 @@ public class FitnessService {
   }
 
   public void deleteWeightEntry(String id) {
-    weightEntryRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    weightEntryRepository.findById(id).ifPresent(w -> {
+      if (userId.equals(w.getUserId())) weightEntryRepository.deleteById(id);
+    });
   }
 
   // ===== STATS METHODS =====
@@ -252,12 +261,15 @@ public class FitnessService {
   }
 
   public Optional<WorkoutTemplate> getTemplateById(String id) {
-    return workoutTemplateRepository.findById(id);
+    String userId = authUtils.getCurrentUserId();
+    return workoutTemplateRepository.findById(id).filter(t -> userId.equals(t.getUserId()));
   }
 
   public WorkoutTemplate updateTemplate(String id, WorkoutTemplate templateDetails) {
+    String userId = authUtils.getCurrentUserId();
     return workoutTemplateRepository
         .findById(id)
+        .filter(t -> userId.equals(t.getUserId()))
         .map(
             template -> {
               template.setName(templateDetails.getName());
@@ -271,7 +283,10 @@ public class FitnessService {
   }
 
   public void deleteTemplate(String id) {
-    workoutTemplateRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    workoutTemplateRepository.findById(id).ifPresent(t -> {
+      if (userId.equals(t.getUserId())) workoutTemplateRepository.deleteById(id);
+    });
   }
 
   // ===== PLAN METHODS =====
@@ -290,7 +305,8 @@ public class FitnessService {
   }
 
   public Optional<WorkoutPlan> getPlanById(String id) {
-    return workoutPlanRepository.findById(id);
+    String userId = authUtils.getCurrentUserId();
+    return workoutPlanRepository.findById(id).filter(p -> userId.equals(p.getUserId()));
   }
 
   public Optional<WorkoutPlan> getActivePlan() {
@@ -298,8 +314,10 @@ public class FitnessService {
   }
 
   public WorkoutPlan updatePlan(String id, WorkoutPlan planDetails) {
+    String userId = authUtils.getCurrentUserId();
     return workoutPlanRepository
         .findById(id)
+        .filter(p -> userId.equals(p.getUserId()))
         .map(
             plan -> {
               plan.setName(planDetails.getName());
@@ -316,9 +334,11 @@ public class FitnessService {
   }
 
   public void setActivePlan(String planId) {
+    String userId = authUtils.getCurrentUserId();
     deactivateAllPlans();
     workoutPlanRepository
         .findById(planId)
+        .filter(p -> userId.equals(p.getUserId()))
         .ifPresent(
             plan -> {
               plan.setActive(true);
@@ -327,7 +347,10 @@ public class FitnessService {
   }
 
   public void deletePlan(String id) {
-    workoutPlanRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    workoutPlanRepository.findById(id).ifPresent(p -> {
+      if (userId.equals(p.getUserId())) workoutPlanRepository.deleteById(id);
+    });
   }
 
   private void deactivateAllPlans() {
@@ -343,13 +366,15 @@ public class FitnessService {
   // ===== QUICK LOG FROM TEMPLATE =====
 
   public WorkoutLog logFromTemplate(String templateId, LocalDate date) {
+    String userId = authUtils.getCurrentUserId();
     Optional<WorkoutTemplate> templateOpt = workoutTemplateRepository.findById(templateId);
-    if (templateOpt.isEmpty()) {
+    if (templateOpt.isEmpty() || !userId.equals(templateOpt.get().getUserId())) {
       return null;
     }
 
     WorkoutTemplate template = templateOpt.get();
     WorkoutLog workout = new WorkoutLog();
+    workout.setUserId(userId);
     workout.setWorkoutDate(date);
     workout.setDayOfWeek(date.getDayOfWeek());
     workout.setExerciseType(template.getExerciseType());

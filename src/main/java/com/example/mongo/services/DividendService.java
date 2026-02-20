@@ -24,13 +24,15 @@ public class DividendService {
   }
 
   public DividendRecord getDividendById(String id) {
-    return dividendRepository
-        .findById(id)
+    String userId = authUtils.getCurrentUserId();
+    DividendRecord record = dividendRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Dividend record not found: " + id));
+    if (!userId.equals(record.getUserId())) throw new RuntimeException("Access denied");
+    return record;
   }
 
   public List<DividendRecord> getDividendsBySymbol(String symbol) {
-    return dividendRepository.findByStockSymbol(symbol);
+    return dividendRepository.findByStockSymbolAndUserId(symbol, authUtils.getCurrentUserId());
   }
 
   public DividendRecord createDividend(DividendRecord record) {
@@ -98,6 +100,6 @@ public class DividendService {
   public List<DividendRecord> getDividendsForMonth(int year, int month) {
     LocalDate start = LocalDate.of(year, month, 1);
     LocalDate end = start.plusMonths(1).minusDays(1);
-    return dividendRepository.findByPaymentDateBetweenOrderByPaymentDateAsc(start, end);
+    return dividendRepository.findByPaymentDateBetweenAndUserIdOrderByPaymentDateAsc(start, end, authUtils.getCurrentUserId());
   }
 }

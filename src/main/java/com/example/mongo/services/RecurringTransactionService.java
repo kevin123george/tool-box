@@ -34,9 +34,11 @@ public class RecurringTransactionService {
   }
 
   public RecurringTransaction getById(String id) {
-    return recurringRepository
-        .findById(id)
+    String userId = authUtils.getCurrentUserId();
+    RecurringTransaction tx = recurringRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Recurring transaction not found: " + id));
+    if (!userId.equals(tx.getUserId())) throw new RuntimeException("Access denied");
+    return tx;
   }
 
   public RecurringTransaction create(RecurringTransaction transaction) {
@@ -57,7 +59,10 @@ public class RecurringTransactionService {
   }
 
   public void delete(String id) {
-    recurringRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    recurringRepository.findById(id).ifPresent(tx -> {
+      if (userId.equals(tx.getUserId())) recurringRepository.deleteById(id);
+    });
   }
 
   public void processDueTransactions() {

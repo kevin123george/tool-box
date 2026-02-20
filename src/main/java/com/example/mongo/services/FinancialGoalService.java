@@ -96,7 +96,10 @@ public class FinancialGoalService {
   }
 
   public FinancialGoal getGoal(String id) {
-    return repo.findById(id).orElse(null);
+    String userId = authUtils.getCurrentUserId();
+    FinancialGoal goal = repo.findById(id).orElse(null);
+    if (goal == null || !userId.equals(goal.getUserId())) return null;
+    return goal;
   }
 
   public List<FinancialGoal> getAll() {
@@ -104,10 +107,13 @@ public class FinancialGoalService {
   }
 
   public void deleteAll() {
-    repo.deleteAll();
+    repo.deleteAll(repo.findAllByUserId(authUtils.getCurrentUserId()));
   }
 
   public void delete(String id) {
-    repo.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    repo.findById(id).ifPresent(goal -> {
+      if (userId.equals(goal.getUserId())) repo.deleteById(id);
+    });
   }
 }

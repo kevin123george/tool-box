@@ -36,13 +36,15 @@ public class PriceAlertService {
   }
 
   public PriceAlert getAlertById(String id) {
-    return alertRepository
-        .findById(id)
+    String userId = authUtils.getCurrentUserId();
+    PriceAlert alert = alertRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Price alert not found: " + id));
+    if (!userId.equals(alert.getUserId())) throw new RuntimeException("Access denied");
+    return alert;
   }
 
   public List<PriceAlert> getAlertsBySymbol(String symbol) {
-    return alertRepository.findBySymbol(symbol);
+    return alertRepository.findBySymbolAndUserId(symbol, authUtils.getCurrentUserId());
   }
 
   public PriceAlert createAlert(PriceAlert alert) {
@@ -60,7 +62,10 @@ public class PriceAlertService {
   }
 
   public void deleteAlert(String id) {
-    alertRepository.deleteById(id);
+    String userId = authUtils.getCurrentUserId();
+    alertRepository.findById(id).ifPresent(alert -> {
+      if (userId.equals(alert.getUserId())) alertRepository.deleteById(id);
+    });
   }
 
   public void checkAlerts() {
