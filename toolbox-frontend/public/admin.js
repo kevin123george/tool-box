@@ -4,16 +4,16 @@
 
 requireAuth();
 
-// Guard: non-admins get bounced to home
 if ((localStorage.getItem('userRole') || '').toUpperCase() !== 'ADMIN') {
     window.location.href = '/';
 }
 
 const currentUserId = localStorage.getItem('userId');
+const ONLINE_MS = 5 * 60 * 1000; // 5 minutes = "online now"
 let pendingDeleteId = null;
 
 /* -------------------------------------------------------
-   Load & render users
+   Load & render
 ------------------------------------------------------- */
 async function loadUsers() {
     const el = document.getElementById('usersContent');
@@ -27,12 +27,48 @@ async function loadUsers() {
         const res = await authFetch(`${API}/api/system/users`);
         if (!res.ok) throw new Error('Failed to load users');
         const users = await res.json();
+        renderStats(users);
         renderUsers(users);
     } catch (e) {
         el.innerHTML = `<div class="alert alert-error text-sm">${e.message}</div>`;
     }
 }
 
+/* -------------------------------------------------------
+   Stats bar
+------------------------------------------------------- */
+function renderStats(users) {
+    const total   = users.length;
+    const admins  = users.filter(u => u.role === 'ADMIN').length;
+    const online  = users.filter(u => isOnline(u)).length;
+    const recent  = users.filter(u => u.lastLoginAt && Date.now() - new Date(u.lastLoginAt) < 24 * 60 * 60 * 1000).length;
+
+    document.getElementById('statsBar').innerHTML = `
+        <div class="stats stats-horizontal bg-base-200 shadow-sm w-full">
+            <div class="stat py-3 px-5">
+                <div class="stat-title text-xs">Total Users</div>
+                <div class="stat-value text-2xl">${total}</div>
+            </div>
+            <div class="stat py-3 px-5">
+                <div class="stat-title text-xs">Admins</div>
+                <div class="stat-value text-2xl text-warning">${admins}</div>
+            </div>
+            <div class="stat py-3 px-5">
+                <div class="stat-title text-xs">Online Now</div>
+                <div class="stat-value text-2xl text-success">${online}</div>
+                <div class="stat-desc text-xs">last 5 min</div>
+            </div>
+            <div class="stat py-3 px-5">
+                <div class="stat-title text-xs">Active Today</div>
+                <div class="stat-value text-2xl">${recent}</div>
+                <div class="stat-desc text-xs">logged in 24h</div>
+            </div>
+        </div>`;
+}
+
+/* -------------------------------------------------------
+   User table
+------------------------------------------------------- */
 function renderUsers(users) {
     const el = document.getElementById('usersContent');
 
@@ -41,22 +77,31 @@ function renderUsers(users) {
         return;
     }
 
+    // Sort: online first, then by lastSeenAt desc
+    users.sort((a, b) => {
+        const aOn = isOnline(a), bOn = isOnline(b);
+        if (aOn !== bOn) return bOn - aOn;
+        const aT = a.lastSeenAt ? new Date(a.lastSeenAt) : 0;
+        const bT = b.lastSeenAt ? new Date(b.lastSeenAt) : 0;
+        return bT - aT;
+    });
+
     const rows = users.map(u => {
-        const isSelf = u.id === currentUserId;
+        const isSelf  = u.id === currentUserId;
         const isAdmin = u.role === 'ADMIN';
+        const online  = isOnline(u);
         const initials = (u.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-        const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
         const roleBadge = isAdmin
             ? `<span class="badge badge-warning badge-sm font-semibold">ADMIN</span>`
             : `<span class="badge badge-ghost badge-sm">USER</span>`;
 
-        const selfBadge = isSelf ? `<span class="badge badge-primary badge-sm ml-1">you</span>` : '';
+        const onlineDot = online
+            ? `<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-success rounded-full border-2 border-base-200"></span>`
+            : '';
 
         const toggleBtn = isSelf ? '' : `
-            <button class="btn btn-ghost btn-xs"
-                    onclick="toggleRole('${u.id}', '${u.role}')"
-                    title="${isAdmin ? 'Demote to USER' : 'Promote to ADMIN'}">
+            <button class="btn btn-ghost btn-xs" onclick="toggleRole('${u.id}', '${u.role}')">
                 ${isAdmin ? 'Demote' : 'Promote'}
             </button>`;
 
@@ -67,22 +112,45 @@ function renderUsers(users) {
             </button>`;
 
         return `
-        <tr>
+        <tr class="${online ? 'bg-success/5' : ''}">
             <td>
                 <div class="flex items-center gap-3">
-                    <div class="avatar placeholder">
-                        <div class="bg-primary/15 text-primary rounded-full w-9 h-9 text-xs font-bold">
-                            <span>${initials}</span>
+                    <div class="relative">
+                        <div class="avatar placeholder">
+                            <div class="bg-primary/15 text-primary rounded-full w-9 h-9 text-xs font-bold">
+                                <span>${initials}</span>
+                            </div>
                         </div>
+                        ${onlineDot}
                     </div>
                     <div>
-                        <div class="font-medium text-sm">${escapeHtml(u.name)} ${selfBadge}</div>
+                        <div class="font-medium text-sm">
+                            ${escapeHtml(u.name)}
+                            ${isSelf ? `<span class="badge badge-primary badge-sm ml-1">you</span>` : ''}
+                        </div>
                         <div class="text-xs opacity-50">${escapeHtml(u.email)}</div>
                     </div>
                 </div>
             </td>
             <td>${roleBadge}</td>
-            <td class="text-xs opacity-50">${joined}</td>
+            <td>
+                ${online
+                    ? `<span class="badge badge-success badge-sm gap-1"><span class="w-1.5 h-1.5 bg-success-content rounded-full inline-block animate-pulse"></span>Online</span>`
+                    : u.lastSeenAt
+                        ? `<span class="text-xs opacity-50">${timeAgo(u.lastSeenAt)}</span>`
+                        : `<span class="text-xs opacity-25">Never</span>`
+                }
+            </td>
+            <td>
+                ${u.lastLoginAt
+                    ? `<div class="text-xs opacity-60">${timeAgo(u.lastLoginAt)}</div>
+                       <div class="text-xs opacity-30">${fmtDate(u.lastLoginAt)}</div>`
+                    : `<span class="text-xs opacity-25">Never</span>`
+                }
+            </td>
+            <td>
+                <div class="text-xs opacity-40">${u.createdAt ? fmtDate(u.createdAt) : '—'}</div>
+            </td>
             <td class="text-right">
                 <div class="flex gap-1 justify-end">
                     ${toggleBtn}
@@ -101,13 +169,13 @@ function renderUsers(users) {
                             <tr class="text-xs opacity-50 uppercase tracking-wider">
                                 <th>User</th>
                                 <th>Role</th>
+                                <th>Last Seen</th>
+                                <th>Last Login</th>
                                 <th>Joined</th>
                                 <th class="text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
+                        <tbody>${rows}</tbody>
                     </table>
                 </div>
                 <div class="px-4 pb-3 pt-1 text-xs opacity-40">${users.length} user${users.length !== 1 ? 's' : ''} total</div>
@@ -170,6 +238,29 @@ async function confirmDelete() {
 /* -------------------------------------------------------
    Helpers
 ------------------------------------------------------- */
+function isOnline(u) {
+    if (!u.lastSeenAt) return false;
+    return Date.now() - new Date(u.lastSeenAt).getTime() < ONLINE_MS;
+}
+
+function timeAgo(isoStr) {
+    if (!isoStr) return '—';
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60)  return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60)  return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24)  return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
+}
+
+function fmtDate(isoStr) {
+    if (!isoStr) return '—';
+    return new Date(isoStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 function escapeHtml(str) {
     return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

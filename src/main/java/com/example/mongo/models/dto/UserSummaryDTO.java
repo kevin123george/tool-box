@@ -12,4 +12,6 @@ public class UserSummaryDTO {
   private String email;
   private String role;
   private Instant createdAt;
+  private Instant lastLoginAt;
+  private Instant lastSeenAt;
 }

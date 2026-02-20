@@ -20,5 +20,8 @@ public class UsersEntity {
   private String passwordHash;
   private String role = "USER";
 
+  private Instant lastLoginAt;
+  private Instant lastSeenAt;
+
   @CreatedDate private Instant createdAt;
 }

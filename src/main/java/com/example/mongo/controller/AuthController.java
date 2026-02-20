@@ -8,6 +8,7 @@ import com.example.mongo.models.dto.AuthResponse;
 import com.example.mongo.models.dto.RegisterRequest;
 import com.example.mongo.repos.UserRepo;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,6 +29,10 @@ public class AuthController {
     if (user == null || !passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
       return ResponseEntity.status(401).body("Invalid credentials");
     }
+    Instant now = Instant.now();
+    user.setLastLoginAt(now);
+    user.setLastSeenAt(now);
+    userRepo.save(user);
     String token = jwtUtil.generateToken(user);
     return ResponseEntity.ok(
         new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));

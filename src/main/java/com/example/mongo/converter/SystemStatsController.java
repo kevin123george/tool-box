@@ -31,7 +31,8 @@ public class SystemStatsController {
             .map(
                 u ->
                     new UserSummaryDTO(
-                        u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getCreatedAt()))
+                        u.getId(), u.getName(), u.getEmail(), u.getRole(),
+                        u.getCreatedAt(), u.getLastLoginAt(), u.getLastSeenAt()))
             .toList();
     return ResponseEntity.ok(users);
   }
