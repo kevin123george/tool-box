@@ -113,7 +113,7 @@ function fmtRatio(n) {
 
     async function _fetchTickerResults(input, dropdown, query, resetIdx) {
         try {
-            const res = await fetch(`${API}/api/market/search?q=${encodeURIComponent(query)}`);
+            const res = await authFetch(`${API}/api/market/search?q=${encodeURIComponent(query)}`);
             const results = await res.json();
             if (!results.length) { dropdown.style.display = 'none'; return; }
             resetIdx();
@@ -158,7 +158,7 @@ function onFundamentalsTabShown() {
 
 async function loadPortfolioForFundamentals() {
     try {
-        const res = await fetch(`${API}/api/stocks`);
+        const res = await authFetch(`${API}/api/stocks`);
         const stocks = await res.json();
         const select = document.getElementById('fundamentalsPortfolio');
         const existing = select.value;
@@ -191,12 +191,12 @@ async function loadFundamentals() {
 
     try {
         const [overviewRes, revenueRes, epsRes, fcfRes, marginsRes, ratiosRes] = await Promise.all([
-            fetch(`${API}/api/fundamentals/${symbol}/overview`),
-            fetch(`${API}/api/fundamentals/${symbol}/revenue`),
-            fetch(`${API}/api/fundamentals/${symbol}/eps`),
-            fetch(`${API}/api/fundamentals/${symbol}/fcf`),
-            fetch(`${API}/api/fundamentals/${symbol}/margins`),
-            fetch(`${API}/api/fundamentals/${symbol}/ratios`)
+            authFetch(`${API}/api/fundamentals/${symbol}/overview`),
+            authFetch(`${API}/api/fundamentals/${symbol}/revenue`),
+            authFetch(`${API}/api/fundamentals/${symbol}/eps`),
+            authFetch(`${API}/api/fundamentals/${symbol}/fcf`),
+            authFetch(`${API}/api/fundamentals/${symbol}/margins`),
+            authFetch(`${API}/api/fundamentals/${symbol}/ratios`)
         ]);
 
         if (!overviewRes.ok) { showToast('Symbol not found or API error', 'error'); hideLoading(); return; }
@@ -384,7 +384,7 @@ async function loadDCFDefaults() {
 
     showLoading('Loading defaults for ' + symbol + '...');
     try {
-        const res = await fetch(`${API}/api/dcf/defaults/${symbol}`);
+        const res = await authFetch(`${API}/api/dcf/defaults/${symbol}`);
         const defaults = await res.json();
 
         document.getElementById('dcfCompanyName').textContent = defaults.name || '';
@@ -421,7 +421,7 @@ async function calculateDCF() {
 
     showLoading('Calculating DCF...');
     try {
-        const res = await fetch(`${API}/api/dcf/calculate`, {
+        const res = await authFetch(`${API}/api/dcf/calculate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ symbol, initialFCF, growthRate, discountRate, terminalGrowthRate, projectionYears, sharesOutstanding, currentPrice })
@@ -547,7 +547,7 @@ function onScreenerTabShown() {
 
 async function loadScreenerSectors() {
     try {
-        const res = await fetch(`${API}/api/screener/sectors`);
+        const res = await authFetch(`${API}/api/screener/sectors`);
         const sectors = await res.json();
         const select = document.getElementById('screenerSector');
         const current = select.value;
@@ -567,7 +567,7 @@ async function addScreenerSymbol() {
 
     showLoading('Adding ' + symbol + ' to screener...');
     try {
-        const res = await fetch(`${API}/api/screener/add/${symbol}`, { method: 'POST' });
+        const res = await authFetch(`${API}/api/screener/add/${symbol}`, { method: 'POST' });
         if (!res.ok) { showToast('Failed to add symbol. It may not exist.', 'error'); return; }
         showToast(symbol + ' added to screener', 'success');
         document.getElementById('screenerAddSymbol').value = '';
@@ -604,7 +604,7 @@ async function searchScreener() {
     params.set('size', 20);
 
     try {
-        const res = await fetch(`${API}/api/screener/search?${params.toString()}`);
+        const res = await authFetch(`${API}/api/screener/search?${params.toString()}`);
         const data = await res.json();
         renderScreenerTable(data.content || []);
         renderScreenerPagination(data);

@@ -200,7 +200,7 @@ function initializeCharts() {
 async function loadSymbolsForFilter() {
     updateDebug('Loading symbols from API...');
     try {
-        const res = await fetch(`${API}/api/hist/stats`);
+        const res = await authFetch(`${API}/api/hist/stats`);
         updateDebug('Stats response: ' + res.status);
 
         if (!res.ok) {
@@ -291,7 +291,7 @@ async function loadAdvancedChart() {
         const url = `${API}/api/hist/ohlc/${symbol}?${params}`;
         updateDebug('Fetching: ' + url);
 
-        const res = await fetch(url);
+        const res = await authFetch(url);
         if (!res.ok) {
             updateDebug('ERROR: OHLC API returned ' + res.status);
             hideLoading();
@@ -394,7 +394,7 @@ async function loadPerformanceMetrics(symbol) {
         const params = new URLSearchParams();
         addDateRangeParams(params);
 
-        const res = await fetch(`${API}/api/hist/metrics/${symbol}?${params}`);
+        const res = await authFetch(`${API}/api/hist/metrics/${symbol}?${params}`);
         const m = await res.json();
 
         setMetric('metricTotalReturn', m.totalReturn, '%', true);
@@ -547,7 +547,7 @@ async function loadBuyPoints(symbol) {
     if (!candlestickSeries) return;
 
     try {
-        const res = await fetch(`${API}/api/hist/buypoints/${symbol}`);
+        const res = await authFetch(`${API}/api/hist/buypoints/${symbol}`);
         const points = await res.json();
 
         if (!points || points.length === 0) {
@@ -606,7 +606,7 @@ function handleCrosshairMove(param) {
 
 async function loadHistoryTable(symbol) {
     try {
-        const res = await fetch(`${API}/api/hist/recent?symbol=${symbol}&limit=20`);
+        const res = await authFetch(`${API}/api/hist/recent?symbol=${symbol}&limit=20`);
         const data = await res.json();
 
         const container = document.getElementById('historyTable');

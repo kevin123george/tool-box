@@ -169,7 +169,7 @@ async function loadFundPriceChart(symbol) {
 
     try {
         const url = `${API}/api/market/ohlc/${fundCurrentSymbol}?period=${fundCurrentPeriod}&interval=${fundCurrentInterval}`;
-        const res = await fetch(url);
+        const res = await authFetch(url);
         if (!res.ok) {
             console.error('[FundChart] API error:', res.status);
             return;
