@@ -1,5 +1,6 @@
 package com.example.mongo.controller;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.FinancialGoal;
 import com.example.mongo.models.MonthlyBudget;
 import com.example.mongo.models.dto.DashboardDTO;
@@ -27,18 +28,21 @@ public class DashboardController {
   private final MonthlyBudgetService budgetService;
   private final FinancialGoalRepository goalRepository;
   private final FitnessService fitnessService;
+  private final AuthUtils authUtils;
 
   public DashboardController(
       BankAccountService bankAccountService,
       StockService stockService,
       MonthlyBudgetService budgetService,
       FinancialGoalRepository goalRepository,
-      FitnessService fitnessService) {
+      FitnessService fitnessService,
+      AuthUtils authUtils) {
     this.bankAccountService = bankAccountService;
     this.stockService = stockService;
     this.budgetService = budgetService;
     this.goalRepository = goalRepository;
     this.fitnessService = fitnessService;
+    this.authUtils = authUtils;
   }
 
   @GetMapping
@@ -64,8 +68,8 @@ public class DashboardController {
     double budgetSavings = budgetIncome - budgetExpenses;
     double budgetAdherence = budget.getBudgetAdherence();
 
-    // Get first goal if exists
-    List<FinancialGoal> goals = goalRepository.findAll();
+    // Get first goal if exists (scoped to current user)
+    List<FinancialGoal> goals = goalRepository.findAllByUserId(authUtils.getCurrentUserId());
     double goalCurrent = 0;
     double goalTarget = 0;
     double goalProgress = 0;
