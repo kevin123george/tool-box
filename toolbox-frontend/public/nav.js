@@ -149,14 +149,19 @@
                                 <span class="is-drawer-close:hidden opacity-40">${ICONS.chevronDown}</span>
                             </summary>
                             <ul class="is-drawer-close:hidden pl-0 mt-0.5 gap-0">
-                                ${item.children.map(child => `
+                                ${item.children.map(child => {
+                                    const u = new URL(child.href, 'http://x');
+                                    const tab = u.searchParams.get('tab') || '';
+                                    return `
                                 <li>
                                     <a href="${child.href}"
+                                       data-nav-tab="${tab}"
                                        class="flex items-center rounded-lg py-1.5 pl-10 pr-3 text-xs text-base-content/55
                                               hover:text-base-content hover:bg-base-300/50 transition-colors">
                                         ${child.label}
                                     </a>
-                                </li>`).join('')}
+                                </li>`;
+                                }).join('')}
                             </ul>
                         </details>
                     </li>`;
@@ -334,6 +339,36 @@
         const chevron = document.getElementById('sidebarChevron');
         if (chevron) chevron.classList.toggle('rotate-180', !nowOpen);
     };
+
+    /* -------------------------------------------------------
+       Same-page tab switching — no full reload
+       Maps page pathname → global tab-switch function name
+    ------------------------------------------------------- */
+    const TAB_FN_MAP = {
+        '/finance.html':     'switchFinanceTab',
+        '/investments.html': 'switchInvestmentTab',
+    };
+
+    document.addEventListener('click', function (e) {
+        const link = e.target.closest('a[data-nav-tab]');
+        if (!link) return;
+
+        const tab = link.dataset.navTab;
+        if (!tab) return;
+
+        const linkPath = new URL(link.href).pathname;
+        const curPath  = window.location.pathname;
+
+        // Only intercept if we're already on that page
+        if (linkPath !== curPath) return;
+
+        const fnName = TAB_FN_MAP[linkPath];
+        if (fnName && typeof window[fnName] === 'function') {
+            e.preventDefault();
+            window[fnName](tab);
+            history.pushState({}, '', link.href);
+        }
+    });
 
     // Close mobile drawer on Escape
     document.addEventListener('keydown', e => {
