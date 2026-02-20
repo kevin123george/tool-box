@@ -856,26 +856,31 @@ async function loadTemplates() {
 
         const container = document.getElementById('templatesList');
         if (!templatesCache.length) {
-            container.innerHTML = '<div style="opacity:0.5; padding:12px;">No templates yet. Create one to get started.</div>';
+            container.innerHTML = '<div class="text-center opacity-50 py-8">No templates yet. Create one to get started.</div>';
             return;
         }
 
-        container.innerHTML = templatesCache.map(t => `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px;">
-                <div>
-                    <div style="font-weight:bold;">${t.name}</div>
-                    <div style="font-size:12px; opacity:0.7;">
-                        ${t.exerciseType ? t.exerciseType.replace('_', ' ') : 'Unknown'}
-                        ${t.estimatedDuration ? `• ${t.estimatedDuration} min` : ''}
+        const typeColors = { PUSH: 'badge-primary', PULL: 'badge-secondary', LEGS: 'badge-accent', CARDIO: 'badge-success', FULL_BODY: 'badge-info', CORE: 'badge-warning', REST: 'badge-ghost' };
+
+        container.innerHTML = '<div class="flex flex-col gap-2">' + templatesCache.map(t => `
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body p-3 flex-row items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-semibold">${t.name}</span>
+                            <span class="badge ${typeColors[t.exerciseType] || 'badge-ghost'} badge-xs">${t.exerciseType ? t.exerciseType.replace('_', ' ') : 'Unknown'}</span>
+                            ${t.estimatedDuration ? `<span class="text-xs opacity-50">${t.estimatedDuration} min</span>` : ''}
+                        </div>
+                        ${t.notes ? `<div class="text-xs opacity-50 mt-0.5 truncate">${t.notes}</div>` : ''}
+                    </div>
+                    <div class="flex gap-1 shrink-0">
+                        <button class="btn btn-success btn-xs" onclick="quickLogFromTemplate('${t.id}')">Log</button>
+                        <button class="btn btn-ghost btn-xs" onclick="editTemplate('${t.id}')">Edit</button>
+                        <button class="btn btn-ghost btn-xs text-error" onclick="deleteTemplate('${t.id}')">Del</button>
                     </div>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn" onclick="quickLogFromTemplate('${t.id}')" style="padding:4px 8px; font-size:11px;">LOG TODAY</button>
-                    <button class="btn" onclick="editTemplate('${t.id}')" style="padding:4px 8px; font-size:11px;">EDIT</button>
-                    <button class="btn" onclick="deleteTemplate('${t.id}')" style="padding:4px 8px; font-size:11px;">DEL</button>
-                </div>
             </div>
-        `).join('');
+        `).join('') + '</div>';
 
         // Update plan dropdowns
         updatePlanTemplateDropdowns();

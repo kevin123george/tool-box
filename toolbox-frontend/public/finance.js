@@ -223,23 +223,26 @@ async function loadFinance(page = 0) {
 
     updatePaginationControls('finance', financePage);
 
-    let html = '<div class="stats-grid">';
+    let html = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">';
 
     data.forEach(acc => {
         const modified = acc.lastModified ? new Date(acc.lastModified).toLocaleString() : "\u2014";
+        const modeColor = acc.mode === 'Savings' ? 'badge-success' : acc.mode === 'Credit' ? 'badge-warning' : 'badge-ghost';
 
         html += `
-        <div class="stat-card" style="text-align:left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <div style="font-weight:bold; font-size:14px;">${acc.bank}</div>
-                <div style="font-size:11px; opacity:0.6; text-transform:uppercase;">${acc.mode || "Unknown"}</div>
-            </div>
-            <div style="font-size:20px; font-weight:bold; margin:10px 0;">\u20AC${acc.balance.toFixed(2)}</div>
-            <div style="font-size:10px; opacity:0.5; margin-bottom:10px;">${modified}</div>
-            <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button class="btn" style="flex:1; min-width:60px;" onclick="viewFinance('${acc.id}')">VIEW</button>
-                <button class="btn" style="flex:1; min-width:60px;" onclick="showEditFinance('${acc.id}')">EDIT</button>
-                <button class="btn" style="flex:1; min-width:60px;" onclick="delFinance('${acc.id}')">DEL</button>
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-4 gap-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-base">${acc.bank}</h3>
+                    <span class="badge ${modeColor} badge-sm">${acc.mode || 'Unknown'}</span>
+                </div>
+                <div class="text-2xl font-bold tabular-nums">\u20AC${acc.balance.toFixed(2)}</div>
+                <div class="text-xs opacity-40">${modified}</div>
+                <div class="card-actions justify-end mt-1">
+                    <button class="btn btn-ghost btn-xs" onclick="viewFinance('${acc.id}')">View</button>
+                    <button class="btn btn-ghost btn-xs" onclick="showEditFinance('${acc.id}')">Edit</button>
+                    <button class="btn btn-ghost btn-xs text-error" onclick="delFinance('${acc.id}')">Delete</button>
+                </div>
             </div>
         </div>`;
     });
@@ -1228,32 +1231,40 @@ function renderSubscriptions() {
     if (!container) return;
 
     if (subscriptions.length === 0) {
-        container.innerHTML = '<div style="opacity:0.5; text-align:center; padding:20px;">No subscriptions tracked.</div>';
+        container.innerHTML = '<div class="text-center opacity-50 py-8">No subscriptions tracked.</div>';
         return;
     }
 
-    container.innerHTML = subscriptions.map(sub => {
-        const statusClass = sub.active ? 'positive' : 'negative';
-        const status = sub.active ? 'ACTIVE' : 'CANCELLED';
+    container.innerHTML = '<div class="flex flex-col gap-2">' + subscriptions.map(sub => {
+        const statusBadge = sub.active
+            ? 'badge-success'
+            : 'badge-error';
+        const status = sub.active ? 'Active' : 'Cancelled';
+        const cycleLabel = { MONTHLY: '/mo', YEARLY: '/yr', WEEKLY: '/wk', QUARTERLY: '/qtr' }[sub.billingCycle] || `/${sub.billingCycle}`;
 
         return `
-            <div class="card" style="margin-bottom:8px;">
-                <div class="card-main">
-                    <strong>${sub.name}</strong>
-                    <span style="margin-left:8px; opacity:0.7;">${sub.provider || ''}</span>
-                    <div style="font-size:12px; margin-top:4px;">
-                        \u20AC${(sub.amount || 0).toFixed(2)} / ${sub.billingCycle}
-                        <span style="margin-left:10px;">Next: ${sub.nextBillingDate || '-'}</span>
-                        <span class="${statusClass}" style="margin-left:10px;">${status}</span>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body p-3 flex-row items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-semibold">${sub.name}</span>
+                            ${sub.provider ? `<span class="text-xs opacity-50">${sub.provider}</span>` : ''}
+                            <span class="badge ${statusBadge} badge-xs">${status}</span>
+                        </div>
+                        <div class="text-sm opacity-60 mt-0.5">
+                            <span class="font-medium text-base-content">\u20AC${(sub.amount || 0).toFixed(2)}${cycleLabel}</span>
+                            ${sub.nextBillingDate ? `<span class="mx-2">\u00B7</span>Next: ${sub.nextBillingDate}` : ''}
+                            ${sub.category ? `<span class="mx-2">\u00B7</span>${sub.category}` : ''}
+                        </div>
                     </div>
-                </div>
-                <div class="card-actions">
-                    <button class="btn" onclick="editSubscription('${sub.id}')">EDIT</button>
-                    <button class="btn" onclick="deleteSubscription('${sub.id}')">DEL</button>
+                    <div class="flex gap-1 shrink-0">
+                        <button class="btn btn-ghost btn-xs" onclick="editSubscription('${sub.id}')">Edit</button>
+                        <button class="btn btn-ghost btn-xs text-error" onclick="deleteSubscription('${sub.id}')">Del</button>
+                    </div>
                 </div>
             </div>
         `;
-    }).join('');
+    }).join('') + '</div>';
 }
 
 function showAddSubscriptionModal() {

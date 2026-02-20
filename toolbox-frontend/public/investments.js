@@ -1441,7 +1441,7 @@ function displayResearchReport(report) {
 
 function createStockAnalysisCard(symbol, analysis, holding) {
     const card = document.createElement('div');
-    card.className = 'stock-analysis-card';
+    card.className = 'card bg-base-200 shadow-sm mb-4';
 
     const currentValue = holding.currentPrice * holding.quantity;
     const costBasis = holding.buyPrice * holding.quantity;
@@ -1467,12 +1467,10 @@ function createStockAnalysisCard(symbol, analysis, holding) {
     );
 
     const newsHTML = sortedNews.map((n, i) => `
-        <div class="news-item ${i >= 3 ? 'hidden-news-item' : ''}">
-            <a href="${n.url}" target="_blank" class="news-title">${n.title}</a>
-            <div class="news-meta">
-                ${n.source || 'Unknown'} |
-                Sentiment ${(n.tickerSentimentScore ?? 0).toFixed(3)} |
-                Relevance ${(n.relevanceScore ?? 0).toFixed(2)}
+        <div class="news-item py-2 ${i >= 3 ? 'hidden-news-item' : ''}">
+            <a href="${n.url}" target="_blank" class="text-sm hover:underline block mb-0.5">${n.title}</a>
+            <div class="text-xs opacity-50">
+                ${n.source || 'Unknown'} · Sentiment ${(n.tickerSentimentScore ?? 0).toFixed(3)} · Relevance ${(n.relevanceScore ?? 0).toFixed(2)}
             </div>
         </div>
     `).join('');
@@ -1480,56 +1478,52 @@ function createStockAnalysisCard(symbol, analysis, holding) {
     const hiddenCount = Math.max(0, sortedNews.length - 3);
 
     card.innerHTML = `
-        <div class="stock-header">
-            <div class="stock-symbol">${symbol}</div>
-            <div class="stock-return ${gainPct >= 0 ? 'positive' : 'negative'}">
-                ${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%
+        <div class="card-body p-4 gap-4">
+            <!-- Header -->
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl font-bold tracking-tight">${symbol}</span>
+                    <span class="badge badge-ghost badge-sm">STOCK</span>
+                </div>
+                <span class="text-lg font-bold tabular-nums ${gainPct >= 0 ? 'text-success' : 'text-error'}">
+                    ${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%
+                </span>
             </div>
-        </div>
 
-        <div class="stock-metrics">
-            <div class="metric-box">
-                <div class="metric-label">SENTIMENT</div>
-                <div class="metric-value ${sentimentClass}">
-                    ${analysis.sentimentScore.toFixed(3)}
+            <!-- Metrics stats row -->
+            <div class="stats stats-horizontal shadow w-full flex-wrap">
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Sentiment</div>
+                    <div class="stat-value text-sm ${sentimentClass}">${analysis.sentimentScore.toFixed(3)}</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">RSI (14)</div>
+                    <div class="stat-value text-sm ${rsiClass}">${rsi === null ? 'N/A' : rsi.toFixed(1)}</div>
+                    <div class="stat-desc">${rsiStatus}</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Current Price</div>
+                    <div class="stat-value text-sm">$${holding.currentPrice.toFixed(2)}</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Shares</div>
+                    <div class="stat-value text-sm">${holding.quantity.toFixed(2)}</div>
                 </div>
             </div>
 
-            <div class="metric-box">
-                <div class="metric-label">RSI (14)</div>
-                <div class="metric-value ${rsiClass}">
-                    ${rsi === null ? 'N/A' : rsi.toFixed(1)}
+            <!-- Recommendation -->
+            <div class="bg-base-300 rounded-box p-3">
+                <div class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-1">Recommendation</div>
+                <div class="text-sm leading-relaxed whitespace-pre-wrap">${analysis.recommendation}</div>
+            </div>
+
+            <!-- News -->
+            <div>
+                <div class="text-xs font-semibold uppercase tracking-widest opacity-60 mb-2">Recent News (${sortedNews.length})</div>
+                <div class="flex flex-col divide-y divide-base-300" data-symbol="${symbol}">
+                    ${newsHTML}
+                    ${hiddenCount > 0 ? `<div class="show-more-news btn btn-ghost btn-xs mt-2 w-full" data-symbol="${symbol}">+ ${hiddenCount} more article${hiddenCount > 1 ? 's' : ''}</div>` : ''}
                 </div>
-                <div class="metric-sublabel">${rsiStatus}</div>
-            </div>
-
-            <div class="metric-box">
-                <div class="metric-label">CURRENT PRICE</div>
-                <div class="metric-value">$${holding.currentPrice.toFixed(2)}</div>
-            </div>
-
-            <div class="metric-box">
-                <div class="metric-label">SHARES</div>
-                <div class="metric-value">${holding.quantity.toFixed(2)}</div>
-            </div>
-        </div>
-
-        <div class="recommendation-box">
-            <div class="recommendation-label">RECOMMENDATION</div>
-            <div class="recommendation-text">${analysis.recommendation}</div>
-        </div>
-
-        <div class="news-section">
-            <div class="news-header">RECENT NEWS (${sortedNews.length})</div>
-            <div class="news-list" data-symbol="${symbol}">
-                ${newsHTML}
-                ${
-        hiddenCount > 0
-            ? `<div class="show-more-news" data-symbol="${symbol}">
-                               + ${hiddenCount} more article${hiddenCount > 1 ? 's' : ''}
-                           </div>`
-            : ''
-    }
             </div>
         </div>
     `;

@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.ExpenseCategory;
 import com.example.mongo.models.MonthlyBudget;
 import com.example.mongo.models.dto.AnomalyDTO;
@@ -20,12 +21,13 @@ import org.springframework.stereotype.Service;
 public class ExpenseAnalyticsService {
 
   @Autowired private MonthlyBudgetRepository budgetRepository;
+  @Autowired private AuthUtils authUtils;
 
   private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
   private static final double ANOMALY_THRESHOLD = 40.0; // 40% increase
 
   public List<CategoryTrendDTO> getCategoryTrends(int months) {
-    List<MonthlyBudget> budgets = getRecentBudgets(months);
+    List<MonthlyBudget> budgets = getRecentBudgets(months, authUtils.getCurrentUserId());
     Map<String, Map<String, Double>> categoryMonthlyData = new HashMap<>();
 
     for (MonthlyBudget budget : budgets) {
@@ -45,7 +47,7 @@ public class ExpenseAnalyticsService {
   }
 
   public List<MonthlyAnalyticsDTO> getMonthlyAnalytics(int months) {
-    List<MonthlyBudget> budgets = getRecentBudgets(months);
+    List<MonthlyBudget> budgets = getRecentBudgets(months, authUtils.getCurrentUserId());
     List<MonthlyAnalyticsDTO> analytics = new ArrayList<>();
 
     for (MonthlyBudget budget : budgets) {
@@ -68,7 +70,7 @@ public class ExpenseAnalyticsService {
 
   public List<AnomalyDTO> getAnomalies() {
     List<AnomalyDTO> anomalies = new ArrayList<>();
-    List<MonthlyBudget> budgets = getRecentBudgets(4); // Current + 3 months for average
+    List<MonthlyBudget> budgets = getRecentBudgets(4, authUtils.getCurrentUserId()); // Current + 3 months for average
 
     if (budgets.size() < 2) return anomalies;
 
@@ -117,13 +119,13 @@ public class ExpenseAnalyticsService {
     return anomalies;
   }
 
-  private List<MonthlyBudget> getRecentBudgets(int months) {
+  private List<MonthlyBudget> getRecentBudgets(int months, String userId) {
     YearMonth current = YearMonth.now();
     List<MonthlyBudget> budgets = new ArrayList<>();
 
     for (int i = months - 1; i >= 0; i--) {
       YearMonth targetMonth = current.minusMonths(i);
-      budgetRepository.findByMonth(targetMonth).ifPresent(budgets::add);
+      budgetRepository.findByMonthAndUserId(targetMonth, userId).ifPresent(budgets::add);
     }
 
     return budgets;
