@@ -1,7 +1,6 @@
 package com.example.mongo.converter;
 
 import com.example.mongo.config.AuthUtils;
-import com.example.mongo.models.UsersEntity;
 import com.example.mongo.models.dto.SystemStatsDTO;
 import com.example.mongo.models.dto.UserSummaryDTO;
 import com.example.mongo.repos.UserRepo;
@@ -29,13 +28,17 @@ public class SystemStatsController {
   public ResponseEntity<List<UserSummaryDTO>> listUsers() {
     List<UserSummaryDTO> users =
         userRepo.findAll().stream()
-            .map(u -> new UserSummaryDTO(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getCreatedAt()))
+            .map(
+                u ->
+                    new UserSummaryDTO(
+                        u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getCreatedAt()))
             .toList();
     return ResponseEntity.ok(users);
   }
 
   @PatchMapping("/users/{id}/role")
-  public ResponseEntity<?> updateRole(@PathVariable String id, @RequestBody Map<String, String> body) {
+  public ResponseEntity<?> updateRole(
+      @PathVariable String id, @RequestBody Map<String, String> body) {
     String newRole = body.get("role");
     if (newRole == null || (!newRole.equals("USER") && !newRole.equals("ADMIN"))) {
       return ResponseEntity.badRequest().body(Map.of("error", "role must be USER or ADMIN"));
