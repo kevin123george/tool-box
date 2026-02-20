@@ -1,10 +1,12 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.BankAccount;
 import com.example.mongo.models.FinancialGoal;
 import com.example.mongo.repos.BankAccountRepository;
 import com.example.mongo.repos.FinancialGoalRepository;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,14 +15,16 @@ public class FinancialGoalService {
   private final FinancialGoalRepository repo;
   private final BankAccountRepository bankRepo;
 
+  @Autowired private AuthUtils authUtils;
+
   public FinancialGoalService(FinancialGoalRepository repo, BankAccountRepository bankRepo) {
     this.repo = repo;
     this.bankRepo = bankRepo;
   }
 
   /** Pull total corpus from bank accounts */
-  private double getTotalCorpus() {
-    return bankRepo.findAll().stream().mapToDouble(BankAccount::getBalance).sum();
+  private double getTotalCorpus(String userId) {
+    return bankRepo.findAllByUserId(userId).stream().mapToDouble(BankAccount::getBalance).sum();
   }
 
   /** Compute required retirement corpus */
@@ -31,8 +35,9 @@ public class FinancialGoalService {
 
   /** Saves or updates a plan */
   public FinancialGoal saveGoal(FinancialGoal goal) {
-
-    double corpus = getTotalCorpus();
+    String userId = authUtils.getCurrentUserId();
+    goal.setUserId(userId);
+    double corpus = getTotalCorpus(userId);
     goal.setCurrentCorpus(corpus);
 
     double requiredCorpus = calculateRequiredCorpus(goal);
@@ -95,7 +100,7 @@ public class FinancialGoalService {
   }
 
   public List<FinancialGoal> getAll() {
-    return repo.findAll();
+    return repo.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   public void deleteAll() {

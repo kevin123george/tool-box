@@ -5,6 +5,7 @@ import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -13,6 +14,8 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class Memo {
 
   @Id private String id;
+
+  @Indexed private String userId;
 
   private String title; // Required
   private String content; // Rich text content

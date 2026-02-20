@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.Memo;
 import com.example.mongo.repos.MemoRepository;
 import java.util.Optional;
@@ -14,9 +15,10 @@ import org.springframework.stereotype.Service;
 public class MemoService {
 
   @Autowired private MemoRepository memoRepository;
+  @Autowired private AuthUtils authUtils;
 
   public Page<Memo> getAllMemos(Pageable pageable) {
-
+    String userId = authUtils.getCurrentUserId();
     Pageable sortedPageable =
         PageRequest.of(
             pageable.getPageNumber(),
@@ -25,8 +27,7 @@ public class MemoService {
                 Sort.Order.desc("pinned"),
                 Sort.Order.desc("updatedAt"),
                 Sort.Order.desc("createdAt")));
-
-    return memoRepository.findAll(sortedPageable);
+    return memoRepository.findAllByUserId(userId, sortedPageable);
   }
 
   public Optional<Memo> getMemoById(String id) {
@@ -34,6 +35,7 @@ public class MemoService {
   }
 
   public Memo createMemo(Memo memo) {
+    memo.setUserId(authUtils.getCurrentUserId());
     return memoRepository.save(memo);
   }
 

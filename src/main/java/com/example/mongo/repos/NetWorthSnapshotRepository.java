@@ -17,4 +17,12 @@ public interface NetWorthSnapshotRepository extends MongoRepository<NetWorthSnap
   Optional<NetWorthSnapshot> findByDate(LocalDate date);
 
   List<NetWorthSnapshot> findByDateBetweenOrderByDateAsc(LocalDate start, LocalDate end);
+
+  List<NetWorthSnapshot> findAllByUserIdOrderByDateAsc(String userId);
+
+  List<NetWorthSnapshot> findAllByUserIdOrderByDateDesc(String userId);
+
+  Optional<NetWorthSnapshot> findByDateAndUserId(java.time.LocalDate date, String userId);
+
+  List<NetWorthSnapshot> findByDateBetweenAndUserIdOrderByDateAsc(java.time.LocalDate start, java.time.LocalDate end, String userId);
 }

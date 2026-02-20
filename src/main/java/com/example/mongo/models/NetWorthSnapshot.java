@@ -6,17 +6,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @NoArgsConstructor
+@CompoundIndex(def = "{'userId': 1, 'date': 1}", unique = true)
 @Document(collection = "net_worth_snapshots")
 public class NetWorthSnapshot {
 
   @Id private String id;
 
-  @Indexed(unique = true)
+  @Indexed private String userId;
+
   private LocalDate date;
 
   private double totalCash;

@@ -90,7 +90,7 @@ function switchInvestmentTab(which) {
 async function exportPortfolioCsv() {
     try {
         showLoading('Exporting CSV...');
-        const res = await fetch(`${API}/api/stocks/export`);
+        const res = await authFetch(`${API}/api/stocks/export`);
 
         if (!res.ok) {
             throw new Error('Export failed');
@@ -126,7 +126,7 @@ async function loadStocks() {
 
 async function loadStockStats() {
     try {
-        const res = await fetch(`${API}/api/stocks/stats`);
+        const res = await authFetch(`${API}/api/stocks/stats`);
         const stats = await res.json();
 
         document.getElementById('statInvested').textContent = "€" + stats.totalInvested.toFixed(2);
@@ -149,7 +149,7 @@ async function loadStockStats() {
 
 async function loadHoldings() {
     try {
-        const res = await fetch(`${API}/api/stocks`);
+        const res = await authFetch(`${API}/api/stocks`);
         const holdings = await res.json();
         const holdingsList = document.getElementById('holdingsList');
 
@@ -208,7 +208,7 @@ async function loadHoldings() {
 
 async function loadWatchlist() {
     try {
-        const res = await fetch(`${API}/api/stocks-watch`);
+        const res = await authFetch(`${API}/api/stocks-watch`);
         const watchlist = await res.json();
         const watchlistList = document.getElementById('watchlistList');
 
@@ -299,13 +299,13 @@ async function saveStockHolding() {
 
     try {
         if (editingHoldingId) {
-            await fetch(`${API}/api/stocks/${editingHoldingId}`, {
+            await authFetch(`${API}/api/stocks/${editingHoldingId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             });
         } else {
-            await fetch(`${API}/api/stocks`, {
+            await authFetch(`${API}/api/stocks`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
@@ -323,7 +323,7 @@ async function saveStockHolding() {
 async function delHolding(id) {
     if (!confirm("Delete this holding?")) return;
 
-    await fetch(`${API}/api/stocks/${id}`, { method: "DELETE" });
+    await authFetch(`${API}/api/stocks/${id}`, { method: "DELETE" });
     loadStocks();
 }
 
@@ -352,7 +352,7 @@ async function saveWatchlist() {
     }
 
     try {
-        await fetch(`${API}/api/stocks-watch`, {
+        await authFetch(`${API}/api/stocks-watch`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -369,7 +369,7 @@ async function saveWatchlist() {
 async function delWatchlist(id) {
     if (!confirm("Remove from watchlist?")) return;
 
-    await fetch(`${API}/api/stocks-watch/${id}`, { method: "DELETE" });
+    await authFetch(`${API}/api/stocks-watch/${id}`, { method: "DELETE" });
     loadStocks();
 }
 
@@ -380,8 +380,8 @@ async function delWatchlist(id) {
 async function loadDividends() {
     try {
         const [divRes, summaryRes] = await Promise.all([
-            fetch(`${API}/api/dividends`),
-            fetch(`${API}/api/dividends/summary`)
+            authFetch(`${API}/api/dividends`),
+            authFetch(`${API}/api/dividends/summary`)
         ]);
 
         if (divRes.ok) {
@@ -477,7 +477,7 @@ async function saveDividend() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API}/api/dividends/${id}` : `${API}/api/dividends`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dividend)
@@ -497,7 +497,7 @@ async function deleteDividend(id) {
     if (!confirm('Delete this dividend record?')) return;
 
     try {
-        await fetch(`${API}/api/dividends/${id}`, { method: 'DELETE' });
+        await authFetch(`${API}/api/dividends/${id}`, { method: 'DELETE' });
         showToast('Dividend deleted', 'success');
         loadDividends();
     } catch (e) {
@@ -511,7 +511,7 @@ async function deleteDividend(id) {
 
 async function loadPriceAlerts() {
     try {
-        const res = await fetch(`${API}/api/alerts`);
+        const res = await authFetch(`${API}/api/alerts`);
         if (res.ok) {
             priceAlerts = await res.json();
             renderPriceAlerts();
@@ -566,7 +566,7 @@ async function savePriceAlert() {
     };
 
     try {
-        const res = await fetch(`${API}/api/alerts`, {
+        const res = await authFetch(`${API}/api/alerts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(alert)
@@ -586,7 +586,7 @@ async function deletePriceAlert(id) {
     if (!confirm('Delete this alert?')) return;
 
     try {
-        await fetch(`${API}/api/alerts/${id}`, { method: 'DELETE' });
+        await authFetch(`${API}/api/alerts/${id}`, { method: 'DELETE' });
         showToast('Alert deleted', 'success');
         loadPriceAlerts();
     } catch (e) {
@@ -600,7 +600,7 @@ async function deletePriceAlert(id) {
 
 async function loadCapitalGains() {
     try {
-        const res = await fetch(`${API}/api/stocks/capital-gains`);
+        const res = await authFetch(`${API}/api/stocks/capital-gains`);
         if (res.ok) {
             const data = await res.json();
             renderCapitalGains(data);
@@ -661,7 +661,7 @@ function renderCapitalGains(data) {
 
 async function loadPortfolioAllocation() {
     try {
-        const res = await fetch(`${API}/api/stocks/allocation`);
+        const res = await authFetch(`${API}/api/stocks/allocation`);
         if (res.ok) {
             const data = await res.json();
             renderAllocationChart(data);
@@ -748,7 +748,7 @@ function renderAllocationTable(data) {
 }
 
 function showSetTargetModal() {
-    fetch(`${API}/api/stocks/allocation/target`)
+    authFetch(`${API}/api/stocks/allocation/target`)
         .then(res => res.json())
         .then(data => {
             document.getElementById('targetAllocationsInput').value =
@@ -765,7 +765,7 @@ async function saveTargetAllocation() {
     try {
         const allocations = JSON.parse(document.getElementById('targetAllocationsInput').value);
 
-        const res = await fetch(`${API}/api/stocks/allocation/target`, {
+        const res = await authFetch(`${API}/api/stocks/allocation/target`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ allocations })
@@ -800,7 +800,7 @@ async function loadStockHistory() {
             statsParams.append('to', toDate.toISOString());
         }
 
-        const statsRes = await fetch(`${API}/api/hist/stats?${statsParams}`);
+        const statsRes = await authFetch(`${API}/api/hist/stats?${statsParams}`);
         const statsData = await statsRes.json();
 
         if (document.getElementById('histStockFilter').options.length <= 1) {
@@ -828,7 +828,7 @@ async function loadStockHistory() {
             chartParams.append('to', toDate.toISOString());
         }
 
-        const chartRes = await fetch(`${API}/api/hist/chart?${chartParams}`);
+        const chartRes = await authFetch(`${API}/api/hist/chart?${chartParams}`);
         const chartData = await chartRes.json();
 
         renderPriceChart(chartData.data, symbol);
@@ -837,7 +837,7 @@ async function loadStockHistory() {
         tableParams.append('limit', '20');
         if (symbol) tableParams.append('symbol', symbol);
 
-        const tableRes = await fetch(`${API}/api/hist/recent?${tableParams}`);
+        const tableRes = await authFetch(`${API}/api/hist/recent?${tableParams}`);
         const tableData = await tableRes.json();
 
         renderHistoryTable(tableData);
@@ -1340,7 +1340,7 @@ async function generateResearch() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-        const response = await fetch('/api/research/generate', {
+        const response = await authFetch('/api/research/generate', {
             method: 'POST',
             signal: controller.signal
         });
@@ -1370,7 +1370,7 @@ async function generateResearch() {
 
 async function loadLatestResearch() {
     try {
-        const response = await fetch('/api/research/latest');
+        const response = await authFetch('/api/research/latest');
 
         if (!response.ok) {
             if (response.status === 404) {
@@ -1571,7 +1571,7 @@ function attachShowMoreListeners() {
 
 function populateHistorySymbols() {
     const sel = document.getElementById('historySymbolSelect');
-    fetch('/api/hist/stats')
+    authFetch('/api/hist/stats')
         .then(res => res.json())
         .then(json => {
             const symbols = json.symbols || [];
@@ -1605,7 +1605,7 @@ window.refreshHistoryChart = async function() {
     params.set('to', to.toISOString());
 
     try {
-        const chartRes = await fetch('/api/hist/chart?' + params.toString());
+        const chartRes = await authFetch('/api/hist/chart?' + params.toString());
         const chartJson = await chartRes.json();
 
         const datasets = [];
@@ -1640,7 +1640,7 @@ window.refreshHistoryChart = async function() {
             });
         }
 
-        const tableRes = await fetch('/api/hist/recent?' + params.toString());
+        const tableRes = await authFetch('/api/hist/recent?' + params.toString());
         const tableJson = await tableRes.json();
         const recentEl = document.getElementById('historyRecentEntries');
         if (recentEl) {
@@ -1661,6 +1661,7 @@ window.refreshHistoryChart = async function() {
 =============================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
+    requireAuth();
     populateHistorySymbols();
 
     const savedTab = localStorage.getItem('investments_active_tab');

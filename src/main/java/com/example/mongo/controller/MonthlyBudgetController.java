@@ -20,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/budget")
-@CrossOrigin(origins = "*")
 public class MonthlyBudgetController {
 
   @Autowired private MonthlyBudgetService budgetService;

@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.PortfolioTarget;
 import com.example.mongo.models.StockHolding;
 import com.example.mongo.models.StockHoldingHistory;
@@ -32,6 +33,8 @@ public class StockService {
   private final StockPriceService stockPriceService;
   private final PortfolioTargetRepository portfolioTargetRepository;
 
+  @Autowired private AuthUtils authUtils;
+
   // German capital gains tax rate (Abgeltungssteuer)
   private static final double GERMAN_TAX_RATE = 0.26375;
 
@@ -48,7 +51,7 @@ public class StockService {
   }
 
   public List<StockHolding> getAllStocks() {
-    return stockRepository.findAll();
+    return stockRepository.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   public StockHolding addStock(StockRequest req) {
@@ -58,6 +61,7 @@ public class StockService {
     stock.setBuyPrice(req.getBuyPrice());
     stock.setBuyDate(req.getBuyDate());
     stock.setCurrentPrice(req.getCurrentPrice());
+    stock.setUserId(authUtils.getCurrentUserId());
     return stockRepository.save(stock);
   }
 
@@ -75,8 +79,11 @@ public class StockService {
   }
 
   public PortfolioStats getPortfolioStats() {
-    List<StockHolding> holdings =
-        stockRepository.findAll().stream().filter(i -> i.getSold() == false).toList();
+    return getPortfolioStats(authUtils.getCurrentUserId());
+  }
+
+  public PortfolioStats getPortfolioStats(String userId) {
+    List<StockHolding> holdings = stockRepository.findByUserIdAndSoldFalse(userId);
     double invested = 0;
     double current = 0;
 
@@ -89,7 +96,7 @@ public class StockService {
   }
 
   public Set<String> HoldingTickers() {
-    return stockRepository.findAll().stream()
+    return stockRepository.findAllByUserId(authUtils.getCurrentUserId()).stream()
         .map(StockHolding::getSymbol)
         .collect(Collectors.toSet());
   }
@@ -160,8 +167,7 @@ public class StockService {
   }
 
   public CapitalGainsSummaryDTO getCapitalGains() {
-    List<StockHolding> holdings =
-        stockRepository.findAll().stream().filter(h -> !h.getSold()).toList();
+    List<StockHolding> holdings = stockRepository.findByUserIdAndSoldFalse(authUtils.getCurrentUserId());
 
     List<CapitalGainsDTO> gains = new ArrayList<>();
     double totalUnrealizedGain = 0;
@@ -198,14 +204,14 @@ public class StockService {
   }
 
   public PortfolioAllocationDTO getCurrentAllocation() {
-    List<StockHolding> holdings =
-        stockRepository.findAll().stream().filter(h -> !h.getSold()).toList();
+    String userId = authUtils.getCurrentUserId();
+    List<StockHolding> holdings = stockRepository.findByUserIdAndSoldFalse(userId);
 
     double totalValue =
         holdings.stream().mapToDouble(h -> h.getQuantity() * h.getCurrentPrice()).sum();
 
     // Get target allocations if they exist
-    PortfolioTarget target = portfolioTargetRepository.findAll().stream().findFirst().orElse(null);
+    PortfolioTarget target = portfolioTargetRepository.findFirstByUserId(userId).orElse(null);
     Map<String, Double> targetAllocations =
         target != null ? target.getAllocations() : new HashMap<>();
 
@@ -245,12 +251,15 @@ public class StockService {
   }
 
   public PortfolioTarget getPortfolioTarget() {
-    return portfolioTargetRepository.findAll().stream().findFirst().orElse(new PortfolioTarget());
+    String userId = authUtils.getCurrentUserId();
+    return portfolioTargetRepository.findFirstByUserId(userId).orElse(new PortfolioTarget());
   }
 
   public PortfolioTarget savePortfolioTarget(PortfolioTarget target) {
-    // Only keep one target document
-    List<PortfolioTarget> existing = portfolioTargetRepository.findAll();
+    String userId = authUtils.getCurrentUserId();
+    target.setUserId(userId);
+    // Only keep one target document per user
+    List<PortfolioTarget> existing = portfolioTargetRepository.findAllByUserId(userId);
     if (!existing.isEmpty() && target.getId() == null) {
       target.setId(existing.get(0).getId());
     }

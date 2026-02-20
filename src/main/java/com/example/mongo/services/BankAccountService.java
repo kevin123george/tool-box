@@ -1,12 +1,16 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.BankAccount;
 import com.example.mongo.models.dto.FinanceSummaryDTO;
 import com.example.mongo.repos.BankAccountRepository;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class BankAccountService {
 
   private final BankAccountRepository repo;
+  private final AuthUtils authUtils;
 
   public Page<BankAccount> getAll(Pageable pageable) {
 
@@ -26,7 +31,14 @@ public class BankAccountService {
             pageable.getPageSize(),
             Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("createdAt")));
 
-    return repo.findAll(sortedPageable);
+    String userId = authUtils.getCurrentUserId();
+    List<BankAccount> all = repo.findAllByUserId(userId);
+    all.sort(Comparator.comparing(BankAccount::getLastModified, Comparator.nullsLast(Comparator.reverseOrder())));
+    int start = (int) sortedPageable.getOffset();
+    int end = Math.min(start + sortedPageable.getPageSize(), all.size());
+    return new PageImpl<>(
+        start < all.size() ? all.subList(start, end) : Collections.emptyList(),
+        sortedPageable, all.size());
   }
 
   public BankAccount getById(String id) {
@@ -34,6 +46,7 @@ public class BankAccountService {
   }
 
   public BankAccount create(BankAccount bank) {
+    bank.setUserId(authUtils.getCurrentUserId());
     return repo.save(bank);
   }
 
@@ -54,7 +67,11 @@ public class BankAccountService {
   }
 
   public FinanceSummaryDTO getSummary() {
-    List<BankAccount> accounts = repo.findAll();
+    return getSummary(authUtils.getCurrentUserId());
+  }
+
+  public FinanceSummaryDTO getSummary(String userId) {
+    List<BankAccount> accounts = repo.findAllByUserId(userId);
 
     FinanceSummaryDTO dto = new FinanceSummaryDTO();
 

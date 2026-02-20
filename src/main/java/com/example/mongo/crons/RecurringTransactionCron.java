@@ -12,15 +12,19 @@ public class RecurringTransactionCron {
 
   @Autowired private RecurringTransactionService recurringService;
 
+  @Autowired private com.example.mongo.repos.UserRepo userRepo;
+
   // Run daily at 1 AM
   @Scheduled(cron = "0 0 1 * * *")
   public void processDueTransactions() {
     log.info("Running recurring transaction cron job...");
-    try {
-      recurringService.processDueTransactions();
-      log.info("Recurring transactions processed successfully");
-    } catch (Exception e) {
-      log.error("Failed to process recurring transactions: {}", e.getMessage());
+    for (com.example.mongo.models.UsersEntity user : userRepo.findAll()) {
+      try {
+        recurringService.processDueTransactions(user.getId());
+        log.info("Processed recurring transactions for user {}", user.getId());
+      } catch (Exception e) {
+        log.error("Failed to process recurring transactions for user {}: {}", user.getId(), e.getMessage());
+      }
     }
   }
 }

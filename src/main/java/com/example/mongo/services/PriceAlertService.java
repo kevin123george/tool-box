@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.AlertDirection;
 import com.example.mongo.models.PriceAlert;
 import com.example.mongo.models.StockHolding;
@@ -24,12 +25,14 @@ public class PriceAlertService {
 
   @Autowired private WebPushService webPushService;
 
+  @Autowired private AuthUtils authUtils;
+
   public List<PriceAlert> getAllAlerts() {
-    return alertRepository.findAll();
+    return alertRepository.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   public List<PriceAlert> getActiveAlerts() {
-    return alertRepository.findByActiveTrue();
+    return alertRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId());
   }
 
   public PriceAlert getAlertById(String id) {
@@ -43,6 +46,7 @@ public class PriceAlertService {
   }
 
   public PriceAlert createAlert(PriceAlert alert) {
+    alert.setUserId(authUtils.getCurrentUserId());
     return alertRepository.save(alert);
   }
 

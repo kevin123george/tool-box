@@ -12,15 +12,19 @@ public class SubscriptionReminderCron {
 
   @Autowired private SubscriptionService subscriptionService;
 
+  @Autowired private com.example.mongo.repos.UserRepo userRepo;
+
   // Run daily at 9 AM
   @Scheduled(cron = "0 0 9 * * *")
   public void checkRenewalReminders() {
     log.info("Running subscription reminder cron job...");
-    try {
-      subscriptionService.checkRenewalReminders();
-      log.info("Subscription reminders checked successfully");
-    } catch (Exception e) {
-      log.error("Failed to check subscription reminders: {}", e.getMessage());
+    for (com.example.mongo.models.UsersEntity user : userRepo.findAll()) {
+      try {
+        subscriptionService.checkRenewalReminders(user.getId());
+        log.info("Subscription reminders checked for user {}", user.getId());
+      } catch (Exception e) {
+        log.error("Failed to check subscription reminders for user {}: {}", user.getId(), e.getMessage());
+      }
     }
   }
 }

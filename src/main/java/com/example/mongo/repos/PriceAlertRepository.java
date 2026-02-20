@@ -15,4 +15,10 @@ public interface PriceAlertRepository extends MongoRepository<PriceAlert, String
   List<PriceAlert> findBySymbolAndActiveTrue(String symbol);
 
   List<PriceAlert> findByTriggeredTrue();
+
+  List<PriceAlert> findAllByUserId(String userId);
+
+  List<PriceAlert> findByActiveTrueAndUserId(String userId);
+
+  List<PriceAlert> findBySymbolAndUserId(String symbol, String userId);
 }

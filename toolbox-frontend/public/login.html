@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolBox — Login</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5/dist/full.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/shared.js"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-base-100">
+
+  <div class="card w-full max-w-sm shadow-2xl bg-base-200">
+    <div class="card-body gap-4">
+      <!-- Brand -->
+      <div class="flex items-center gap-2 justify-center mb-2">
+        <span class="text-3xl">🧰</span>
+        <span class="text-2xl font-bold tracking-tight">ToolBox</span>
+      </div>
+
+      <!-- Login form (default) -->
+      <div id="loginForm">
+        <h2 class="text-center text-lg font-semibold mb-4">Sign In</h2>
+        <div class="form-control mb-3">
+          <label class="label"><span class="label-text">Email</span></label>
+          <input id="loginEmail" type="email" class="input input-bordered" placeholder="you@example.com" />
+        </div>
+        <div class="form-control mb-4">
+          <label class="label"><span class="label-text">Password</span></label>
+          <input id="loginPassword" type="password" class="input input-bordered" placeholder="••••••••" />
+        </div>
+        <button id="loginBtn" class="btn btn-primary w-full" onclick="doLogin()">Sign In</button>
+        <p class="text-center text-sm mt-4 opacity-70">
+          Don't have an account?
+          <a class="link link-primary" onclick="toggleForm()">Register</a>
+        </p>
+        <div id="loginError" class="alert alert-error mt-3 hidden text-sm"></div>
+      </div>
+
+      <!-- Register form (hidden) -->
+      <div id="registerForm" class="hidden">
+        <h2 class="text-center text-lg font-semibold mb-4">Create Account</h2>
+        <div class="form-control mb-3">
+          <label class="label"><span class="label-text">Name</span></label>
+          <input id="regName" type="text" class="input input-bordered" placeholder="Your name" />
+        </div>
+        <div class="form-control mb-3">
+          <label class="label"><span class="label-text">Email</span></label>
+          <input id="regEmail" type="email" class="input input-bordered" placeholder="you@example.com" />
+        </div>
+        <div class="form-control mb-4">
+          <label class="label"><span class="label-text">Password</span></label>
+          <input id="regPassword" type="password" class="input input-bordered" placeholder="••••••••" />
+        </div>
+        <button id="registerBtn" class="btn btn-primary w-full" onclick="doRegister()">Create Account</button>
+        <p class="text-center text-sm mt-4 opacity-70">
+          Already have an account?
+          <a class="link link-primary" onclick="toggleForm()">Sign In</a>
+        </p>
+        <div id="registerError" class="alert alert-error mt-3 hidden text-sm"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // If already logged in, redirect to home
+    if (localStorage.getItem('authToken')) {
+      window.location.href = '/';
+    }
+
+    function toggleForm() {
+      document.getElementById('loginForm').classList.toggle('hidden');
+      document.getElementById('registerForm').classList.toggle('hidden');
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errEl = document.getElementById('loginError');
+      const btn = document.getElementById('loginBtn');
+
+      errEl.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (!res.ok) {
+          const msg = await res.text();
+          errEl.textContent = msg || 'Invalid credentials';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        const data = await res.json();
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('userName', data.name);
+        localStorage.setItem('userEmail', data.email);
+        window.location.href = '/';
+      } catch (e) {
+        errEl.textContent = 'Connection error. Is the server running?';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    }
+
+    async function doRegister() {
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const errEl = document.getElementById('registerError');
+      const btn = document.getElementById('registerBtn');
+
+      errEl.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        if (!res.ok) {
+          const msg = await res.text();
+          errEl.textContent = msg || 'Registration failed';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        const data = await res.json();
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('userName', data.name);
+        localStorage.setItem('userEmail', data.email);
+        window.location.href = '/';
+      } catch (e) {
+        errEl.textContent = 'Connection error. Is the server running?';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+
+    // Allow Enter key on password fields
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('loginPassword').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+      });
+      document.getElementById('regPassword').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doRegister();
+      });
+    });
+  </script>
+</body>
+</html>

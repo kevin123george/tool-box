@@ -12,4 +12,8 @@ public interface WorkoutTemplateRepository extends MongoRepository<WorkoutTempla
   List<WorkoutTemplate> findByExerciseType(WorkoutLog.ExerciseType exerciseType);
 
   List<WorkoutTemplate> findAllByOrderByNameAsc();
+
+  List<WorkoutTemplate> findAllByUserIdOrderByNameAsc(String userId);
+
+  List<WorkoutTemplate> findAllByUserId(String userId);
 }

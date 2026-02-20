@@ -179,7 +179,7 @@ function startDayWorkout() {
 
 async function logWorkoutForDate(template, dateStr) {
     try {
-        const res = await fetch(`${API}/api/fitness/workouts`, {
+        const res = await authFetch(`${API}/api/fitness/workouts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -215,7 +215,7 @@ let todaysWorkoutData = null;
 
 async function loadTodaysWorkout() {
     try {
-        const res = await fetch(`${API}/api/fitness/today`);
+        const res = await authFetch(`${API}/api/fitness/today`);
         if (!res.ok) throw new Error('Failed to load today\'s workout');
         todaysWorkoutData = await res.json();
 
@@ -381,7 +381,7 @@ async function completeTodaysWorkout() {
             url = `${API}/api/fitness/workouts/${existingWorkout.id}`;
         }
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(workoutData)
@@ -407,7 +407,7 @@ async function completeTodaysWorkout() {
 
 async function loadFitnessStats() {
     try {
-        const res = await fetch(`${API}/api/fitness/stats`);
+        const res = await authFetch(`${API}/api/fitness/stats`);
         if (!res.ok) throw new Error('Failed to load fitness stats');
         const stats = await res.json();
 
@@ -435,8 +435,8 @@ async function loadWeeklyWorkouts() {
 
         // Fetch both workouts and active plan
         const [workoutsRes, planRes] = await Promise.all([
-            fetch(`${API}/api/fitness/workouts/week?date=${localToday}`),
-            fetch(`${API}/api/fitness/plans/active`)
+            authFetch(`${API}/api/fitness/workouts/week?date=${localToday}`),
+            authFetch(`${API}/api/fitness/plans/active`)
         ]);
 
         const workouts = workoutsRes.ok ? await workoutsRes.json() : [];
@@ -541,14 +541,14 @@ async function loadWeeklyWorkouts() {
 async function loadWeightData() {
     try {
         // Load latest weight
-        const latestRes = await fetch(`${API}/api/fitness/weight/latest`);
+        const latestRes = await authFetch(`${API}/api/fitness/weight/latest`);
         if (latestRes.ok) {
             const latest = await latestRes.json();
             document.getElementById('currentWeight').textContent = `${latest.weight} kg`;
         }
 
         // Load weight history for chart
-        const historyRes = await fetch(`${API}/api/fitness/weight?days=30`);
+        const historyRes = await authFetch(`${API}/api/fitness/weight?days=30`);
         if (!historyRes.ok) throw new Error('Failed to load weight history');
         const history = await historyRes.json();
 
@@ -640,7 +640,7 @@ function renderWeightChart(data) {
 
 async function loadWorkoutHistory() {
     try {
-        const res = await fetch(`${API}/api/fitness/workouts/recent`);
+        const res = await authFetch(`${API}/api/fitness/workouts/recent`);
         if (!res.ok) throw new Error('Failed to load workout history');
         const workouts = await res.json();
 
@@ -687,7 +687,7 @@ async function logWorkout() {
     }
 
     try {
-        const res = await fetch(`${API}/api/fitness/workouts`, {
+        const res = await authFetch(`${API}/api/fitness/workouts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -733,7 +733,7 @@ async function logWeight() {
     }
 
     try {
-        const res = await fetch(`${API}/api/fitness/weight`, {
+        const res = await authFetch(`${API}/api/fitness/weight`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -761,7 +761,7 @@ async function logWeight() {
 
 async function editWorkout(id) {
     try {
-        const res = await fetch(`${API}/api/fitness/workouts/${id}`);
+        const res = await authFetch(`${API}/api/fitness/workouts/${id}`);
         if (!res.ok) throw new Error('Failed to fetch workout');
         const workout = await res.json();
 
@@ -790,7 +790,7 @@ async function saveWorkoutEdit() {
     const completed = document.getElementById('editWorkoutCompleted').checked;
 
     try {
-        const res = await fetch(`${API}/api/fitness/workouts/${id}`, {
+        const res = await authFetch(`${API}/api/fitness/workouts/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -823,7 +823,7 @@ async function deleteWorkout(id) {
     if (!confirm('Delete this workout?')) return;
 
     try {
-        const res = await fetch(`${API}/api/fitness/workouts/${id}`, {
+        const res = await authFetch(`${API}/api/fitness/workouts/${id}`, {
             method: 'DELETE'
         });
 
@@ -850,7 +850,7 @@ let templatesCache = [];
 
 async function loadTemplates() {
     try {
-        const res = await fetch(`${API}/api/fitness/templates`);
+        const res = await authFetch(`${API}/api/fitness/templates`);
         if (!res.ok) throw new Error('Failed to load templates');
         templatesCache = await res.json();
 
@@ -909,7 +909,7 @@ function showAddTemplateModal() {
 
 async function editTemplate(id) {
     try {
-        const res = await fetch(`${API}/api/fitness/templates/${id}`);
+        const res = await authFetch(`${API}/api/fitness/templates/${id}`);
         if (!res.ok) throw new Error('Failed to fetch template');
         const template = await res.json();
 
@@ -943,7 +943,7 @@ async function saveTemplate() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API}/api/fitness/templates/${id}` : `${API}/api/fitness/templates`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -969,7 +969,7 @@ async function deleteTemplate(id) {
     if (!confirm('Delete this template?')) return;
 
     try {
-        const res = await fetch(`${API}/api/fitness/templates/${id}`, { method: 'DELETE' });
+        const res = await authFetch(`${API}/api/fitness/templates/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Failed to delete template');
 
         showToast('Template deleted', 'success');
@@ -982,7 +982,7 @@ async function deleteTemplate(id) {
 
 async function quickLogFromTemplate(templateId) {
     try {
-        const res = await fetch(`${API}/api/fitness/workouts/from-template/${templateId}`, {
+        const res = await authFetch(`${API}/api/fitness/workouts/from-template/${templateId}`, {
             method: 'POST'
         });
 
@@ -1007,7 +1007,7 @@ async function quickLogFromTemplate(templateId) {
 
 async function loadPlans() {
     try {
-        const res = await fetch(`${API}/api/fitness/plans`);
+        const res = await authFetch(`${API}/api/fitness/plans`);
         if (!res.ok) throw new Error('Failed to load plans');
         const plans = await res.json();
 
@@ -1079,7 +1079,7 @@ function showAddPlanModal() {
 
 async function editPlan(id) {
     try {
-        const res = await fetch(`${API}/api/fitness/plans/${id}`);
+        const res = await authFetch(`${API}/api/fitness/plans/${id}`);
         if (!res.ok) throw new Error('Failed to fetch plan');
         const plan = await res.json();
 
@@ -1136,7 +1136,7 @@ async function savePlan() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API}/api/fitness/plans/${id}` : `${API}/api/fitness/plans`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, schedule, active, notes: notes || null })
@@ -1155,7 +1155,7 @@ async function savePlan() {
 
 async function activatePlan(id) {
     try {
-        const res = await fetch(`${API}/api/fitness/plans/${id}/activate`, { method: 'PUT' });
+        const res = await authFetch(`${API}/api/fitness/plans/${id}/activate`, { method: 'PUT' });
         if (!res.ok) throw new Error('Failed to activate plan');
 
         showToast('Plan activated', 'success');
@@ -1170,7 +1170,7 @@ async function deletePlan(id) {
     if (!confirm('Delete this plan?')) return;
 
     try {
-        const res = await fetch(`${API}/api/fitness/plans/${id}`, { method: 'DELETE' });
+        const res = await authFetch(`${API}/api/fitness/plans/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Failed to delete plan');
 
         showToast('Plan deleted', 'success');
@@ -1190,7 +1190,7 @@ let weeklyVolumeChart = null;
 
 async function loadFitnessAnalytics() {
     try {
-        const res = await fetch(`${API}/api/fitness/analytics?weeks=12`);
+        const res = await authFetch(`${API}/api/fitness/analytics?weeks=12`);
         if (!res.ok) throw new Error('Failed to load analytics');
         const analytics = await res.json();
 
@@ -1319,5 +1319,6 @@ function renderWeeklyVolumeChart(data) {
 =============================================================*/
 
 document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
     loadFitnessTab();
 });

@@ -221,3 +221,43 @@ function renderEmptyState(containerId, icon, title, message, buttonText, buttonA
         </div>
     `;
 }
+
+/* ===========================================================
+   AUTH HELPERS
+=============================================================*/
+
+function getToken() {
+    return localStorage.getItem('authToken');
+}
+
+function requireAuth() {
+    if (!getToken()) {
+        window.location.href = '/login.html';
+    }
+}
+
+async function authFetch(url, options = {}) {
+    const token = getToken();
+    if (!token) {
+        window.location.href = '/login.html';
+        return;
+    }
+    const headers = {
+        ...(options.headers || {}),
+        'Authorization': `Bearer ${token}`
+    };
+    const res = await fetch(url, { ...options, headers });
+    if (res.status === 401 || res.status === 403) {
+        logout();
+        return;
+    }
+    return res;
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    window.location.href = '/login.html';
+}

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "stock_price_entries")
@@ -11,6 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class StockPriceEntry {
 
   @Id private Long id;
+
+  @Indexed private String userId;
 
   private double price;
 

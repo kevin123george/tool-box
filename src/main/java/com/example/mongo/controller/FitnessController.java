@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/fitness")
-@CrossOrigin(origins = "*")
 public class FitnessController {
 
   @Autowired private FitnessService fitnessService;

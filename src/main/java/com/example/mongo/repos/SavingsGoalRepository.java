@@ -11,4 +11,8 @@ public interface SavingsGoalRepository extends MongoRepository<SavingsGoal, Stri
   List<SavingsGoal> findAllByOrderByDeadlineAsc();
 
   List<SavingsGoal> findByNameContainingIgnoreCase(String name);
+
+  List<SavingsGoal> findAllByUserIdOrderByDeadlineAsc(String userId);
+
+  List<SavingsGoal> findAllByUserId(String userId);
 }

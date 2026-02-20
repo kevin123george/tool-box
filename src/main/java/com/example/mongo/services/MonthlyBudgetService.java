@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.controller.MonthlyBudgetController.BudgetComparisonDTO;
 import com.example.mongo.models.ExpenseCategory;
 import com.example.mongo.models.ExpenseRecord;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class MonthlyBudgetService {
 
   @Autowired private MonthlyBudgetRepository monthlyBudgetRepository;
+  @Autowired private AuthUtils authUtils;
 
   private static final Set<ExpenseCategory> AUTO_CREATE_EXPENSE_CATEGORIES =
       Set.of(
@@ -33,26 +35,33 @@ public class MonthlyBudgetService {
       Set.of(IncomeCategory.SALARY);
 
   public MonthlyBudget getOrCreateBudget(YearMonth month) {
+    return getOrCreateBudget(month, authUtils.getCurrentUserId());
+  }
 
-    var budgetOpt = monthlyBudgetRepository.findByMonth(month);
-
-    return monthlyBudgetRepository
-        .findByMonth(month)
-        .orElseGet(() -> monthlyBudgetRepository.save(new MonthlyBudget(month)));
+  public MonthlyBudget getOrCreateBudget(YearMonth month, String userId) {
+    return monthlyBudgetRepository.findByMonthAndUserId(month, userId)
+        .orElseGet(() -> {
+          MonthlyBudget b = new MonthlyBudget(month);
+          b.setUserId(userId);
+          return monthlyBudgetRepository.save(b);
+        });
   }
 
   public MonthlyBudget getBudget(YearMonth month) {
-    return monthlyBudgetRepository
-        .findByMonth(month)
+    return getBudget(month, authUtils.getCurrentUserId());
+  }
+
+  public MonthlyBudget getBudget(YearMonth month, String userId) {
+    return monthlyBudgetRepository.findByMonthAndUserId(month, userId)
         .orElseThrow(() -> new RuntimeException("Budget not found for month: " + month));
   }
 
   public List<MonthlyBudget> getAllBudgets() {
-    return monthlyBudgetRepository.findAllByOrderByMonthDesc();
+    return monthlyBudgetRepository.findAllByUserIdOrderByMonthDesc(authUtils.getCurrentUserId());
   }
 
   public void deleteBudget(YearMonth month) {
-    MonthlyBudget budget = getBudget(month);
+    MonthlyBudget budget = getBudget(month, authUtils.getCurrentUserId());
     monthlyBudgetRepository.delete(budget);
   }
 
@@ -61,7 +70,7 @@ public class MonthlyBudgetService {
       Map<IncomeCategory, Double> plannedIncome,
       Map<ExpenseCategory, Double> plannedExpenses,
       boolean autoCreateRecords) {
-    MonthlyBudget budget = getOrCreateBudget(month);
+    MonthlyBudget budget = getOrCreateBudget(month, authUtils.getCurrentUserId());
 
     if (plannedIncome != null) {
       budget.setPlannedIncome(plannedIncome);
@@ -138,44 +147,52 @@ public class MonthlyBudgetService {
 
   public MonthlyBudget setPlannedIncome(
       YearMonth month, Map<IncomeCategory, Double> plannedIncome) {
-    MonthlyBudget budget = getOrCreateBudget(month);
+    MonthlyBudget budget = getOrCreateBudget(month, authUtils.getCurrentUserId());
     budget.setPlannedIncome(plannedIncome);
     return monthlyBudgetRepository.save(budget);
   }
 
   public MonthlyBudget setPlannedExpenses(
       YearMonth month, Map<ExpenseCategory, Double> plannedExpenses) {
-    MonthlyBudget budget = getOrCreateBudget(month);
+    MonthlyBudget budget = getOrCreateBudget(month, authUtils.getCurrentUserId());
     budget.setPlannedExpenses(plannedExpenses);
     return monthlyBudgetRepository.save(budget);
   }
 
   public MonthlyBudget addIncome(YearMonth month, IncomeRecord income) {
-    MonthlyBudget budget = getOrCreateBudget(month);
+    return addIncome(month, income, authUtils.getCurrentUserId());
+  }
+
+  public MonthlyBudget addIncome(YearMonth month, IncomeRecord income, String userId) {
+    MonthlyBudget budget = getOrCreateBudget(month, userId);
     budget.addIncomeRecord(income);
     return monthlyBudgetRepository.save(budget);
   }
 
   public MonthlyBudget removeIncome(YearMonth month, int index) {
-    MonthlyBudget budget = getBudget(month);
+    MonthlyBudget budget = getBudget(month, authUtils.getCurrentUserId());
     budget.removeIncomeRecord(index);
     return monthlyBudgetRepository.save(budget);
   }
 
   public MonthlyBudget addExpense(YearMonth month, ExpenseRecord expense) {
-    MonthlyBudget budget = getOrCreateBudget(month);
+    return addExpense(month, expense, authUtils.getCurrentUserId());
+  }
+
+  public MonthlyBudget addExpense(YearMonth month, ExpenseRecord expense, String userId) {
+    MonthlyBudget budget = getOrCreateBudget(month, userId);
     budget.addExpenseRecord(expense);
     return monthlyBudgetRepository.save(budget);
   }
 
   public MonthlyBudget removeExpense(YearMonth month, int index) {
-    MonthlyBudget budget = getBudget(month);
+    MonthlyBudget budget = getBudget(month, authUtils.getCurrentUserId());
     budget.removeExpenseRecord(index);
     return monthlyBudgetRepository.save(budget);
   }
 
   public MonthlyBudget updateNotes(YearMonth month, String notes) {
-    MonthlyBudget budget = getOrCreateBudget(month);
+    MonthlyBudget budget = getOrCreateBudget(month, authUtils.getCurrentUserId());
     budget.setNotes(notes);
     return monthlyBudgetRepository.save(budget);
   }
@@ -184,12 +201,13 @@ public class MonthlyBudgetService {
     List<BudgetComparisonDTO> comparisons = new ArrayList<>();
     YearMonth current = YearMonth.now();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+    String userId = authUtils.getCurrentUserId();
 
     for (int i = months - 1; i >= 0; i--) {
       YearMonth targetMonth = current.minusMonths(i);
 
       // Try to find existing budget, don't create new ones for comparison
-      var budgetOpt = monthlyBudgetRepository.findByMonth(targetMonth);
+      var budgetOpt = monthlyBudgetRepository.findByMonthAndUserId(targetMonth, userId);
 
       BudgetComparisonDTO dto = new BudgetComparisonDTO();
       dto.setMonth(targetMonth.format(formatter));
@@ -219,10 +237,11 @@ public class MonthlyBudgetService {
     List<SavingsRateDTO> history = new ArrayList<>();
     YearMonth current = YearMonth.now();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+    String userId = authUtils.getCurrentUserId();
 
     for (int i = months - 1; i >= 0; i--) {
       YearMonth targetMonth = current.minusMonths(i);
-      var budgetOpt = monthlyBudgetRepository.findByMonth(targetMonth);
+      var budgetOpt = monthlyBudgetRepository.findByMonthAndUserId(targetMonth, userId);
 
       if (budgetOpt.isPresent()) {
         MonthlyBudget budget = budgetOpt.get();

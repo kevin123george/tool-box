@@ -26,4 +26,16 @@ public interface WorkoutLogRepository extends MongoRepository<WorkoutLog, String
   List<WorkoutLog> findByCompletedTrueOrderByWorkoutDateDesc();
 
   long countByCompletedTrue();
+
+  List<WorkoutLog> findByWorkoutDateBetweenAndUserId(java.time.LocalDate start, java.time.LocalDate end, String userId);
+
+  List<WorkoutLog> findTop30ByUserIdOrderByWorkoutDateDesc(String userId);
+
+  Page<WorkoutLog> findAllByUserIdOrderByWorkoutDateDesc(String userId, Pageable pageable);
+
+  Optional<WorkoutLog> findByWorkoutDateAndUserId(java.time.LocalDate date, String userId);
+
+  List<WorkoutLog> findByCompletedTrueAndUserIdOrderByWorkoutDateDesc(String userId);
+
+  long countByCompletedTrueAndUserId(String userId);
 }

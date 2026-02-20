@@ -15,7 +15,7 @@ function initSystemStatsTab() {
 
 async function loadSystemStats() {
     try {
-        const response = await fetch('/api/system/stats');
+        const response = await authFetch('/api/system/stats');
         const stats = await response.json();
         renderSystemStats(stats);
     } catch (error) {
@@ -272,7 +272,7 @@ async function initPushNotifications() {
         const registration = await navigator.serviceWorker.register('/sw.js');
         console.log('Service Worker registered:', registration);
 
-        const response = await fetch('/api/push/public-key');
+        const response = await authFetch('/api/push/public-key');
         const data = await response.json();
         publicVapidKey = data.publicKey;
 
@@ -302,7 +302,7 @@ async function subscribeToPush() {
             applicationServerKey: convertedKey
         });
 
-        const response = await fetch('/api/push/subscribe', {
+        const response = await authFetch('/api/push/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -333,7 +333,7 @@ async function unsubscribeFromPush() {
         if (pushSubscription) {
             await pushSubscription.unsubscribe();
 
-            await fetch('/api/push/unsubscribe', {
+            await authFetch('/api/push/unsubscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -353,7 +353,7 @@ async function unsubscribeFromPush() {
 
 async function testNotification() {
     try {
-        const response = await fetch('/api/push/test', { method: 'POST' });
+        const response = await authFetch('/api/push/test', { method: 'POST' });
         const result = await response.json();
 
         if (result.success) {
@@ -422,6 +422,7 @@ function arrayBufferToBase64(buffer) {
 =============================================================*/
 
 document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
     initSystemStatsTab();
     initPushNotifications();
 });

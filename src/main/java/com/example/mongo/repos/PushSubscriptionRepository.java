@@ -9,4 +9,6 @@ public interface PushSubscriptionRepository extends MongoRepository<PushSubscrip
   Optional<PushSubscription> findByEndpoint(String endpoint);
 
   List<PushSubscription> findAll();
+
+  List<PushSubscription> findAllByUserId(String userId);
 }

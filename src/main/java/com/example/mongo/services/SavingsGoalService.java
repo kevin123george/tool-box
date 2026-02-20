@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.SavingsGoal;
 import com.example.mongo.repos.SavingsGoalRepository;
 import java.util.List;
@@ -10,9 +11,10 @@ import org.springframework.stereotype.Service;
 public class SavingsGoalService {
 
   @Autowired private SavingsGoalRepository savingsGoalRepository;
+  @Autowired private AuthUtils authUtils;
 
   public List<SavingsGoal> getAllGoals() {
-    return savingsGoalRepository.findAllByOrderByDeadlineAsc();
+    return savingsGoalRepository.findAllByUserIdOrderByDeadlineAsc(authUtils.getCurrentUserId());
   }
 
   public SavingsGoal getGoalById(String id) {
@@ -22,6 +24,7 @@ public class SavingsGoalService {
   }
 
   public SavingsGoal createGoal(SavingsGoal goal) {
+    goal.setUserId(authUtils.getCurrentUserId());
     return savingsGoalRepository.save(goal);
   }
 
@@ -48,13 +51,13 @@ public class SavingsGoalService {
   }
 
   public double getTotalSaved() {
-    return savingsGoalRepository.findAll().stream()
+    return savingsGoalRepository.findAllByUserId(authUtils.getCurrentUserId()).stream()
         .mapToDouble(SavingsGoal::getCurrentAmount)
         .sum();
   }
 
   public double getTotalTarget() {
-    return savingsGoalRepository.findAll().stream()
+    return savingsGoalRepository.findAllByUserId(authUtils.getCurrentUserId()).stream()
         .mapToDouble(SavingsGoal::getTargetAmount)
         .sum();
   }

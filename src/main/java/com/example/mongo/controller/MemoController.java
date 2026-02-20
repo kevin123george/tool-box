@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/memos")
-@CrossOrigin(origins = "*") // Remove or adjust for production
 public class MemoController {
 
   @Autowired private MemoService memoService;

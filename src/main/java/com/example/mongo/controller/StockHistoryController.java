@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/hist")
-@CrossOrigin
 public class StockHistoryController {
 
   @Autowired private StockHoldingHistoryRepository repository;

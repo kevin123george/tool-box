@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -11,6 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "stock_holdings")
 public class StockHolding {
   @Id private String id;
+
+  @Indexed private String userId;
 
   private String symbol; // e.g., AAPL, TSLA
   private double quantity;

@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.StockPriceEntry;
 import com.example.mongo.models.StockWatch;
 import com.example.mongo.repos.StockPriceEntryRepository;
@@ -17,6 +18,8 @@ public class StockWatchService {
   private final StockPriceEntryRepository priceRepo;
   private final StockWatchRepository stockWatchRepository;
   private final StockPriceService stockPriceService;
+
+  @Autowired private AuthUtils authUtils;
 
   @Autowired
   public StockWatchService(
@@ -40,14 +43,15 @@ public class StockWatchService {
   }
 
   public void recordCurrentPrice(String symbol) {
-    Optional<StockWatch> stockOpt = stockWatchRepository.findById(symbol);
-    if (symbol.isEmpty()) {
+    if (symbol == null || symbol.isEmpty()) {
       System.err.println("Invalid stock symbol provided.");
       return;
     }
     System.out.println("Recording current price for: " + symbol);
-    if (stockOpt.isEmpty()) {
-      System.err.println("Stock not found in watchlist: " + symbol);
+    // Find ALL watches for this symbol across all users
+    List<StockWatch> watches = stockWatchRepository.findBySymbol(symbol);
+    if (watches.isEmpty()) {
+      System.err.println("No watches found for symbol: " + symbol);
       return;
     }
     Optional<Double> priceOpt = fetchCurrentPrice(symbol);
@@ -55,18 +59,22 @@ public class StockWatchService {
       System.err.println("Could not fetch current price for: " + symbol);
       return;
     }
-    stockOpt.get().setCurrentPrice(priceOpt.get());
-    stockWatchRepository.save(stockOpt.get());
-    StockPriceEntry entry = new StockPriceEntry();
-    entry.setPrice(priceOpt.get());
-    entry.setStock(stockOpt.get());
-    entry.setTimestamp(LocalDateTime.now());
-    priceRepo.save(entry);
+    double price = priceOpt.get();
+    for (StockWatch stockWatch : watches) {
+      stockWatch.setCurrentPrice(price);
+      stockWatchRepository.save(stockWatch);
+      StockPriceEntry entry = new StockPriceEntry();
+      entry.setPrice(price);
+      entry.setStock(stockWatch);
+      entry.setTimestamp(LocalDateTime.now());
+      priceRepo.save(entry);
+    }
   }
 
   public String addToWatchlist(StockWatch request) {
+    String userId = authUtils.getCurrentUserId();
     String symbol = request.getSymbol().toUpperCase();
-    if (stockWatchRepository.existsById(symbol)) {
+    if (stockWatchRepository.existsBySymbolAndUserId(symbol, userId)) {
       return "Symbol already in watchlist: " + symbol;
     }
     Optional<Double> priceOpt = fetchCurrentPrice(symbol);
@@ -74,6 +82,7 @@ public class StockWatchService {
 
     StockWatch stock = new StockWatch();
     stock.setSymbol(symbol);
+    stock.setUserId(userId);
     stock.setInitialPrice(initialPrice);
     stock.setAddedAt(LocalDateTime.now());
     stockWatchRepository.save(stock);
@@ -88,15 +97,17 @@ public class StockWatchService {
   }
 
   public List<StockWatch> getAllStocks() {
-    return stockWatchRepository.findAll();
+    return stockWatchRepository.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   public void deleteById(String symbol) {
-    if (!stockWatchRepository.existsById(symbol)) {
+    String userId = authUtils.getCurrentUserId();
+    Optional<StockWatch> watch = stockWatchRepository.findBySymbolAndUserId(symbol, userId);
+    if (watch.isEmpty()) {
       System.err.println("Symbol not found in watchlist: " + symbol);
       return;
     }
-    stockWatchRepository.deleteById(symbol);
+    stockWatchRepository.deleteById(watch.get().getId());
     System.out.println("Deleted " + symbol + " from watchlist.");
   }
 }

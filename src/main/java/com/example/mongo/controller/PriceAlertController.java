@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/alerts")
-@CrossOrigin(origins = "*")
 public class PriceAlertController {
 
   @Autowired private PriceAlertService alertService;

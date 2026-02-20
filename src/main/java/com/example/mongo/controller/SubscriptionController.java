@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/subscriptions")
-@CrossOrigin(origins = "*")
 public class SubscriptionController {
 
   @Autowired private SubscriptionService subscriptionService;

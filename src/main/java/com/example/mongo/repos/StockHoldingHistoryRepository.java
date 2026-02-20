@@ -20,4 +20,6 @@ public interface StockHoldingHistoryRepository
 
   // Find by date range
   List<StockHoldingHistory> findByUpdatedAtBetween(LocalDateTime from, LocalDateTime to);
+
+  List<StockHoldingHistory> findAllByUserId(String userId);
 }

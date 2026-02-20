@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.Subscription;
 import com.example.mongo.models.dto.SubscriptionSummaryDTO;
 import com.example.mongo.repos.SubscriptionRepository;
@@ -20,12 +21,14 @@ public class SubscriptionService {
 
   @Autowired private WebPushService webPushService;
 
+  @Autowired private AuthUtils authUtils;
+
   public List<Subscription> getAllSubscriptions() {
-    return subscriptionRepository.findAll();
+    return subscriptionRepository.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   public List<Subscription> getActiveSubscriptions() {
-    return subscriptionRepository.findByActiveTrue();
+    return subscriptionRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId());
   }
 
   public Subscription getById(String id) {
@@ -35,6 +38,7 @@ public class SubscriptionService {
   }
 
   public Subscription create(Subscription subscription) {
+    subscription.setUserId(authUtils.getCurrentUserId());
     return subscriptionRepository.save(subscription);
   }
 
@@ -57,7 +61,8 @@ public class SubscriptionService {
   }
 
   public SubscriptionSummaryDTO getSummary() {
-    List<Subscription> active = subscriptionRepository.findByActiveTrue();
+    String userId = authUtils.getCurrentUserId();
+    List<Subscription> active = subscriptionRepository.findByActiveTrueAndUserId(userId);
 
     double totalMonthly = active.stream().mapToDouble(Subscription::getMonthlyEquivalent).sum();
 
@@ -74,11 +79,15 @@ public class SubscriptionService {
   }
 
   public void checkRenewalReminders() {
+    checkRenewalReminders(authUtils.getCurrentUserId());
+  }
+
+  public void checkRenewalReminders(String userId) {
     LocalDate today = LocalDate.now();
     LocalDate threeDaysFromNow = today.plusDays(3);
 
     List<Subscription> upcomingRenewals =
-        subscriptionRepository.findByNextBillingDateBetweenAndActiveTrue(today, threeDaysFromNow);
+        subscriptionRepository.findByNextBillingDateBetweenAndActiveTrueAndUserId(today, threeDaysFromNow, userId);
 
     for (Subscription sub : upcomingRenewals) {
       String title = "Subscription Renewal Reminder";
@@ -87,7 +96,7 @@ public class SubscriptionService {
               "%s (%s) renews on %s - €%.2f",
               sub.getName(), sub.getProvider(), sub.getNextBillingDate(), sub.getAmount());
 
-      Map<String, String> data = new HashMap<>();
+      java.util.Map<String, String> data = new java.util.HashMap<>();
       data.put("subscriptionId", sub.getId());
       data.put("name", sub.getName());
 
@@ -101,8 +110,9 @@ public class SubscriptionService {
   }
 
   public List<Subscription> getSubscriptionsForMonth(int year, int month) {
+    String userId = authUtils.getCurrentUserId();
     LocalDate start = LocalDate.of(year, month, 1);
     LocalDate end = start.plusMonths(1).minusDays(1);
-    return subscriptionRepository.findByNextBillingDateBetweenAndActiveTrue(start, end);
+    return subscriptionRepository.findByNextBillingDateBetweenAndActiveTrueAndUserId(start, end, userId);
   }
 }

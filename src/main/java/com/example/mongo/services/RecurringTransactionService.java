@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.ExpenseCategory;
 import com.example.mongo.models.ExpenseRecord;
 import com.example.mongo.models.IncomeCategory;
@@ -22,12 +23,14 @@ public class RecurringTransactionService {
 
   @Autowired private MonthlyBudgetService budgetService;
 
+  @Autowired private AuthUtils authUtils;
+
   public List<RecurringTransaction> getAllTransactions() {
-    return recurringRepository.findAll();
+    return recurringRepository.findAllByUserId(authUtils.getCurrentUserId());
   }
 
   public List<RecurringTransaction> getActiveTransactions() {
-    return recurringRepository.findByActiveTrue();
+    return recurringRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId());
   }
 
   public RecurringTransaction getById(String id) {
@@ -37,6 +40,7 @@ public class RecurringTransactionService {
   }
 
   public RecurringTransaction create(RecurringTransaction transaction) {
+    transaction.setUserId(authUtils.getCurrentUserId());
     return recurringRepository.save(transaction);
   }
 
@@ -57,9 +61,13 @@ public class RecurringTransactionService {
   }
 
   public void processDueTransactions() {
+    processDueTransactions(authUtils.getCurrentUserId());
+  }
+
+  public void processDueTransactions(String userId) {
     LocalDate today = LocalDate.now();
     List<RecurringTransaction> dueTransactions =
-        recurringRepository.findByNextDueDateLessThanEqualAndActiveTrue(today);
+        recurringRepository.findByNextDueDateLessThanEqualAndActiveTrueAndUserId(today, userId);
 
     for (RecurringTransaction transaction : dueTransactions) {
       try {
@@ -70,13 +78,13 @@ public class RecurringTransactionService {
           IncomeRecord record =
               new IncomeRecord(
                   category, transaction.getAmount(), "Auto: " + transaction.getName());
-          budgetService.addIncome(month, record);
+          budgetService.addIncome(month, record, userId);
         } else {
           ExpenseCategory category = ExpenseCategory.valueOf(transaction.getCategoryType());
           ExpenseRecord record =
               new ExpenseRecord(
                   category, transaction.getAmount(), "Auto: " + transaction.getName());
-          budgetService.addExpense(month, record);
+          budgetService.addExpense(month, record, userId);
         }
 
         // Advance to next due date
@@ -91,7 +99,7 @@ public class RecurringTransactionService {
   }
 
   public double getTotalMonthlyRecurringCost() {
-    return recurringRepository.findByActiveTrue().stream()
+    return recurringRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId()).stream()
         .filter(t -> "EXPENSE".equalsIgnoreCase(t.getCategory()))
         .mapToDouble(
             t -> {
@@ -105,7 +113,7 @@ public class RecurringTransactionService {
   }
 
   public double getTotalMonthlyRecurringIncome() {
-    return recurringRepository.findByActiveTrue().stream()
+    return recurringRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId()).stream()
         .filter(t -> "INCOME".equalsIgnoreCase(t.getCategory()))
         .mapToDouble(
             t -> {
@@ -122,7 +130,7 @@ public class RecurringTransactionService {
     LocalDate start = LocalDate.of(year, month, 1);
     LocalDate end = start.plusMonths(1).minusDays(1);
 
-    return recurringRepository.findByActiveTrue().stream()
+    return recurringRepository.findByActiveTrueAndUserId(authUtils.getCurrentUserId()).stream()
         .filter(t -> {
           LocalDate due = t.getNextDueDate();
           return due != null && !due.isBefore(start) && !due.isAfter(end);

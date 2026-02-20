@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/recurring")
-@CrossOrigin(origins = "*")
 public class RecurringTransactionController {
 
   @Autowired private RecurringTransactionService recurringService;

@@ -19,4 +19,6 @@ public interface StockPriceEntryRepository extends MongoRepository<StockPriceEnt
   // Optional: Get price entries within a date range
   List<StockPriceEntry> findByStockAndTimestampBetween(
       StockWatch stock, LocalDateTime from, LocalDateTime to);
+
+  List<StockPriceEntry> findAllByUserId(String userId);
 }

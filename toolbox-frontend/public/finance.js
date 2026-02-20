@@ -34,7 +34,7 @@ function switchFinanceTab(tab) {
    ============================================================ */
 
 async function loadFinanceSummary() {
-    const res = await fetch(`${API}/api/finance/summary`);
+    const res = await authFetch(`${API}/api/finance/summary`);
     const s = await res.json();
 
     sumTotal.textContent = "\u20AC" + s.totalBalance.toFixed(2);
@@ -111,7 +111,7 @@ async function loadGoal() {
         return;
     }
 
-    const res = await fetch(`/api/goal/${goalId}`);
+    const res = await authFetch(`/api/goal/${goalId}`);
     const g = await res.json();
     currentGoalId = g.id;
 
@@ -126,7 +126,7 @@ async function loadGoal() {
     goalContributionInput.value = g.yearlyContribution;
     goalAgeInput.value = g.currentAge;
 
-    const projText = await fetch(`/api/goal/${goalId}/projection`).then(r => r.text());
+    const projText = await authFetch(`/api/goal/${goalId}/projection`).then(r => r.text());
     const match = projText.match(/Age (\d+)/);
     goalFireAge.textContent = match ? match[1] : (g.goalAchievedAge || "\u2014");
 
@@ -177,7 +177,7 @@ async function saveGoalForm() {
 
     goalStatus.textContent = "Saving\u2026";
 
-    const res = await fetch(`/api/goal`, {
+    const res = await authFetch(`/api/goal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -198,7 +198,7 @@ async function deleteGoal() {
 
     goalStatus.textContent = "Deleting\u2026";
 
-    await fetch(`/api/goal/${currentGoalId}`, { method: "DELETE" });
+    await authFetch(`/api/goal/${currentGoalId}`, { method: "DELETE" });
 
     currentGoalId = null;
     goalSelect.value = "";
@@ -210,7 +210,7 @@ async function deleteGoal() {
 
 async function loadFinance(page = 0) {
     const size = parseInt(document.getElementById('financePageSize').value) || 10;
-    const res = await fetch(`${API}/api/finance?page=${page}&size=${size}`);
+    const res = await authFetch(`${API}/api/finance?page=${page}&size=${size}`);
     const response = await res.json();
     const data = response.content;
 
@@ -268,7 +268,7 @@ async function addFinance() {
         balance: parseFloat(financeBalance.value || 0)
     };
 
-    await fetch(`${API}/api/finance`, {
+    await authFetch(`${API}/api/finance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -281,7 +281,7 @@ async function addFinance() {
 }
 
 async function viewFinance(id) {
-    const res = await fetch(`${API}/api/finance/${id}`);
+    const res = await authFetch(`${API}/api/finance/${id}`);
     const acc = await res.json();
 
     viewFinanceBank.textContent = acc.bank;
@@ -296,7 +296,7 @@ function closeFinanceViewModal() { closeModal("financeViewModal"); }
 async function showEditFinance(id) {
     editingFinanceId = id;
 
-    const res = await fetch(`${API}/api/finance/${id}`);
+    const res = await authFetch(`${API}/api/finance/${id}`);
     const acc = await res.json();
 
     editFinanceBank.value = acc.bank;
@@ -318,7 +318,7 @@ async function saveFinanceEdit() {
         balance: parseFloat(editFinanceBalance.value || 0)
     };
 
-    await fetch(`${API}/api/finance/${editingFinanceId}`, {
+    await authFetch(`${API}/api/finance/${editingFinanceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated)
@@ -329,12 +329,12 @@ async function saveFinanceEdit() {
 }
 
 async function delFinance(id) {
-    await fetch(`${API}/api/finance/${id}`, { method: "DELETE" });
+    await authFetch(`${API}/api/finance/${id}`, { method: "DELETE" });
     loadFinance(financePage.current);
 }
 
 async function loadGoalList(selectedId) {
-    const res = await fetch(`/api/goal`);
+    const res = await authFetch(`/api/goal`);
     const goals = await res.json();
 
     const sel = document.getElementById("goalSelect");
@@ -364,7 +364,7 @@ let savingsGoals = [];
 
 async function loadSavingsGoals() {
     try {
-        const res = await fetch(`${API}/api/savings-goals`);
+        const res = await authFetch(`${API}/api/savings-goals`);
         if (res.ok) {
             savingsGoals = await res.json();
             renderSavingsGoals();
@@ -456,7 +456,7 @@ async function saveSavingsGoal() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API}/api/savings-goals/${id}` : `${API}/api/savings-goals`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(goal)
@@ -476,7 +476,7 @@ async function deleteSavingsGoal(id) {
     if (!confirm('Delete this savings goal?')) return;
 
     try {
-        await fetch(`${API}/api/savings-goals/${id}`, { method: 'DELETE' });
+        await authFetch(`${API}/api/savings-goals/${id}`, { method: 'DELETE' });
         showToast('Goal deleted', 'success');
         loadSavingsGoals();
     } catch (e) {
@@ -495,7 +495,7 @@ async function contributeToGoal() {
     const amount = parseFloat(document.getElementById('contributeAmount').value) || 0;
 
     try {
-        const res = await fetch(`${API}/api/savings-goals/${id}/contribute`, {
+        const res = await authFetch(`${API}/api/savings-goals/${id}/contribute`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount })
@@ -519,7 +519,7 @@ let netWorthChart = null;
 
 async function loadNetWorthHistory() {
     try {
-        const res = await fetch(`${API}/api/networth/history`);
+        const res = await authFetch(`${API}/api/networth/history`);
         if (res.ok) {
             const data = await res.json();
             renderNetWorthChart(data);
@@ -579,7 +579,7 @@ function renderNetWorthChart(data) {
 
 async function captureNetWorthSnapshot() {
     try {
-        const res = await fetch(`${API}/api/networth/snapshot`, { method: 'POST' });
+        const res = await authFetch(`${API}/api/networth/snapshot`, { method: 'POST' });
         if (res.ok) {
             showToast('Net worth snapshot captured!', 'success');
             loadNetWorthHistory();
@@ -597,7 +597,7 @@ let savingsRateChart = null;
 
 async function loadSavingsRateHistory() {
     try {
-        const res = await fetch(`${API}/api/budget/savings-rate?months=12`);
+        const res = await authFetch(`${API}/api/budget/savings-rate?months=12`);
         if (res.ok) {
             const data = await res.json();
             renderSavingsRateChart(data);
@@ -675,7 +675,7 @@ async function loadBudgetForSelectedMonth() {
     currentBudgetMonth = { year: parseInt(year), month: parseInt(month) };
 
     try {
-        const res = await fetch(`${API}/api/budget/${year}/${month}`);
+        const res = await authFetch(`${API}/api/budget/${year}/${month}`);
 
         if (res.ok) {
             currentBudgetData = await res.json();
@@ -824,7 +824,7 @@ async function saveBudgetPlan() {
         autoCreateRecords: true  // Auto-create records from planned amounts
     };
 
-    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/planned`, {
+    await authFetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/planned`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -848,7 +848,7 @@ async function addIncome() {
     const record = { category, amount, description };
 
     try {
-        await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income`, {
+        await authFetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(record)
@@ -879,7 +879,7 @@ async function addExpense() {
     const record = { category, amount, description };
 
     try {
-        await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses`, {
+        await authFetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(record)
@@ -898,7 +898,7 @@ async function addExpense() {
 async function deleteIncomeRecord(index) {
     if (!currentBudgetMonth || !confirm('Delete this income record?')) return;
 
-    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income/${index}`, {
+    await authFetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/income/${index}`, {
         method: 'DELETE'
     });
 
@@ -908,7 +908,7 @@ async function deleteIncomeRecord(index) {
 async function deleteExpenseRecord(index) {
     if (!currentBudgetMonth || !confirm('Delete this expense record?')) return;
 
-    await fetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses/${index}`, {
+    await authFetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}/expenses/${index}`, {
         method: 'DELETE'
     });
 
@@ -925,7 +925,7 @@ async function loadBudgetComparison() {
     const months = document.getElementById('comparisonMonths')?.value || 6;
 
     try {
-        const res = await fetch(`${API}/api/budget/compare?months=${months}`);
+        const res = await authFetch(`${API}/api/budget/compare?months=${months}`);
         if (!res.ok) {
             console.error('Failed to load budget comparison');
             return;
@@ -1062,8 +1062,8 @@ let recurringTransactions = [];
 async function loadRecurringTransactions() {
     try {
         const [transRes, summaryRes] = await Promise.all([
-            fetch(`${API}/api/recurring`),
-            fetch(`${API}/api/recurring/summary`)
+            authFetch(`${API}/api/recurring`),
+            authFetch(`${API}/api/recurring/summary`)
         ]);
 
         if (transRes.ok) {
@@ -1158,7 +1158,7 @@ async function saveRecurringTransaction() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API}/api/recurring/${id}` : `${API}/api/recurring`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(transaction)
@@ -1178,7 +1178,7 @@ async function deleteRecurringTransaction(id) {
     if (!confirm('Delete this recurring transaction?')) return;
 
     try {
-        await fetch(`${API}/api/recurring/${id}`, { method: 'DELETE' });
+        await authFetch(`${API}/api/recurring/${id}`, { method: 'DELETE' });
         showToast('Deleted', 'success');
         loadRecurringTransactions();
     } catch (e) {
@@ -1195,8 +1195,8 @@ let subscriptions = [];
 async function loadSubscriptions() {
     try {
         const [subsRes, summaryRes] = await Promise.all([
-            fetch(`${API}/api/subscriptions`),
-            fetch(`${API}/api/subscriptions/summary`)
+            authFetch(`${API}/api/subscriptions`),
+            authFetch(`${API}/api/subscriptions/summary`)
         ]);
 
         if (subsRes.ok) {
@@ -1304,7 +1304,7 @@ async function saveSubscription() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API}/api/subscriptions/${id}` : `${API}/api/subscriptions`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(subscription)
@@ -1324,7 +1324,7 @@ async function deleteSubscription(id) {
     if (!confirm('Delete this subscription?')) return;
 
     try {
-        await fetch(`${API}/api/subscriptions/${id}`, { method: 'DELETE' });
+        await authFetch(`${API}/api/subscriptions/${id}`, { method: 'DELETE' });
         showToast('Subscription deleted', 'success');
         loadSubscriptions();
     } catch (e) {
@@ -1353,7 +1353,7 @@ async function previewImport() {
 
     try {
         showLoading('Parsing CSV...');
-        const res = await fetch(`${API}/api/budget/import/preview`, {
+        const res = await authFetch(`${API}/api/budget/import/preview`, {
             method: 'POST',
             body: formData
         });
@@ -1447,7 +1447,7 @@ async function confirmImport() {
 
     try {
         showLoading('Importing transactions...');
-        const res = await fetch(`${API}/api/budget/${year}/${month}/import/confirm`, {
+        const res = await authFetch(`${API}/api/budget/${year}/${month}/import/confirm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(includedItems)
@@ -1484,7 +1484,7 @@ let calendarEvents = [];
 
 async function loadCalendar() {
     try {
-        const res = await fetch(`${API}/api/calendar/${calendarYear}/${calendarMonth}`);
+        const res = await authFetch(`${API}/api/calendar/${calendarYear}/${calendarMonth}`);
         if (res.ok) {
             calendarEvents = await res.json();
             renderCalendar();
@@ -1603,9 +1603,9 @@ let categoryBreakdownChart = null;
 async function loadAnalytics() {
     try {
         const [trendsRes, monthlyRes, anomaliesRes] = await Promise.all([
-            fetch(`${API}/api/analytics/category-trends?months=6`),
-            fetch(`${API}/api/analytics/monthly?months=6`),
-            fetch(`${API}/api/analytics/anomalies`)
+            authFetch(`${API}/api/analytics/category-trends?months=6`),
+            authFetch(`${API}/api/analytics/monthly?months=6`),
+            authFetch(`${API}/api/analytics/anomalies`)
         ]);
 
         if (trendsRes.ok) {
@@ -1767,6 +1767,7 @@ function renderCategoryBreakdownChart(monthly) {
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
     const saved = localStorage.getItem('finance_active_tab') || 'accounts';
     switchFinanceTab(saved);
 });

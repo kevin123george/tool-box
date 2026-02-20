@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/fundamentals")
-@CrossOrigin(origins = "*")
 public class FundamentalController {
 
   @Autowired private FundamentalService fundamentalService;

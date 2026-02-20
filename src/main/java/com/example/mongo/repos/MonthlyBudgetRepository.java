@@ -15,4 +15,8 @@ public interface MonthlyBudgetRepository extends MongoRepository<MonthlyBudget, 
   List<MonthlyBudget> findAllByOrderByMonthDesc();
 
   List<MonthlyBudget> findAllByOrderByMonthAsc();
+
+  Optional<MonthlyBudget> findByMonthAndUserId(YearMonth month, String userId);
+
+  List<MonthlyBudget> findAllByUserIdOrderByMonthDesc(String userId);
 }

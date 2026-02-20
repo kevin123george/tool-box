@@ -187,8 +187,21 @@
                             </span>
                         </button>
                     </div>
-                    <div class="navbar-end">
+                    <div class="navbar-end gap-2">
                         <div id="themePickerContainer"></div>
+                        <div class="dropdown dropdown-end">
+                            <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content rounded-full w-7 h-7 text-xs font-bold flex items-center justify-center">
+                                        <span id="userInitials">?</span>
+                                    </div>
+                                </div>
+                                <span id="userDisplayName" class="hidden sm:inline text-xs font-medium"></span>
+                            </div>
+                            <ul tabindex="0" class="dropdown-content z-[200] menu menu-sm bg-base-200 rounded-box shadow-2xl p-2 w-40 mt-1">
+                                <li><a onclick="logout()" class="text-error">Logout</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -242,6 +255,14 @@
 
         // Render theme picker
         if (typeof renderThemePicker === 'function') renderThemePicker();
+
+        // Populate user info in topbar
+        const userName = localStorage.getItem('userName') || '';
+        const initials = userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+        const initialsEl = document.getElementById('userInitials');
+        const nameEl = document.getElementById('userDisplayName');
+        if (initialsEl) initialsEl.textContent = initials;
+        if (nameEl) nameEl.textContent = userName;
     }
 
     /* -------------------------------------------------------

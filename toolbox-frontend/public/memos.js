@@ -11,6 +11,7 @@ let quillEdit = null;
 
 /* Initialize Quill Editors */
 document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
     // Main editor
     quillMain = new Quill('#memoContent', {
         theme: 'snow',
@@ -63,7 +64,7 @@ document.addEventListener("keydown", function(e) {
 
 async function loadMemos(page = 0) {
     const size = parseInt(document.getElementById('memoPageSize').value) || 10;
-    const res = await fetch(`${API}/api/memos?page=${page}&size=${size}`);
+    const res = await authFetch(`${API}/api/memos?page=${page}&size=${size}`);
     const response = await res.json();
     const data = response.content;
 
@@ -123,7 +124,7 @@ async function addMemo() {
     const file = document.getElementById('memoFile').files[0];
     if (file) form.append("media", file);
 
-    await fetch(`${API}/api/memos/upload`, { method: "POST", body: form });
+    await authFetch(`${API}/api/memos/upload`, { method: "POST", body: form });
 
     document.getElementById('memoTitle').value = "";
     quillMain.setContents([]);
@@ -133,12 +134,12 @@ async function addMemo() {
 }
 
 async function delMemo(id) {
-    await fetch(`${API}/api/memos/${id}`, { method: "DELETE" });
+    await authFetch(`${API}/api/memos/${id}`, { method: "DELETE" });
     loadMemos(memoPage.current);
 }
 
 async function viewMemo(id) {
-    const res = await fetch(`${API}/api/memos/${id}`);
+    const res = await authFetch(`${API}/api/memos/${id}`);
     const m = await res.json();
 
     document.getElementById('viewMemoTitle').textContent = m.title;
@@ -160,7 +161,7 @@ function closeMemoViewModal() { closeModal("memoViewModal"); }
 
 async function copyMemo(id) {
     try {
-        const res = await fetch(`${API}/api/memos/${id}`);
+        const res = await authFetch(`${API}/api/memos/${id}`);
         const m = await res.json();
         const temp = document.createElement("div");
         temp.innerHTML = m.title + " - " + (m.content || "");
@@ -176,7 +177,7 @@ let editingMemoId = null;
 async function showEditMemo(id) {
     editingMemoId = id;
 
-    const res = await fetch(`${API}/api/memos/${id}`);
+    const res = await authFetch(`${API}/api/memos/${id}`);
     const m = await res.json();
 
     document.getElementById('editMemoTitle').value = m.title;
@@ -204,7 +205,7 @@ async function saveMemoEdit() {
     const file = document.getElementById('editMemoFile').files[0];
     if (file) form.append("media", file);
 
-    await fetch(`${API}/api/memos/upload/${editingMemoId}`, {
+    await authFetch(`${API}/api/memos/upload/${editingMemoId}`, {
         method: "PUT",
         body: form
     });

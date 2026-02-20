@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.DividendFrequency;
 import com.example.mongo.models.DividendRecord;
 import com.example.mongo.models.dto.DividendSummaryDTO;
@@ -16,9 +17,10 @@ import org.springframework.stereotype.Service;
 public class DividendService {
 
   @Autowired private DividendRecordRepository dividendRepository;
+  @Autowired private AuthUtils authUtils;
 
   public List<DividendRecord> getAllDividends() {
-    return dividendRepository.findAllByOrderByPaymentDateDesc();
+    return dividendRepository.findAllByUserIdOrderByPaymentDateDesc(authUtils.getCurrentUserId());
   }
 
   public DividendRecord getDividendById(String id) {
@@ -32,6 +34,7 @@ public class DividendService {
   }
 
   public DividendRecord createDividend(DividendRecord record) {
+    record.setUserId(authUtils.getCurrentUserId());
     return dividendRepository.save(record);
   }
 
@@ -52,7 +55,8 @@ public class DividendService {
   }
 
   public DividendSummaryDTO getSummary() {
-    List<DividendRecord> all = dividendRepository.findAll();
+    String userId = authUtils.getCurrentUserId();
+    List<DividendRecord> all = dividendRepository.findAllByUserIdOrderByPaymentDateDesc(userId);
 
     double totalReceived = all.stream().mapToDouble(DividendRecord::getAmount).sum();
 

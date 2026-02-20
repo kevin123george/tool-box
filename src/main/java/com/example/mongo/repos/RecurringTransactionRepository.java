@@ -14,4 +14,10 @@ public interface RecurringTransactionRepository extends MongoRepository<Recurrin
   List<RecurringTransaction> findByNextDueDateLessThanEqualAndActiveTrue(LocalDate date);
 
   List<RecurringTransaction> findByCategory(String category);
+
+  List<RecurringTransaction> findAllByUserId(String userId);
+
+  List<RecurringTransaction> findByActiveTrueAndUserId(String userId);
+
+  List<RecurringTransaction> findByNextDueDateLessThanEqualAndActiveTrueAndUserId(java.time.LocalDate date, String userId);
 }

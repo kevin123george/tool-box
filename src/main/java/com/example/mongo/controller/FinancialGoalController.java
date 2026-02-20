@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/goal")
-@CrossOrigin
 public class FinancialGoalController {
 
   private final FinancialGoalService service;

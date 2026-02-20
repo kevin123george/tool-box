@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/screener")
-@CrossOrigin(origins = "*")
 public class ScreenerController {
 
   @Autowired private ScreenerService screenerService;

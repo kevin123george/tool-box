@@ -9,6 +9,7 @@ import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -16,6 +17,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class WorkoutLog {
 
   @Id private String id;
+
+  @Indexed private String userId;
 
   private LocalDate workoutDate;
   private DayOfWeek dayOfWeek;

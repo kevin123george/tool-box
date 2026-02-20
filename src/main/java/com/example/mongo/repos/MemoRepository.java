@@ -1,8 +1,16 @@
 package com.example.mongo.repos;
 
 import com.example.mongo.models.Memo;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface MemoRepository extends MongoRepository<Memo, String> {}
+public interface MemoRepository extends MongoRepository<Memo, String> {
+
+  Page<Memo> findAllByUserId(String userId, Pageable pageable);
+
+  List<Memo> findAllByUserId(String userId);
+}

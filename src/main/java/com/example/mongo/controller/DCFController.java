@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/dcf")
-@CrossOrigin(origins = "*")
 public class DCFController {
 
   @Autowired private DCFService dcfService;

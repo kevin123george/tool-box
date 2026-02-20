@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/finance") // <-- FIXED
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class FinanceController {
 
   private final BankAccountService service;

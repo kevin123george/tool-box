@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/networth")
-@CrossOrigin(origins = "*")
 public class NetWorthController {
 
   @Autowired private NetWorthSnapshotService snapshotService;

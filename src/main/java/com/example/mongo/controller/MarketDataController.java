@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/market")
-@CrossOrigin(origins = "*")
 public class MarketDataController {
 
   @Autowired private MarketDataService marketDataService;

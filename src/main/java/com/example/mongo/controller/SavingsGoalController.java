@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/savings-goals")
-@CrossOrigin(origins = "*")
 public class SavingsGoalController {
 
   @Autowired private SavingsGoalService savingsGoalService;

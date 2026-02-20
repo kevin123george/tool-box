@@ -1,6 +1,8 @@
 package com.example.mongo.models;
 
+import java.time.Instant;
 import lombok.Data;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -14,4 +16,9 @@ public class UsersEntity {
 
   @Indexed(unique = true)
   private String email;
+
+  private String passwordHash;
+  private String role = "USER";
+
+  @CreatedDate private Instant createdAt;
 }

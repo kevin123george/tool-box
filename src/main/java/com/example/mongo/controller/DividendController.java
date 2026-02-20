@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/dividends")
-@CrossOrigin(origins = "*")
 public class DividendController {
 
   @Autowired private DividendService dividendService;

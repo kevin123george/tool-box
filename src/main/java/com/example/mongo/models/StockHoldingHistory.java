@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -12,6 +13,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "stock_holding_histories")
 public class StockHoldingHistory {
   @Id private String id;
+
+  @Indexed private String userId;
 
   private String stockHoldingId;
   private String symbol;

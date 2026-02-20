@@ -188,7 +188,7 @@ async function loadDashboard() {
     const stats = { balance: '—', accounts: '—', netWorth: '—', portfolio: '—' };
 
     try {
-        const r = await fetch('/api/finance/summary');
+        const r = await authFetch('/api/finance/summary');
         if (r.ok) {
             const d = await r.json();
             const total = d.totalBalance ?? d.total ?? 0;
@@ -209,7 +209,7 @@ async function loadDashboard() {
     } catch (_) {}
 
     try {
-        const r = await fetch('/api/dashboard');
+        const r = await authFetch('/api/dashboard');
         if (r.ok) {
             const d = await r.json();
             if (d.netWorth      != null) stats.netWorth  = fmtEur(d.netWorth);
@@ -225,7 +225,10 @@ async function loadDashboard() {
     ].join('');
 }
 
-document.addEventListener('DOMContentLoaded', loadDashboard);
+document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+    loadDashboard();
+});
 </script>
 </body>
 </html>

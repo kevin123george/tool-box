@@ -1,5 +1,6 @@
 package com.example.mongo.services;
 
+import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.NetWorthSnapshot;
 import com.example.mongo.repos.NetWorthSnapshotRepository;
 import java.time.LocalDate;
@@ -17,12 +18,18 @@ public class NetWorthSnapshotService {
 
   @Autowired private StockService stockService;
 
-  public NetWorthSnapshot captureSnapshot() {
-    LocalDate today = LocalDate.now();
-    Optional<NetWorthSnapshot> existing = snapshotRepository.findByDate(today);
+  @Autowired private AuthUtils authUtils;
 
-    double totalCash = bankAccountService.getSummary().getTotalBalance();
-    double portfolioValue = stockService.getPortfolioStats().currentValue;
+  public NetWorthSnapshot captureSnapshot() {
+    return captureSnapshot(authUtils.getCurrentUserId());
+  }
+
+  public NetWorthSnapshot captureSnapshot(String userId) {
+    LocalDate today = LocalDate.now();
+    Optional<NetWorthSnapshot> existing = snapshotRepository.findByDateAndUserId(today, userId);
+
+    double totalCash = bankAccountService.getSummary(userId).getTotalBalance();
+    double portfolioValue = stockService.getPortfolioStats(userId).currentValue;
 
     if (existing.isPresent()) {
       NetWorthSnapshot snapshot = existing.get();
@@ -32,20 +39,21 @@ public class NetWorthSnapshotService {
       return snapshotRepository.save(snapshot);
     } else {
       NetWorthSnapshot snapshot = new NetWorthSnapshot(today, totalCash, portfolioValue);
+      snapshot.setUserId(userId);
       return snapshotRepository.save(snapshot);
     }
   }
 
   public List<NetWorthSnapshot> getHistory() {
-    return snapshotRepository.findAllByOrderByDateAsc();
+    return snapshotRepository.findAllByUserIdOrderByDateAsc(authUtils.getCurrentUserId());
   }
 
   public List<NetWorthSnapshot> getHistoryBetween(LocalDate start, LocalDate end) {
-    return snapshotRepository.findByDateBetweenOrderByDateAsc(start, end);
+    return snapshotRepository.findByDateBetweenAndUserIdOrderByDateAsc(start, end, authUtils.getCurrentUserId());
   }
 
   public Optional<NetWorthSnapshot> getLatestSnapshot() {
-    List<NetWorthSnapshot> all = snapshotRepository.findAllByOrderByDateDesc();
+    List<NetWorthSnapshot> all = snapshotRepository.findAllByUserIdOrderByDateDesc(authUtils.getCurrentUserId());
     return all.isEmpty() ? Optional.empty() : Optional.of(all.get(0));
   }
 }
