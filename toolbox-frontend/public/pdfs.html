@@ -55,6 +55,10 @@
         body.note-mode #pdfViewport { cursor: crosshair; }
         /* ─── Marker mode ──────────────────────────────────── */
         body.marker-mode #pdfViewport { cursor: crosshair; user-select: none; }
+        /* ─── Pen mode ──────────────────────────────────────── */
+        body.pen-mode #pdfViewport { cursor: crosshair; user-select: none; }
+        .draw-layer { position: absolute; inset: 0; pointer-events: none; }
+        body.pen-mode .draw-layer { pointer-events: auto; }
         /* ─── Fullscreen ────────────────────────────────────── */
         #readerView:fullscreen { height: 100vh !important; margin: 0 !important; }
         #readerView:-moz-full-screen { height: 100vh !important; margin: 0 !important; }
@@ -156,6 +160,24 @@
                     <button style="background:#f472b6" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activateMarker('pink')" title="Pink"></button>
                 </div>
             </div>
+            <!-- Pen tool -->
+            <div class="relative">
+                <button id="penBtn" class="btn btn-ghost btn-xs gap-1" onclick="togglePenPicker()" title="Freehand pen">
+                    <span>✏️</span><span class="hidden sm:inline">Pen</span>
+                </button>
+                <div id="penColorRow" class="hidden absolute top-full left-0 mt-1 flex gap-1.5 p-2 bg-base-100 border border-base-300 rounded-lg shadow-xl z-[9999]">
+                    <button style="background:#1e1e1e" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activatePen('#1e1e1e')" title="Black"></button>
+                    <button style="background:#2563eb" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activatePen('#2563eb')" title="Blue"></button>
+                    <button style="background:#ef4444" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activatePen('#ef4444')" title="Red"></button>
+                    <button style="background:#16a34a" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activatePen('#16a34a')" title="Green"></button>
+                </div>
+            </div>
+            <!-- Undo -->
+            <button class="btn btn-ghost btn-xs" onclick="undoLastAnnotation()" title="Undo last (Ctrl+Z)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/>
+                </svg>
+            </button>
             <button class="btn btn-ghost btn-xs gap-1" onclick="downloadCurrentPdf()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
@@ -247,6 +269,19 @@
         </div>
         <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>
+
+    <!-- ══════════════════════════════════════════════════════
+         ANNOTATION DELETE BUBBLE
+    ═══════════════════════════════════════════════════════ -->
+    <div id="annotDeleteBubble" class="hidden fixed z-[9600] flex items-center gap-1 bg-base-100 border border-base-300 rounded-lg shadow-xl px-2 py-1.5">
+        <span class="text-xs opacity-50" id="annotDeleteLabel">Annotation</span>
+        <button class="btn btn-error btn-xs btn-square" onclick="deleteFromBubble()" title="Delete">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+            </svg>
+        </button>
+        <button class="btn btn-ghost btn-xs btn-square" onclick="hideAnnotDeleteBubble()">✕</button>
+    </div>
 
     <!-- Scripts -->
     <script src="shared.js"></script>

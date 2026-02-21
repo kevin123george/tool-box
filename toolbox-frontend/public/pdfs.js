@@ -31,6 +31,23 @@ let markerActive = false;
 let markerColor  = 'yellow';
 let _markerDrag  = null;
 
+// Pen tool
+let penActive        = false;
+let penColor         = '#1e1e1e';
+let _penStroke       = null; // { pageEl, points: [{x,y}…], pageW, pageH, ctx }
+
+// Annotation history (for undo)
+let _annotHistory    = []; // stack of annotation IDs added this session
+
+// Delete bubble
+let _bubbleAnnotId   = null;
+let _bubblePageEl    = null;
+
+// Pinch zoom
+let _pinch           = null; // { dist, startScale }
+let _pinchLastScale  = null;
+let _wheelZoomTimer  = null;
+
 // Library state
 let allPdfs        = [];
 let activeGroup    = null; // null = All
@@ -39,13 +56,28 @@ let activeGroup    = null; // null = All
 document.addEventListener('DOMContentLoaded', () => {
     requireAuth();
     loadLibrary();
-    // Close marker color picker on outside click
+
+    // Close floating pickers/bubbles on outside click
     document.addEventListener('click', e => {
-        const row = document.getElementById('markerColorRow');
-        if (row && !row.classList.contains('hidden') &&
-            !document.getElementById('markerBtn')?.contains(e.target) &&
-            !row.contains(e.target)) {
-            row.classList.add('hidden');
+        for (const [btnId, rowId] of [['markerBtn','markerColorRow'],['penBtn','penColorRow']]) {
+            const row = document.getElementById(rowId);
+            if (row && !row.classList.contains('hidden') &&
+                !document.getElementById(btnId)?.contains(e.target) &&
+                !row.contains(e.target)) {
+                row.classList.add('hidden');
+            }
+        }
+        const bubble = document.getElementById('annotDeleteBubble');
+        if (bubble && !bubble.classList.contains('hidden') && !bubble.contains(e.target)) {
+            hideAnnotDeleteBubble();
+        }
+    });
+
+    // Ctrl/Cmd+Z → undo last annotation
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && currentPdfId) {
+            e.preventDefault();
+            undoLastAnnotation();
         }
     });
 });
@@ -420,14 +452,20 @@ async function openReader(id) {
         hideLoading();
     }
 
+    _annotHistory = [];
     setupHighlightListener();
     setupMarkerListeners();
+    setupPenListeners();
+    setupPinchZoom();
 }
 
 function closeReader() {
     cancelNoteMode();
     deactivateMarker();
+    deactivatePen();
+    hideAnnotDeleteBubble();
     hideColorPicker();
+    _annotHistory = [];
     if (progressSaveTimer) { clearTimeout(progressSaveTimer); progressSaveTimer = null; }
     pdfJsDoc = null; currentPdfId = null; allAnnotations = [];
     document.getElementById('pdfViewport').innerHTML = '';
@@ -477,6 +515,9 @@ async function buildPagePlaceholders() {
         const al = document.createElement('div');
         al.className = 'annot-layer';
         container.appendChild(al);
+        const dl = document.createElement('canvas');
+        dl.className = 'draw-layer';
+        container.appendChild(dl);
         viewport.appendChild(container);
     }
     for (let n = 1; n <= Math.min(3, totalPages); n++) renderPage(n);
@@ -495,6 +536,8 @@ async function renderPage(pageNum) {
     canvas.height = vp.height;
     container.style.width  = vp.width  + 'px';
     container.style.height = vp.height + 'px';
+    const drawCanvas = container.querySelector('.draw-layer');
+    if (drawCanvas) { drawCanvas.width = vp.width; drawCanvas.height = vp.height; }
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
     drawAnnotationsForPage(pageNum, container, vp.width, vp.height);
 }
@@ -607,7 +650,13 @@ function drawAnnotationsForPage(pageNum, container, pageW, pageH) {
                 Object.assign(div.style, {
                     left: r.x * pageW + 'px', top: r.y * pageH + 'px',
                     width: r.width * pageW + 'px', height: r.height * pageH + 'px',
-                    background: bg
+                    background: bg, cursor: 'pointer'
+                });
+                div.addEventListener('mousedown', e => e.stopPropagation());
+                div.addEventListener('click', e => {
+                    if (markerActive || penActive) return;
+                    e.stopPropagation();
+                    showAnnotDeleteBubble(a.id, container, e.clientX, e.clientY, 'Highlight');
                 });
                 layer.appendChild(div);
             });
@@ -619,6 +668,16 @@ function drawAnnotationsForPage(pageNum, container, pageW, pageH) {
             layer.appendChild(div);
         }
     });
+
+    // Freehand strokes on the draw-layer canvas
+    const drawCanvas = container.querySelector('.draw-layer');
+    if (drawCanvas && drawCanvas.width > 0) {
+        const ctx = drawCanvas.getContext('2d');
+        ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        allAnnotations.filter(a => a.page === pageNum && a.type === 'FREEHAND' && a.strokes?.length).forEach(a => {
+            _renderStrokes(ctx, a.strokes, a.color || '#1e1e1e', (a.strokeWidth || 0.003) * pageW, pageW, pageH);
+        });
+    }
 }
 
 function renderAnnotSidebar() {
@@ -636,6 +695,11 @@ function renderAnnotSidebar() {
                 <span style="width:10px;height:10px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0;margin-top:2px;"></span>
                 <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Highlight</div>
                 <div class="opacity-70 line-clamp-2">${escHtml(truncate(a.selectedText || '', 80))}</div></div></div>`;
+        } else if (a.type === 'FREEHAND') {
+            return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
+                         onclick="scrollToPage(${a.page})">
+                <span style="width:10px;height:10px;border-radius:50%;background:${escHtml(a.color||'#1e1e1e')};display:inline-block;flex-shrink:0;margin-top:2px;"></span>
+                <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Drawing</div></div></div>`;
         } else {
             return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
                          onclick="scrollToPage(${a.page}); openNoteView('${escHtml(a.id)}')">
@@ -657,6 +721,7 @@ function setupHighlightListener() {
 function onViewportMouseUp(e) {
     if (document.body.classList.contains('note-mode')) return;
     if (document.body.classList.contains('marker-mode')) return;
+    if (document.body.classList.contains('pen-mode')) return;
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) { hideColorPicker(); return; }
     const range  = selection.getRangeAt(0);
@@ -701,7 +766,9 @@ async function saveHighlight(color) {
             body: JSON.stringify({ type: 'HIGHLIGHT', page: pageNum, color, selectedText, rects })
         });
         if (!res || !res.ok) throw new Error();
-        allAnnotations.push(await res.json());
+        const saved = await res.json();
+        allAnnotations.push(saved);
+        _annotHistory.push(saved.id);
         drawAnnotationsForPage(pageNum, _savedPageEl, pageW, pageH);
         renderAnnotSidebar();
     } catch { showToast('Failed to save highlight', 'error'); }
@@ -780,7 +847,7 @@ async function onMarkerMouseUp(e) {
 }
 
 function onMarkerTouchStart(e) {
-    if (!markerActive) return;
+    if (!markerActive || e.touches.length !== 1) return;
     const t = e.touches[0];
     const pageEl = document.elementFromPoint(t.clientX, t.clientY)?.closest('.pdf-page-container');
     if (!pageEl) return;
@@ -826,10 +893,184 @@ async function _saveMarkerRect(pageEl, startX, startY, endX, endY) {
             body: JSON.stringify({ type: 'HIGHLIGHT', page: pageNum, color: markerColor, rects: [r] })
         });
         if (!res || !res.ok) throw new Error();
-        allAnnotations.push(await res.json());
+        const saved = await res.json();
+        allAnnotations.push(saved);
+        _annotHistory.push(saved.id);
         drawAnnotationsForPage(pageNum, pageEl, pageW, pageH);
         renderAnnotSidebar();
     } catch { showToast('Failed to save highlight', 'error'); }
+}
+
+/* ── Pen tool (freehand drawing) ───────────────────────── */
+function togglePenPicker() {
+    if (penActive) { deactivatePen(); return; }
+    document.getElementById('penColorRow').classList.toggle('hidden');
+}
+
+function activatePen(color) {
+    penColor  = color;
+    penActive = true;
+    document.getElementById('penColorRow').classList.add('hidden');
+    document.body.classList.add('pen-mode');
+    document.getElementById('penBtn').classList.add('btn-active');
+    deactivateMarker();
+    cancelNoteMode();
+    showToast('Draw freely on the page', 'info', null, 2000);
+}
+
+function deactivatePen() {
+    penActive = false;
+    document.body.classList.remove('pen-mode');
+    document.getElementById('penBtn')?.classList.remove('btn-active');
+    document.getElementById('penColorRow')?.classList.add('hidden');
+    _penStroke = null;
+}
+
+function setupPenListeners() {
+    const vp = document.getElementById('pdfViewport');
+    if (!vp) return;
+    vp.addEventListener('mousedown',  onPenMouseDown);
+    vp.addEventListener('mousemove',  onPenMouseMove);
+    vp.addEventListener('mouseup',    onPenMouseUp);
+    vp.addEventListener('mouseleave', onPenMouseLeave);
+    vp.addEventListener('touchstart', onPenTouchStart, { passive: false });
+    vp.addEventListener('touchmove',  onPenTouchMove,  { passive: false });
+    vp.addEventListener('touchend',   onPenTouchEnd);
+}
+
+function _penPageInfo(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY)?.closest('.pdf-page-container');
+    if (!el) return null;
+    const canvas = el.querySelector('canvas');
+    const rect   = el.getBoundingClientRect();
+    return { pageEl: el, rect,
+             pageW: canvas?.width  || el.offsetWidth,
+             pageH: canvas?.height || el.offsetHeight };
+}
+
+function onPenMouseDown(e) {
+    if (!penActive || e.touches?.length > 1) return;
+    const info = _penPageInfo(e.clientX, e.clientY);
+    if (!info) return;
+    e.preventDefault();
+    const { pageEl, rect, pageW, pageH } = info;
+    const drawCanvas = pageEl.querySelector('.draw-layer');
+    if (!drawCanvas) return;
+    const ctx = drawCanvas.getContext('2d');
+    const x = (e.clientX - rect.left) / pageW;
+    const y = (e.clientY - rect.top)  / pageH;
+    _penStroke = { pageEl, pageW, pageH, ctx, points: [{ x, y }] };
+    _penBeginPath(ctx, x * pageW, y * pageH, pageW);
+}
+
+function onPenMouseMove(e) {
+    if (!_penStroke) return;
+    e.preventDefault();
+    const { pageEl, pageW, pageH, ctx } = _penStroke;
+    const rect = pageEl.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / pageW;
+    const y = (e.clientY - rect.top)  / pageH;
+    _penStroke.points.push({ x, y });
+    ctx.lineTo(x * pageW, y * pageH);
+    ctx.stroke();
+}
+
+async function onPenMouseUp(e) {
+    if (!_penStroke) return;
+    const stroke = _penStroke;
+    _penStroke = null;
+    await _savePenStroke(stroke);
+}
+
+function onPenMouseLeave(e) {
+    if (_penStroke) onPenMouseUp(e);
+}
+
+function onPenTouchStart(e) {
+    if (!penActive || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const info = _penPageInfo(t.clientX, t.clientY);
+    if (!info) return;
+    e.preventDefault();
+    const { pageEl, rect, pageW, pageH } = info;
+    const drawCanvas = pageEl.querySelector('.draw-layer');
+    if (!drawCanvas) return;
+    const ctx = drawCanvas.getContext('2d');
+    const x = (t.clientX - rect.left) / pageW;
+    const y = (t.clientY - rect.top)  / pageH;
+    _penStroke = { pageEl, pageW, pageH, ctx, points: [{ x, y }] };
+    _penBeginPath(ctx, x * pageW, y * pageH, pageW);
+}
+
+function onPenTouchMove(e) {
+    if (!_penStroke || e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const { pageEl, pageW, pageH, ctx } = _penStroke;
+    const rect = pageEl.getBoundingClientRect();
+    const x = (t.clientX - rect.left) / pageW;
+    const y = (t.clientY - rect.top)  / pageH;
+    _penStroke.points.push({ x, y });
+    ctx.lineTo(x * pageW, y * pageH);
+    ctx.stroke();
+}
+
+async function onPenTouchEnd(e) {
+    if (!_penStroke) return;
+    const stroke = _penStroke;
+    _penStroke = null;
+    await _savePenStroke(stroke);
+}
+
+function _penBeginPath(ctx, startX, startY, pageW) {
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth   = 0.003 * pageW;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.globalAlpha = 0.85;
+}
+
+function _renderStrokes(ctx, strokes, color, lineWidth, pageW, pageH) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = lineWidth;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.globalAlpha = 0.85;
+    strokes.forEach(pts => {
+        if (!pts?.length) return;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x * pageW, pts[0].y * pageH);
+        pts.slice(1).forEach(p => ctx.lineTo(p.x * pageW, p.y * pageH));
+        ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+}
+
+async function _savePenStroke(stroke) {
+    const { pageEl, pageW, pageH, points } = stroke;
+    if (points.length < 2) return;
+    const pageNum    = parseInt(pageEl.dataset.page);
+    const strokeWidth = 0.003; // normalized
+    try {
+        const res = await authFetch(`${API}/api/pdfs/${currentPdfId}/annotations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'FREEHAND', page: pageNum,
+                color: penColor, strokeWidth,
+                strokes: [points]
+            })
+        });
+        if (!res || !res.ok) throw new Error();
+        const saved = await res.json();
+        allAnnotations.push(saved);
+        _annotHistory.push(saved.id);
+        // Redraw entire draw-layer from saved annotations (normalises all strokes together)
+        drawAnnotationsForPage(pageNum, pageEl, pageW, pageH);
+        renderAnnotSidebar();
+    } catch { showToast('Failed to save stroke', 'error'); }
 }
 
 /* ── Notes ─────────────────────────────────────────────── */
@@ -879,7 +1120,9 @@ async function confirmNote() {
             body: JSON.stringify({ type: 'NOTE', page, noteX: normX, noteY: normY, text })
         });
         if (!res || !res.ok) throw new Error();
-        allAnnotations.push(await res.json());
+        const saved = await res.json();
+        allAnnotations.push(saved);
+        _annotHistory.push(saved.id);
         const container = document.querySelector(`.pdf-page-container[data-page="${page}"]`);
         if (container) {
             const canvas = container.querySelector('canvas');
@@ -900,22 +1143,10 @@ function openNoteView(annotId) {
 
 async function deleteCurrentNote() {
     if (!viewingNoteId || !currentPdfId) return;
+    const id = viewingNoteId;
+    viewingNoteId = null;
     closeModal('noteViewModal');
-    const note = allAnnotations.find(a => a.id === viewingNoteId);
-    try {
-        const res = await authFetch(`${API}/api/pdfs/${currentPdfId}/annotations/${viewingNoteId}`, { method: 'DELETE' });
-        if (!res || !res.ok) throw new Error();
-        allAnnotations = allAnnotations.filter(a => a.id !== viewingNoteId);
-        viewingNoteId = null;
-        if (note) {
-            const container = document.querySelector(`.pdf-page-container[data-page="${note.page}"]`);
-            if (container) {
-                const canvas = container.querySelector('canvas');
-                drawAnnotationsForPage(note.page, container, canvas?.width || container.offsetWidth, canvas?.height || container.offsetHeight);
-            }
-        }
-        renderAnnotSidebar();
-    } catch { showToast('Failed to delete note', 'error'); }
+    await _deleteAnnotationById(id, null);
 }
 
 /* ==========================================================
@@ -933,6 +1164,128 @@ function showView(view) {
         reader.classList.remove('flex');
         lib.classList.remove('hidden');
     }
+}
+
+/* ── Delete & Undo ──────────────────────────────────────── */
+function showAnnotDeleteBubble(annotId, pageEl, clientX, clientY, label) {
+    _bubbleAnnotId = annotId;
+    _bubblePageEl  = pageEl;
+    const bubble = document.getElementById('annotDeleteBubble');
+    document.getElementById('annotDeleteLabel').textContent = label || 'Annotation';
+    bubble.classList.remove('hidden');
+    bubble.style.left = clientX + 'px';
+    bubble.style.top  = (clientY - 44) + 'px';
+}
+
+function hideAnnotDeleteBubble() {
+    document.getElementById('annotDeleteBubble')?.classList.add('hidden');
+    _bubbleAnnotId = null;
+    _bubblePageEl  = null;
+}
+
+async function deleteFromBubble() {
+    if (!_bubbleAnnotId) return;
+    await _deleteAnnotationById(_bubbleAnnotId, _bubblePageEl);
+    hideAnnotDeleteBubble();
+}
+
+async function undoLastAnnotation() {
+    if (!_annotHistory.length) { showToast('Nothing to undo', 'info'); return; }
+    const annotId = _annotHistory.pop();
+    const annot   = allAnnotations.find(a => a.id === annotId);
+    const pageEl  = annot
+        ? document.querySelector(`.pdf-page-container[data-page="${annot.page}"]`)
+        : null;
+    await _deleteAnnotationById(annotId, pageEl);
+}
+
+async function _deleteAnnotationById(annotId, pageEl) {
+    if (!currentPdfId) return;
+    const annot = allAnnotations.find(a => a.id === annotId);
+    try {
+        const res = await authFetch(`${API}/api/pdfs/${currentPdfId}/annotations/${annotId}`, { method: 'DELETE' });
+        if (!res || !res.ok) throw new Error();
+        allAnnotations = allAnnotations.filter(a => a.id !== annotId);
+        _annotHistory  = _annotHistory.filter(id => id !== annotId);
+        const container = pageEl ||
+            (annot ? document.querySelector(`.pdf-page-container[data-page="${annot.page}"]`) : null);
+        if (container) {
+            const canvas = container.querySelector('canvas');
+            drawAnnotationsForPage(
+                parseInt(container.dataset.page), container,
+                canvas?.width || container.offsetWidth,
+                canvas?.height || container.offsetHeight
+            );
+        }
+        renderAnnotSidebar();
+    } catch { showToast('Failed to delete annotation', 'error'); }
+}
+
+/* ── Pinch & scroll zoom ────────────────────────────────── */
+function setupPinchZoom() {
+    const vp = document.getElementById('pdfViewport');
+    if (!vp) return;
+
+    // Ctrl+scroll / trackpad pinch (fires as wheel+ctrlKey)
+    vp.addEventListener('wheel', e => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        scale = Math.max(0.5, Math.min(4.0, scale + delta));
+        document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+        if (_wheelZoomTimer) clearTimeout(_wheelZoomTimer);
+        _wheelZoomTimer = setTimeout(async () => {
+            showLoading('Rendering…');
+            try { await rerenderAllPages(); } finally { hideLoading(); }
+        }, 400);
+    }, { passive: false });
+
+    // Two-finger touch pinch
+    vp.addEventListener('touchstart', e => {
+        if (e.touches.length !== 2) return;
+        // Cancel any in-progress draw
+        if (_markerDrag) {
+            if (_markerDrag.pageEl.contains(_markerDrag.previewEl))
+                _markerDrag.pageEl.removeChild(_markerDrag.previewEl);
+            _markerDrag = null;
+        }
+        _penStroke = null;
+        _pinch = {
+            dist: Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            ),
+            startScale: scale
+        };
+        _pinchLastScale = scale;
+    }, { passive: true });
+
+    vp.addEventListener('touchmove', e => {
+        if (e.touches.length !== 2 || !_pinch) return;
+        e.preventDefault();
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        _pinchLastScale = Math.max(0.5, Math.min(4.0, _pinch.startScale * dist / _pinch.dist));
+        // Live CSS scale for smooth visual feedback
+        vp.style.transform       = `scale(${_pinchLastScale / scale})`;
+        vp.style.transformOrigin = 'center top';
+        document.getElementById('zoomLabel').textContent = Math.round(_pinchLastScale * 100) + '%';
+    }, { passive: false });
+
+    vp.addEventListener('touchend', async e => {
+        if (!_pinch || e.touches.length > 0) return;
+        vp.style.transform = '';
+        const newScale = _pinchLastScale ?? scale;
+        _pinch = null; _pinchLastScale = null;
+        if (Math.abs(newScale - scale) > 0.04) {
+            scale = newScale;
+            document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+            showLoading('Rendering…');
+            try { await rerenderAllPages(); } finally { hideLoading(); }
+        }
+    }, { passive: true });
 }
 
 /* ── Fullscreen ─────────────────────────────────────────── */

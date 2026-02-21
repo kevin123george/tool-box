@@ -35,11 +35,16 @@ public class PdfAnnotation {
   private Double noteX; // normalized 0-1
   private Double noteY; // normalized 0-1
 
+  // Freehand pen fields
+  private List<List<Point>> strokes; // each stroke = list of normalized points
+  private Double strokeWidth; // normalized fraction of page width (e.g. 0.003)
+
   @CreatedDate private Instant createdAt;
 
   public enum AnnotationType {
     HIGHLIGHT,
-    NOTE
+    NOTE,
+    FREEHAND
   }
 
   @Data
@@ -49,5 +54,12 @@ public class PdfAnnotation {
     private double y;
     private double width;
     private double height;
+  }
+
+  @Data
+  @NoArgsConstructor
+  public static class Point {
+    private double x;
+    private double y;
   }
 }
