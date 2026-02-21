@@ -421,7 +421,7 @@ async function openReader(id) {
     showLoading('Loading PDF…');
     try {
         await ensurePdfJs();
-        pdfJsDoc = await getOrLoadPdfDoc(id, currentPdfMeta?.fileSize || 0);
+        pdfJsDoc = await getOrLoadPdfDoc(id);
         totalPages = pdfJsDoc.numPages;
 
         document.getElementById('totalPagesLabel').textContent = totalPages;
@@ -498,21 +498,11 @@ async function getPdfJs() {
 }
 
 /**
- * Returns a cached PDF.js document, or fetches it fresh using a custom
- * PDFDataRangeTransport.
- *
- * Why not the simple `{ url, httpHeaders }` approach?
- * PDF.js issues an initial unbounded GET (no Range header) to discover the
- * file size. The server responds 200 and starts streaming the ENTIRE file.
- * PDF.js receives everything in that first response and never needs to make
- * range requests — so the whole PDF downloads before page 1 appears.
- *
- * PDFDataRangeTransport fixes this: we hand PDF.js the file size upfront
- * (already in currentPdfMeta.fileSize) and intercept every byte-range
- * request ourselves, adding the Authorization header. PDF.js only fetches
- * the bytes it actually needs (xref table + current page stream).
+ * Returns a cached PDF.js document, or fetches the full file with the auth
+ * header and loads it from raw bytes. LRU cache (size 3) makes re-opens
+ * instant without re-downloading.
  */
-async function getOrLoadPdfDoc(id, fileSize) {
+async function getOrLoadPdfDoc(id) {
     if (_pdfDocCache.has(id)) {
         const doc = _pdfDocCache.get(id);
         _pdfDocCache.delete(id);
@@ -523,37 +513,13 @@ async function getOrLoadPdfDoc(id, fileSize) {
     const url       = `${location.origin}${API}/api/pdfs/${id}/file`;
     const authToken = `Bearer ${getToken()}`;
 
-    let doc;
-    if (fileSize > 0 && pdfjsLib.PDFDataRangeTransport) {
-        // ── Range-request transport ──────────────────────────
-        const transport = new pdfjsLib.PDFDataRangeTransport(fileSize, new Uint8Array(0));
-        let aborted = false;
-
-        transport.requestDataRange = function (begin, end) {
-            if (aborted) return;
-            fetch(url, {
-                headers: { Authorization: authToken, Range: `bytes=${begin}-${end - 1}` }
-            })
-            .then(r => (r.status === 206 || r.ok) ? r.arrayBuffer() : Promise.reject(r.status))
-            .then(buf => { if (!aborted) transport.onDataRange(begin, new Uint8Array(buf)); })
-            .catch(err => console.warn('[PDF range] fetch failed', err));
-        };
-        transport.abort = () => { aborted = true; };
-
-        doc = await pdfjsLib.getDocument({
-            range: transport,
-            rangeChunkSize: 65536,
-        }).promise;
-    } else {
-        // ── Fallback: full download (fileSize unknown or old PDF.js) ─
-        doc = await pdfjsLib.getDocument({
-            url,
-            httpHeaders: { Authorization: authToken },
-            disableRange: false,
-            disableStream: false,
-            rangeChunkSize: 65536,
-        }).promise;
-    }
+    // Fetch full file with auth header, pass raw bytes to PDF.js.
+    // Simpler and more reliable than PDFDataRangeTransport on a LAN —
+    // no proxy/Range-header-stripping issues. LRU cache makes re-opens instant.
+    const res = await fetch(url, { headers: { Authorization: authToken } });
+    if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
+    const data = new Uint8Array(await res.arrayBuffer());
+    const doc  = await pdfjsLib.getDocument({ data }).promise;
 
     if (_pdfDocCache.size >= 3) {
         _pdfDocCache.delete(_pdfDocCache.keys().next().value);
