@@ -42,14 +42,16 @@ async function loadFinanceSummary() {
     sumByModeList.innerHTML = "";
     Object.entries(s.totalByMode).forEach(([mode, value]) => {
         const li = document.createElement("li");
-        li.textContent = `${mode}: \u20AC ${value.toFixed(2)}`;
+        li.className = "flex justify-between gap-2";
+        li.innerHTML = `<span class="opacity-60">${mode}</span><span class="tabular-nums font-medium">\u20AC${value.toFixed(2)}</span>`;
         sumByModeList.appendChild(li);
     });
 
     sumByBankList.innerHTML = "";
     Object.entries(s.totalByBank).forEach(([bank, value]) => {
         const li = document.createElement("li");
-        li.textContent = `${bank}: \u20AC ${value.toFixed(2)}`;
+        li.className = "flex justify-between gap-2";
+        li.innerHTML = `<span class="opacity-60">${bank}</span><span class="tabular-nums font-medium">\u20AC${value.toFixed(2)}</span>`;
         sumByBankList.appendChild(li);
     });
 }
@@ -399,7 +401,7 @@ function renderSavingsGoals() {
                         <strong>${goal.name}</strong>
                     </div>
                     <div style="font-size:12px; opacity:0.7; margin-bottom:6px;">
-                        \u20AC${(goal.currentAmount || 0).toFixed(2)} / \u20AC${(goal.targetAmount || 0).toFixed(2)}
+                        <span class="tabular-nums">\u20AC${(goal.currentAmount || 0).toFixed(2)}</span> / <span class="tabular-nums">\u20AC${(goal.targetAmount || 0).toFixed(2)}</span>
                         ${daysRemaining >= 0 ? ` \u2022 ${daysRemaining} days left` : ''}
                     </div>
                     <div style="height:8px; background:#222; border:1px solid oklch(var(--b3));">
@@ -1053,11 +1055,11 @@ function renderBudgetComparisonTable(data) {
         html += `
         <div class="stock-row">
             <div><strong>${d.month}</strong></div>
-            <div>\u20AC${d.income.toFixed(2)}</div>
-            <div>\u20AC${d.expenses.toFixed(2)}</div>
-            <div class="${savingsClass}">\u20AC${d.savings.toFixed(2)}</div>
-            <div class="${savingsClass}">${d.savingsRate.toFixed(1)}%</div>
-            <div class="${adherenceClass}">${d.budgetAdherence.toFixed(1)}%</div>
+            <div class="tabular-nums">\u20AC${d.income.toFixed(2)}</div>
+            <div class="tabular-nums">\u20AC${d.expenses.toFixed(2)}</div>
+            <div class="tabular-nums ${savingsClass}">\u20AC${d.savings.toFixed(2)}</div>
+            <div class="tabular-nums ${savingsClass}">${d.savingsRate.toFixed(1)}%</div>
+            <div class="tabular-nums ${adherenceClass}">${d.budgetAdherence.toFixed(1)}%</div>
         </div>`;
     });
 
@@ -1260,7 +1262,7 @@ function renderSubscriptions() {
                             <span class="badge ${statusBadge} badge-xs">${status}</span>
                         </div>
                         <div class="text-sm opacity-60 mt-0.5">
-                            <span class="font-medium text-base-content">\u20AC${(sub.amount || 0).toFixed(2)}${cycleLabel}</span>
+                            <span class="font-medium tabular-nums text-base-content">\u20AC${(sub.amount || 0).toFixed(2)}${cycleLabel}</span>
                             ${sub.nextBillingDate ? `<span class="mx-2">\u00B7</span>Next: ${sub.nextBillingDate}` : ''}
                             ${sub.category ? `<span class="mx-2">\u00B7</span>${sub.category}` : ''}
                         </div>

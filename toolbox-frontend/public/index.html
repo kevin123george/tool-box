@@ -321,7 +321,7 @@ async function loadDashboard() {
             ${dash.subscriptionMonthly > 0 ? `
             <div class="flex justify-between items-center">
                 <span class="text-xs opacity-40">Subscriptions</span>
-                <span class="text-xs font-semibold">${fmtEur(dash.subscriptionMonthly)}/mo <span class="opacity-40">(${dash.subscriptionCount} active)</span></span>
+                <span class="text-xs font-semibold tabular-nums">${fmtEur(dash.subscriptionMonthly)}/mo <span class="opacity-40">(${dash.subscriptionCount} active)</span></span>
             </div>` : ''}
         `;
     } else {

@@ -66,16 +66,22 @@
                 <button onclick="addFinance()" class="btn btn-primary">ADD / UPDATE</button>
             </div>
 
-            <div class="card bg-base-200 shadow p-4">
-                <h3 class="font-bold mb-2">Summary</h3>
-                <div><b>Total Balance:</b> <span id="sumTotal"></span></div>
-                <div class="mt-3">
-                    <b>By Mode:</b>
-                    <ul id="sumByModeList" class="ml-5 list-disc text-sm"></ul>
-                </div>
-                <div class="mt-3">
-                    <b>By Bank:</b>
-                    <ul id="sumByBankList" class="ml-5 list-disc text-sm"></ul>
+            <div class="card bg-base-200 shadow">
+                <div class="card-body p-4 gap-3">
+                    <div>
+                        <div class="text-xs uppercase opacity-50 font-semibold tracking-wide mb-0.5">Total Balance</div>
+                        <div class="text-2xl font-bold tabular-nums" id="sumTotal">€0.00</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 pt-3 border-t border-base-300">
+                        <div>
+                            <div class="text-xs font-semibold opacity-50 uppercase tracking-wide mb-1">By Mode</div>
+                            <ul id="sumByModeList" class="text-sm space-y-1"></ul>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold opacity-50 uppercase tracking-wide mb-1">By Bank</div>
+                            <ul id="sumByBankList" class="text-sm space-y-1"></ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -130,15 +136,15 @@
 
             <div class="card bg-base-200 shadow p-4">
                 <h3 class="font-bold mb-2">Retirement Goal</h3>
-                <div class="text-xs"><b>Target Yearly Income:</b> <span id="goalTargetIncome"></span></div>
-                <div class="text-xs"><b>Required Corpus:</b> <span id="goalRequiredCorpus"></span></div>
-                <div class="text-xs"><b>Current Corpus:</b> <span id="goalCurrentCorpus"></span></div>
+                <div class="text-xs"><b>Target Yearly Income:</b> <span class="tabular-nums" id="goalTargetIncome"></span></div>
+                <div class="text-xs"><b>Required Corpus:</b> <span class="tabular-nums" id="goalRequiredCorpus"></span></div>
+                <div class="text-xs"><b>Current Corpus:</b> <span class="tabular-nums" id="goalCurrentCorpus"></span></div>
                 <div class="text-xs"><b>Goal Achieved:</b> <span id="goalAchieved"></span></div>
-                <div class="text-xs"><b>FIRE Age:</b> <span id="goalFireAge"></span></div>
-                <div class="text-xs"><b>Progress:</b> <span id="goalProgress"></span></div>
-                <div class="text-xs"><b>Years to Goal:</b> <span id="goalYearsToGoal"></span></div>
-                <div class="text-xs"><b>Goal Age:</b> <span id="goalAge"></span></div>
-                <div class="text-xs"><b>Remaining Corpus:</b> <span id="goalRemainingCorpus"></span></div>
+                <div class="text-xs"><b>FIRE Age:</b> <span class="tabular-nums" id="goalFireAge"></span></div>
+                <div class="text-xs"><b>Progress:</b> <span class="tabular-nums" id="goalProgress"></span></div>
+                <div class="text-xs"><b>Years to Goal:</b> <span class="tabular-nums" id="goalYearsToGoal"></span></div>
+                <div class="text-xs"><b>Goal Age:</b> <span class="tabular-nums" id="goalAge"></span></div>
+                <div class="text-xs"><b>Remaining Corpus:</b> <span class="tabular-nums" id="goalRemainingCorpus"></span></div>
                 <div class="mt-3">
                     <progress id="goalProgressBar" class="progress progress-success w-full" value="0" max="100"></progress>
                 </div>
@@ -213,17 +219,17 @@
             <div class="card bg-base-200 shadow p-4">
                 <h3 class="font-bold mb-2">Summary</h3>
                 <div class="text-sm space-y-1 mb-2">
-                    <div class="flex justify-between"><span>Planned Income:</span><span class="font-bold" id="summaryPlannedIncome">&#8364;0.00</span></div>
-                    <div class="flex justify-between"><span>Actual Income:</span><span class="font-bold" id="summaryActualIncome">&#8364;0.00</span></div>
+                    <div class="flex justify-between"><span>Planned Income:</span><span class="font-bold tabular-nums" id="summaryPlannedIncome">&#8364;0.00</span></div>
+                    <div class="flex justify-between"><span>Actual Income:</span><span class="font-bold tabular-nums" id="summaryActualIncome">&#8364;0.00</span></div>
                 </div>
                 <div class="text-sm space-y-1 mb-2 pt-2 border-t border-base-300">
-                    <div class="flex justify-between"><span>Planned Expenses:</span><span class="font-bold" id="summaryPlannedExpenses">&#8364;0.00</span></div>
-                    <div class="flex justify-between"><span>Actual Expenses:</span><span class="font-bold" id="summaryActualExpenses">&#8364;0.00</span></div>
+                    <div class="flex justify-between"><span>Planned Expenses:</span><span class="font-bold tabular-nums" id="summaryPlannedExpenses">&#8364;0.00</span></div>
+                    <div class="flex justify-between"><span>Actual Expenses:</span><span class="font-bold tabular-nums" id="summaryActualExpenses">&#8364;0.00</span></div>
                 </div>
                 <div class="text-sm space-y-1 pt-2 border-t border-base-300">
-                    <div class="flex justify-between"><span>Savings:</span><span class="font-bold text-success" id="summarySavings">&#8364;0.00</span></div>
-                    <div class="flex justify-between"><span>Savings Rate:</span><span class="font-bold text-success" id="summarySavingsRate">0%</span></div>
-                    <div class="flex justify-between"><span>Budget Adherence:</span><span class="font-bold" id="summaryAdherence">100%</span></div>
+                    <div class="flex justify-between"><span>Savings:</span><span class="font-bold tabular-nums text-success" id="summarySavings">&#8364;0.00</span></div>
+                    <div class="flex justify-between"><span>Savings Rate:</span><span class="font-bold tabular-nums text-success" id="summarySavingsRate">0%</span></div>
+                    <div class="flex justify-between"><span>Budget Adherence:</span><span class="font-bold tabular-nums" id="summaryAdherence">100%</span></div>
                 </div>
             </div>
         </div>
