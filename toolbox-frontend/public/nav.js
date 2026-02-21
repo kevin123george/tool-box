@@ -65,7 +65,7 @@
         fitness:     'Fitness',
         system:      'System',
         admin:       'Users',
-        guide:       'Guide'
+        guide:       'README'
     };
 
     /* -------------------------------------------------------
@@ -82,7 +82,7 @@
             group: 'Workspace',
             items: [
                 { key: 'memos', label: 'Memos', href: '/memos.html', icon: 'memos' },
-                { key: 'guide', label: 'Guide',  href: '/guide.html', icon: 'guide' }
+                { key: 'guide', label: 'README', href: '/guide.html', icon: 'guide' }
             ]
         },
         {
