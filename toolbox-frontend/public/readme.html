@@ -26,6 +26,12 @@
 </div>
 
 <div id="nav-placeholder" data-active="guide"></div>
+<div id="guest-bar" class="hidden mb-4">
+    <a href="/login.html" class="btn btn-ghost btn-sm gap-1 opacity-60 hover:opacity-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Back to Login
+    </a>
+</div>
 
 <!-- Page header -->
 <div class="flex items-center justify-between mb-6">
@@ -816,7 +822,11 @@
 <script src="shared.js"></script>
 <script src="nav.js"></script>
 <script>
-requireAuth();
+// Public page — show nav if authenticated, back-link if not
+if (!localStorage.getItem('authToken')) {
+    document.getElementById('nav-placeholder').style.display = 'none';
+    document.getElementById('guest-bar').classList.remove('hidden');
+}
 
 // Tag-limited clouds: show data-limit tags, rest hidden behind "+N more" button
 document.querySelectorAll('.terms-cloud[data-limit]').forEach(cloud => {
