@@ -421,7 +421,7 @@ async function openReader(id) {
     showLoading('Loading PDF…');
     try {
         await ensurePdfJs();
-        pdfJsDoc = await getOrLoadPdfDoc(id);
+        pdfJsDoc = await getOrLoadPdfDoc(id, currentPdfMeta?.fileSize || 0);
         totalPages = pdfJsDoc.numPages;
 
         document.getElementById('totalPagesLabel').textContent = totalPages;
@@ -434,11 +434,17 @@ async function openReader(id) {
             body: JSON.stringify({ totalPages })
         });
 
-        await buildPagePlaceholders();
-        await loadAnnotations();
+        // Resolve start page BEFORE building placeholders so we fetch the
+        // right page's dimensions and skip rendering anything irrelevant.
+        const startPage = Math.min(
+            Math.max(1, currentPdfMeta?.lastPage || 1),
+            totalPages
+        );
 
-        const startPage = (currentPdfMeta?.lastPage > 1) ? currentPdfMeta.lastPage : 1;
-        scrollToPage(startPage);
+        await buildPagePlaceholders(startPage);
+        await loadAnnotations();   // annotations loaded BEFORE first render
+
+        scrollToPage(startPage);   // renders window around startPage
         setupScrollObserver();
     } catch (e) {
         showToast('Failed to open PDF: ' + e.message, 'error');
@@ -491,24 +497,64 @@ async function getPdfJs() {
     throw new Error('PDF.js failed to load');
 }
 
-/** Returns a cached PDF.js document or fetches it fresh (LRU-3 cache). */
-async function getOrLoadPdfDoc(id) {
+/**
+ * Returns a cached PDF.js document, or fetches it fresh using a custom
+ * PDFDataRangeTransport.
+ *
+ * Why not the simple `{ url, httpHeaders }` approach?
+ * PDF.js issues an initial unbounded GET (no Range header) to discover the
+ * file size. The server responds 200 and starts streaming the ENTIRE file.
+ * PDF.js receives everything in that first response and never needs to make
+ * range requests — so the whole PDF downloads before page 1 appears.
+ *
+ * PDFDataRangeTransport fixes this: we hand PDF.js the file size upfront
+ * (already in currentPdfMeta.fileSize) and intercept every byte-range
+ * request ourselves, adding the Authorization header. PDF.js only fetches
+ * the bytes it actually needs (xref table + current page stream).
+ */
+async function getOrLoadPdfDoc(id, fileSize) {
     if (_pdfDocCache.has(id)) {
-        // Move to end (most-recently-used)
         const doc = _pdfDocCache.get(id);
         _pdfDocCache.delete(id);
         _pdfDocCache.set(id, doc);
         return doc;
     }
     const pdfjsLib = await getPdfJs();
-    const doc = await pdfjsLib.getDocument({
-        url: `${location.origin}${API}/api/pdfs/${id}/file`,
-        httpHeaders: { Authorization: `Bearer ${getToken()}` },
-        rangeChunkSize: 65536,
-        disableRange: false,
-        disableStream: false,
-    }).promise;
-    // Evict oldest if over capacity
+    const url       = `${location.origin}${API}/api/pdfs/${id}/file`;
+    const authToken = `Bearer ${getToken()}`;
+
+    let doc;
+    if (fileSize > 0 && pdfjsLib.PDFDataRangeTransport) {
+        // ── Range-request transport ──────────────────────────
+        const transport = new pdfjsLib.PDFDataRangeTransport(fileSize, new Uint8Array(0));
+        let aborted = false;
+
+        transport.requestDataRange = function (begin, end) {
+            if (aborted) return;
+            fetch(url, {
+                headers: { Authorization: authToken, Range: `bytes=${begin}-${end - 1}` }
+            })
+            .then(r => (r.status === 206 || r.ok) ? r.arrayBuffer() : Promise.reject(r.status))
+            .then(buf => { if (!aborted) transport.onDataRange(begin, new Uint8Array(buf)); })
+            .catch(err => console.warn('[PDF range] fetch failed', err));
+        };
+        transport.abort = () => { aborted = true; };
+
+        doc = await pdfjsLib.getDocument({
+            range: transport,
+            rangeChunkSize: 65536,
+        }).promise;
+    } else {
+        // ── Fallback: full download (fileSize unknown or old PDF.js) ─
+        doc = await pdfjsLib.getDocument({
+            url,
+            httpHeaders: { Authorization: authToken },
+            disableRange: false,
+            disableStream: false,
+            rangeChunkSize: 65536,
+        }).promise;
+    }
+
     if (_pdfDocCache.size >= 3) {
         _pdfDocCache.delete(_pdfDocCache.keys().next().value);
     }
@@ -517,11 +563,15 @@ async function getOrLoadPdfDoc(id) {
 }
 
 /* ── Pages ─────────────────────────────────────────────── */
-async function buildPagePlaceholders() {
+async function buildPagePlaceholders(startPage = 1) {
     const viewport = document.getElementById('pdfViewport');
     viewport.innerHTML = '';
-    const firstPage = await pdfJsDoc.getPage(1);
-    const vp = firstPage.getViewport({ scale });
+
+    // Fetch dimensions from startPage — the first page we'll actually render.
+    // This is the only range request made here; page 1 is NOT pre-fetched
+    // unless startPage === 1.
+    const refPage = await pdfJsDoc.getPage(startPage);
+    const vp = refPage.getViewport({ scale });
 
     for (let n = 1; n <= totalPages; n++) {
         const container = document.createElement('div');
@@ -540,7 +590,9 @@ async function buildPagePlaceholders() {
         container.appendChild(dl);
         viewport.appendChild(container);
     }
-    for (let n = 1; n <= Math.min(PAGE_WINDOW + 1, totalPages); n++) renderPage(n);
+    // No rendering here — scrollToPage(startPage) in openReader calls
+    // managePageWindow which renders exactly the right ±PAGE_WINDOW window.
+    // Annotations are also loaded before that call, so first render is complete.
 }
 
 async function renderPage(pageNum) {
