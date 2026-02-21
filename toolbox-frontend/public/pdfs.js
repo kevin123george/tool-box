@@ -548,6 +548,9 @@ async function buildPagePlaceholders(startPage = 1) {
         container.style.height = vp.height + 'px';
         container.style.background = '#fff';
         container.appendChild(document.createElement('canvas'));
+        const tl = document.createElement('div');
+        tl.className = 'textLayer';
+        container.appendChild(tl);
         const al = document.createElement('div');
         al.className = 'annot-layer';
         container.appendChild(al);
@@ -577,6 +580,26 @@ async function renderPage(pageNum) {
     const drawCanvas = container.querySelector('.draw-layer');
     if (drawCanvas) { drawCanvas.width = vp.width; drawCanvas.height = vp.height; }
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+    // Text layer — makes page text selectable/copyable
+    const textLayerDiv = container.querySelector('.textLayer');
+    if (textLayerDiv) {
+        textLayerDiv.innerHTML = '';
+        textLayerDiv.style.width  = vp.width  + 'px';
+        textLayerDiv.style.height = vp.height + 'px';
+        const lib = window.__pdfjsLib;
+        if (lib?.TextLayer) {
+            try {
+                const tl = new lib.TextLayer({
+                    textContentSource: page.streamTextContent(),
+                    container: textLayerDiv,
+                    viewport: vp,
+                });
+                await tl.render();
+            } catch (_) { /* page has no text layer (e.g. scanned image) */ }
+        }
+    }
+
     drawAnnotationsForPage(pageNum, container, vp.width, vp.height);
 }
 
@@ -604,6 +627,8 @@ function unloadPage(container) {
     if (canvas && canvas.width > 0) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     const dl = container.querySelector('.draw-layer');
     if (dl && dl.width > 0) dl.getContext('2d').clearRect(0, 0, dl.width, dl.height);
+    const tl = container.querySelector('.textLayer');
+    if (tl) tl.innerHTML = '';
 }
 
 /** Renders pages [cur-WINDOW, cur+WINDOW] and unloads everything outside. */

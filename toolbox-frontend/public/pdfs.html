@@ -17,6 +17,24 @@
             display: block;
         }
         .pdf-page-container canvas { display: block; width: 100%; height: auto; }
+        /* ─── Text layer (selectable text over canvas) ─────── */
+        .textLayer {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            line-height: 1;
+            user-select: text;
+        }
+        .textLayer span, .textLayer br {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+        }
+        .textLayer ::selection { background: rgba(59, 130, 246, 0.35); }
+        body.marker-mode .textLayer,
+        body.pen-mode .textLayer { pointer-events: none; user-select: none; }
         .annot-layer { position: absolute; inset: 0; pointer-events: none; }
         .annot-layer .hl-rect {
             position: absolute;
