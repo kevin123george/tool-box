@@ -1079,3 +1079,12 @@ body:has(#drawerRoot) {
 @media (max-width: 768px) {
     #pageContentWrapper { padding: 1rem; }
 }
+
+/* ── Privacy mode ─────────────────────────────────── */
+.stat-value,
+.tabular-nums { transition: filter 0.2s ease; }
+.privacy-mode .stat-value,
+.privacy-mode .tabular-nums {
+    filter: blur(8px);
+    user-select: none;
+}

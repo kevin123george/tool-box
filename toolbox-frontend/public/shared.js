@@ -262,3 +262,22 @@ function logout() {
     localStorage.removeItem('userRole');
     window.location.href = '/login.html';
 }
+
+/* ── Privacy mode ───────────────────────────────────
+   Blurs all .stat-value and .tabular-nums elements.
+   State persists in localStorage across pages.
+──────────────────────────────────────────────────── */
+function togglePrivacy() {
+    const on = document.body.classList.toggle('privacy-mode');
+    localStorage.setItem('privacyMode', on ? '1' : '');
+    document.getElementById('privacyEyeOn')?.classList.toggle('hidden', on);
+    document.getElementById('privacyEyeOff')?.classList.toggle('hidden', !on);
+}
+
+function initPrivacy() {
+    if (localStorage.getItem('privacyMode')) {
+        document.body.classList.add('privacy-mode');
+        document.getElementById('privacyEyeOn')?.classList.add('hidden');
+        document.getElementById('privacyEyeOff')?.classList.remove('hidden');
+    }
+}
