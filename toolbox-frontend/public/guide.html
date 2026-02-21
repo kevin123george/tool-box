@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox - Guide</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .guide-toc a.active { color: oklch(var(--p)); font-weight: 600; }
+        .guide-section { scroll-margin-top: 80px; }
+    </style>
+</head>
+<body>
+
+<div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
+<div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+    <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg"></span>
+        <span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span>
+    </div>
+</div>
+
+<div id="nav-placeholder" data-active="guide"></div>
+
+<!-- Page header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight">User Guide</h1>
+        <p class="text-sm opacity-40 mt-0.5">Everything you need to know about ToolBox</p>
+    </div>
+</div>
+
+<!-- Two-column layout: TOC + content -->
+<div class="flex gap-8 items-start">
+
+    <!-- Sticky TOC -->
+    <aside class="hidden lg:block w-52 shrink-0 sticky top-20">
+        <nav class="guide-toc flex flex-col gap-0.5 text-sm">
+            <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mb-2">Contents</p>
+            <a href="#overview"     class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Overview</a>
+            <a href="#dashboard"    class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Dashboard</a>
+            <a href="#finance"      class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Finance</a>
+            <a href="#accounts"     class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Accounts</a>
+            <a href="#budget"       class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Budget</a>
+            <a href="#subscriptions" class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Subscriptions</a>
+            <a href="#calendar"     class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Calendar</a>
+            <a href="#analytics"    class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Analytics</a>
+            <a href="#investments"  class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Investments</a>
+            <a href="#portfolio"    class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Portfolio</a>
+            <a href="#history"      class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ History</a>
+            <a href="#research"     class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Research</a>
+            <a href="#fundamentals" class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Fundamentals</a>
+            <a href="#dcf"          class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ DCF</a>
+            <a href="#screener"     class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Screener</a>
+            <a href="#fitness"      class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Fitness</a>
+            <a href="#memos"        class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Memos</a>
+            <a href="#system"       class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">System</a>
+            <a href="#admin"        class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Admin</a>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col gap-10 min-w-0">
+
+        <!-- Overview -->
+        <section id="overview" class="guide-section">
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body">
+                    <h2 class="text-lg font-bold mb-3">What is ToolBox?</h2>
+                    <p class="text-sm opacity-70 leading-relaxed mb-4">ToolBox is a self-hosted personal management hub. All your data stays on your own server — nothing is shared with third parties. It covers four main areas:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-base-300 rounded-xl p-3 text-center">
+                            <div class="text-xl mb-1">💰</div>
+                            <div class="text-xs font-semibold">Finance</div>
+                            <div class="text-xs opacity-40">Accounts, budgets, subscriptions</div>
+                        </div>
+                        <div class="bg-base-300 rounded-xl p-3 text-center">
+                            <div class="text-xl mb-1">📈</div>
+                            <div class="text-xs font-semibold">Investments</div>
+                            <div class="text-xs opacity-40">Portfolio, research, DCF</div>
+                        </div>
+                        <div class="bg-base-300 rounded-xl p-3 text-center">
+                            <div class="text-xl mb-1">🏋️</div>
+                            <div class="text-xs font-semibold">Fitness</div>
+                            <div class="text-xs opacity-40">Workouts, weight, plans</div>
+                        </div>
+                        <div class="bg-base-300 rounded-xl p-3 text-center">
+                            <div class="text-xl mb-1">📝</div>
+                            <div class="text-xs font-semibold">Memos</div>
+                            <div class="text-xs opacity-40">Rich notes with categories</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Dashboard</h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-4">
+                    <p class="text-sm opacity-70">The dashboard gives you a live summary of everything at a glance. It auto-loads on login and can be manually refreshed.</p>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead><tr class="opacity-40 text-xs uppercase"><th>Card</th><th>What it shows</th></tr></thead>
+                            <tbody>
+                                <tr><td class="font-medium">Net Worth</td><td class="text-sm opacity-60">Total cash + portfolio value, with cash breakdown</td></tr>
+                                <tr><td class="font-medium">Savings Rate</td><td class="text-sm opacity-60">% of income saved this month, with absolute amount</td></tr>
+                                <tr><td class="font-medium">Portfolio Return</td><td class="text-sm opacity-60">Overall % gain/loss on your investments</td></tr>
+                                <tr><td class="font-medium">Subscriptions</td><td class="text-sm opacity-60">Monthly recurring cost across all active subscriptions</td></tr>
+                                <tr><td class="font-medium">Bank Accounts</td><td class="text-sm opacity-60">Total balance with per-bank breakdown bars</td></tr>
+                                <tr><td class="font-medium">This Month's Budget</td><td class="text-sm opacity-60">Income vs expenses, savings, adherence %, subscriptions</td></tr>
+                                <tr><td class="font-medium">Portfolio</td><td class="text-sm opacity-60">Market value, invested amount, P&amp;L</td></tr>
+                                <tr><td class="font-medium">Fitness</td><td class="text-sm opacity-60">Streak, workouts this week, current weight</td></tr>
+                                <tr><td class="font-medium">FIRE Goal</td><td class="text-sm opacity-60">Retirement corpus progress + projected FIRE age (shows only if a goal exists)</td></tr>
+                                <tr><td class="font-medium">Savings Goals</td><td class="text-sm opacity-60">Total saved vs target across all goals (shows only if goals exist)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Finance -->
+        <section id="finance" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Finance</h2>
+            <div class="flex flex-col gap-4">
+
+                <div id="accounts" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-primary badge-sm">Accounts</span></div>
+                        <p class="text-sm opacity-70 mb-3">Track all your bank balances in one place.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Add accounts by selecting a bank, type (Current / Savings / Broker), and balance</li>
+                            <li>Supported banks: N26, Sparkasse, Trade Republic, Wise, Revolut</li>
+                            <li>Edit or delete accounts at any time</li>
+                            <li>View net worth history chart and take manual snapshots</li>
+                            <li>See 6-month savings rate trend</li>
+                        </ul>
+                        <div class="divider my-2 text-xs opacity-30">FIRE Goal</div>
+                        <p class="text-sm opacity-70">Set your retirement target. Fill in your target yearly income, expected return rate, tax rate, yearly contribution, and current age. ToolBox calculates your required corpus, years to goal, and projected FIRE age automatically. The current corpus is pulled live from your bank balances.</p>
+                        <div class="divider my-2 text-xs opacity-30">Savings Goals</div>
+                        <p class="text-sm opacity-70">Create named savings goals (e.g. "Holiday fund") with a target amount and optional deadline. Contribute to them incrementally and track progress with a bar.</p>
+                    </div>
+                </div>
+
+                <div id="budget" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-success badge-sm">Budget</span></div>
+                        <p class="text-sm opacity-70 mb-3">Plan and track spending month by month.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Pick any month using the date picker, or jump to the current month</li>
+                            <li>Set a monthly plan: income categories (Salary, Bonus, Freelance, Other) and expense categories (Rent, Utilities, Groceries, Dining, etc.)</li>
+                            <li>Add actual income and expense transactions throughout the month</li>
+                            <li>Summary shows: planned vs actual, savings amount, savings rate %, budget adherence %</li>
+                            <li>Import a bank CSV (N26, Sparkasse, or auto-detect) to bulk-load transactions</li>
+                            <li>Set up recurring transactions (weekly / monthly / yearly) for predictable income or expenses</li>
+                            <li>Compare multiple months with the budget comparison chart</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="subscriptions" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-warning badge-sm">Subscriptions</span></div>
+                        <p class="text-sm opacity-70 mb-3">Keep track of every recurring service you pay for.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Add subscriptions with name, provider, amount, billing cycle, and next billing date</li>
+                            <li>KPIs: total monthly cost, total annual cost, active count</li>
+                            <li>Mark subscriptions as inactive to exclude them from totals without deleting</li>
+                            <li>Enable push notifications to get reminders 3 days before a renewal</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="calendar" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-info badge-sm">Calendar</span></div>
+                        <p class="text-sm opacity-70 mb-3">A unified monthly view of all financial and fitness events.</p>
+                        <div class="overflow-x-auto">
+                            <table class="table table-sm">
+                                <thead><tr class="opacity-40 text-xs uppercase"><th>Colour</th><th>Means</th></tr></thead>
+                                <tbody>
+                                    <tr><td><span class="badge badge-success badge-sm">Green</span></td><td class="text-sm opacity-60">Income transaction or completed workout</td></tr>
+                                    <tr><td><span class="badge badge-error badge-sm">Red</span></td><td class="text-sm opacity-60">Expense transaction</td></tr>
+                                    <tr><td><span class="badge badge-warning badge-sm">Orange</span></td><td class="text-sm opacity-60">Subscription renewal or planned workout</td></tr>
+                                    <tr><td><span class="badge badge-info badge-sm">Blue</span></td><td class="text-sm opacity-60">Dividend payment</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="analytics" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-secondary badge-sm">Analytics</span></div>
+                        <p class="text-sm opacity-70 mb-3">Visual breakdowns of your spending patterns.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Spending anomaly detection — flags categories with unusual spend vs your average</li>
+                            <li>Income vs Expenses multi-month chart</li>
+                            <li>Category breakdown pie chart</li>
+                            <li>Category trend lines over 6 months</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Investments -->
+        <section id="investments" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Investments</h2>
+            <div class="flex flex-col gap-4">
+
+                <div id="portfolio" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-primary badge-sm">Portfolio</span></div>
+                        <p class="text-sm opacity-70 mb-3">Track stock holdings, dividends, and alerts.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li><strong>Holdings</strong> — add stocks with symbol, quantity, and buy price. Prices update automatically. Export to CSV anytime.</li>
+                            <li><strong>Watchlist</strong> — track stocks you don't own yet. Set an initial price to see how they've moved.</li>
+                            <li><strong>Dividends</strong> — log dividend payments with amount, date, and frequency. See total received and annual projection.</li>
+                            <li><strong>Price Alerts</strong> — set ABOVE/BELOW price targets. Get a push notification when triggered.</li>
+                            <li><strong>Capital Gains</strong> — see realised and unrealised gains broken down by holding.</li>
+                            <li><strong>Allocation</strong> — pie chart of your portfolio split. Set target % per stock and see rebalancing suggestions.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="history" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-warning badge-sm">History</span></div>
+                        <p class="text-sm opacity-70 mb-3">Advanced candlestick chart with full technical analysis for any holding.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Select symbol and interval (1m to 1w) and time range (1D to ALL)</li>
+                            <li>Toggle indicators: SMA, EMA, Bollinger Bands, RSI, MACD, Volume</li>
+                            <li>Performance metrics: CAGR, Sharpe ratio, max drawdown, alpha, beta</li>
+                            <li>Export chart as PNG</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="research" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-success badge-sm">Research</span></div>
+                        <p class="text-sm opacity-70 mb-3">AI-assisted research report for your entire portfolio.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Click <strong>Generate Research Report</strong> to analyse all holdings (news, technicals, fundamentals)</li>
+                            <li>Reload the latest saved report instantly with <strong>Load Latest Report</strong></li>
+                            <li>Each holding gets a sentiment rating; overall portfolio sentiment shown at the top</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="fundamentals" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-info badge-sm">Fundamentals</span></div>
+                        <p class="text-sm opacity-70 mb-3">Deep-dive into any company's financial health.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Search by symbol or name (autocomplete). Or pick directly from your portfolio.</li>
+                            <li>Key ratios: P/E, EPS, ROE, Dividend Yield, and more</li>
+                            <li>Charts: Revenue history, EPS beat/miss, Free Cash Flow, Margin trends</li>
+                            <li>Historical price chart with SMA/EMA/Bollinger toggle</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="dcf" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-secondary badge-sm">DCF</span></div>
+                        <p class="text-sm opacity-70 mb-3">Discounted Cash Flow valuation tool.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Enter a symbol and click <strong>Load Defaults</strong> to pre-fill from fundamentals data</li>
+                            <li>Adjust: Initial FCF, growth rate, WACC, terminal growth rate, projection years, shares outstanding, current price</li>
+                            <li>Result: intrinsic value per share, margin of safety, verdict (Undervalued / Fair / Overvalued)</li>
+                            <li>Sensitivity analysis table showing how value changes with different assumptions</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="screener" class="card bg-base-200 shadow-sm guide-section">
+                    <div class="card-body">
+                        <div class="flex items-center gap-2 mb-2"><span class="badge badge-error badge-sm">Screener</span></div>
+                        <p class="text-sm opacity-70 mb-3">Filter and compare stocks by fundamental criteria.</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>Add any stock symbol to the screener pool</li>
+                            <li>Filter by: Sector, P/E range, Market Cap, Dividend Yield, ROE, Debt/Equity</li>
+                            <li>Sort by: Market Cap, P/E, Dividend Yield, ROE, Profit Margin</li>
+                            <li>Click any row to view the full fundamentals for that stock</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Fitness -->
+        <section id="fitness" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Fitness</h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-4">
+                    <p class="text-sm opacity-70">Log workouts, track weight, and build structured training plans.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Logging</p>
+                            <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                                <li>Log a workout: date, type (Push/Pull/Legs/Cardio/Full Body/Core/Rest), duration, calories, notes</li>
+                                <li>Log weight daily with optional notes</li>
+                                <li>Weight chart shows trend over time</li>
+                                <li>Today's banner shows your scheduled workout from your active plan</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Plans & Templates</p>
+                            <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                                <li>Create <strong>templates</strong> — a named workout with type, estimated duration, and exercise list</li>
+                                <li>Create <strong>plans</strong> — assign templates to days of the week (e.g. Push on Mon/Thu, Pull on Tue/Fri)</li>
+                                <li>Set one plan as <strong>Active</strong> — it drives the weekly schedule grid and Today's banner</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Stats & Analytics</p>
+                        <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                            <li>KPIs: current streak, longest streak, workouts this week, total workouts</li>
+                            <li>Workouts by type pie chart</li>
+                            <li>Weekly volume chart</li>
+                            <li>Consistency score: % of weeks in the last 12 where you hit 3+ workouts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Memos -->
+        <section id="memos" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Memos</h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-3">
+                    <p class="text-sm opacity-70">Rich-text notes with categories, pinning, and optional image attachments.</p>
+                    <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                        <li>Write with the full Quill editor: bold, italic, headers, lists, code blocks, links</li>
+                        <li>Four categories: <span class="badge badge-info badge-xs">Personal</span> <span class="badge badge-secondary badge-xs">Work</span> <span class="badge badge-warning badge-xs">Ideas</span> <span class="badge badge-success badge-xs">Journal</span></li>
+                        <li>Pin important memos — they always appear at the top</li>
+                        <li>Attach an image to any memo</li>
+                        <li>Filter by category using the tabs at the top</li>
+                        <li>Copy memo text to clipboard with one click</li>
+                        <li>Paginated list — choose 10 / 20 / 30 / 50 per page</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- System -->
+        <section id="system" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">System <span class="badge badge-warning badge-sm ml-1">Admin only</span></h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-3">
+                    <p class="text-sm opacity-70">Live server health monitoring. Refreshes every ~900ms.</p>
+                    <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                        <li>CPU usage, memory (used / total), disk, swap, and network stats</li>
+                        <li>JVM metrics: heap, non-heap, uptime</li>
+                        <li>Enable browser push notifications to get alerts when CPU, Memory, or Disk exceeds 90% (5-minute cooldown between alerts)</li>
+                        <li>Test notifications with the Test button once subscribed</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin -->
+        <section id="admin" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Admin — Users <span class="badge badge-warning badge-sm ml-1">Admin only</span></h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-4">
+                    <p class="text-sm opacity-70">Full user management panel. Only visible to admins.</p>
+
+                    <div class="stats stats-horizontal bg-base-300 text-xs w-full">
+                        <div class="stat py-2 px-4"><div class="stat-title text-xs">Total Users</div><div class="stat-desc">All accounts</div></div>
+                        <div class="stat py-2 px-4"><div class="stat-title text-xs">Admins</div><div class="stat-desc">Admin-role count</div></div>
+                        <div class="stat py-2 px-4"><div class="stat-title text-xs">Online Now</div><div class="stat-desc">Active in last 5 min</div></div>
+                        <div class="stat py-2 px-4"><div class="stat-title text-xs">Active Today</div><div class="stat-desc">Logged in 24h</div></div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead><tr class="opacity-40 text-xs uppercase"><th>Action</th><th>What it does</th></tr></thead>
+                            <tbody>
+                                <tr><td class="font-medium">Edit</td><td class="text-sm opacity-60">Update name, email, role, or password for any user</td></tr>
+                                <tr><td class="font-medium">Reset PW</td><td class="text-sm opacity-60">Generate a one-time reset link (24h expiry). Copy and share it with the user via any channel.</td></tr>
+                                <tr><td class="font-medium">Promote / Demote</td><td class="text-sm opacity-60">Toggle a user's role between USER and ADMIN</td></tr>
+                                <tr><td class="font-medium">Delete</td><td class="text-sm opacity-60">Permanently remove a user account (requires confirmation)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-warning py-2 text-xs">
+                        Admins cannot change their own role or delete their own account.
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Password Reset Flow</p>
+                        <ol class="text-sm opacity-70 space-y-1 list-decimal list-inside">
+                            <li>Admin clicks <strong>Reset PW</strong> on the user's row</li>
+                            <li>A unique link is generated (valid 24 hours, single use)</li>
+                            <li>Admin copies the link and sends it to the user (WhatsApp, email, Slack, etc.)</li>
+                            <li>User opens the link, enters a new password, and is redirected to login</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="pb-10 text-xs opacity-20 text-center">ToolBox · Self-hosted · Your data stays yours</div>
+
+    </div>
+</div>
+
+<script src="shared.js"></script>
+<script src="nav.js"></script>
+<script>
+requireAuth();
+
+// Highlight active TOC link on scroll
+const sections = document.querySelectorAll('.guide-section[id]');
+const tocLinks  = document.querySelectorAll('.guide-toc a');
+
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.remove('active'));
+            const active = document.querySelector(`.guide-toc a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -75% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
