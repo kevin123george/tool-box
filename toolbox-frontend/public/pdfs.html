@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox — PDF Reader</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ─── PDF viewport ─────────────────────────────────── */
+        #pdfViewport {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .pdf-page-container {
+            position: relative;
+            margin: 0 auto 16px;
+            display: block;
+        }
+        .pdf-page-container canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .annot-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .annot-layer .hl-rect {
+            position: absolute;
+            mix-blend-mode: multiply;
+            pointer-events: auto;
+            cursor: default;
+        }
+        .annot-layer .note-icon {
+            position: absolute;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            pointer-events: auto;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        /* ─── Color picker popup ───────────────────────────── */
+        #colorPicker {
+            position: fixed;
+            z-index: 9000;
+            display: none;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        #colorPicker button {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        #colorPicker button:hover { transform: scale(1.2); }
+        /* ─── Note mode cursor ─────────────────────────────── */
+        body.note-mode #pdfViewport { cursor: crosshair; }
+        /* ─── Progress bar ─────────────────────────────────── */
+        .pdf-progress { height: 4px; background: oklch(var(--p)); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
+    <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+        <div class="flex flex-col items-center gap-4">
+            <span class="loading loading-spinner loading-lg"></span>
+            <span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span>
+        </div>
+    </div>
+    <div id="nav-placeholder" data-active="pdfs"></div>
+
+    <!-- ══════════════════════════════════════════════════════
+         LIBRARY VIEW
+    ═══════════════════════════════════════════════════════ -->
+    <div id="libraryView">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">PDF Reader</h1>
+                <p class="text-sm opacity-40 mt-0.5">Upload and read PDFs across all devices</p>
+            </div>
+            <label class="btn btn-primary btn-sm gap-2" for="pdfUploadInput">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/>
+                </svg>
+                Upload PDF
+            </label>
+            <input id="pdfUploadInput" type="file" accept="application/pdf" class="hidden" onchange="handlePdfUpload(this)">
+        </div>
+
+        <!-- Grid -->
+        <div id="pdfGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- populated by JS -->
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         READER VIEW
+    ═══════════════════════════════════════════════════════ -->
+    <div id="readerView" class="hidden flex flex-col" style="height: calc(100vh - 56px); margin: -24px;">
+
+        <!-- Sticky toolbar -->
+        <div class="navbar bg-base-200 border-b border-base-300 px-3 gap-2 min-h-[48px] shrink-0 flex-wrap">
+            <!-- Back -->
+            <button class="btn btn-ghost btn-sm btn-square" onclick="closeReader()" title="Back to library">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+                </svg>
+            </button>
+
+            <!-- Title -->
+            <span id="readerTitle" class="text-sm font-medium truncate max-w-[140px] sm:max-w-xs opacity-70"></span>
+
+            <div class="flex-1"></div>
+
+            <!-- Page nav -->
+            <div class="flex items-center gap-1">
+                <button class="btn btn-ghost btn-xs btn-square" onclick="readerPageStep(-1)" title="Previous page">‹</button>
+                <input id="pageInput" type="number" min="1" class="input input-bordered input-xs w-14 text-center" onchange="readerGoToPage(this.value)">
+                <span class="text-xs opacity-50">/ <span id="totalPagesLabel">—</span></span>
+                <button class="btn btn-ghost btn-xs btn-square" onclick="readerPageStep(1)" title="Next page">›</button>
+            </div>
+
+            <!-- Zoom -->
+            <div class="flex items-center gap-1">
+                <button class="btn btn-ghost btn-xs" onclick="readerZoom(-0.25)" title="Zoom out">−</button>
+                <span id="zoomLabel" class="text-xs opacity-50 w-10 text-center">150%</span>
+                <button class="btn btn-ghost btn-xs" onclick="readerZoom(+0.25)" title="Zoom in">+</button>
+            </div>
+
+            <!-- Add Note -->
+            <button id="addNoteBtn" class="btn btn-ghost btn-xs gap-1" onclick="startNoteMode()" title="Add sticky note">
+                <span>📝</span>
+                <span class="hidden sm:inline">Note</span>
+            </button>
+
+            <!-- Download -->
+            <button class="btn btn-ghost btn-xs gap-1" onclick="downloadCurrentPdf()" title="Download PDF">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                </svg>
+                <span class="hidden sm:inline">Download</span>
+            </button>
+
+            <!-- Sidebar toggle (lg+) -->
+            <button class="btn btn-ghost btn-xs hidden lg:flex" onclick="toggleAnnotSidebar()" title="Annotations">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Reader body -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- PDF viewport -->
+            <div id="pdfViewport" class="flex-1 overflow-y-auto p-4 bg-base-300">
+                <!-- page containers injected by JS -->
+            </div>
+
+            <!-- Annotation sidebar (lg+) -->
+            <aside id="annotSidebar" class="hidden lg:flex flex-col w-72 shrink-0 border-l border-base-300 bg-base-100 overflow-y-auto">
+                <div class="p-3 border-b border-base-300 text-xs font-semibold uppercase tracking-widest opacity-50">Annotations</div>
+                <div id="annotSidebarList" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+                    <!-- populated by JS -->
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         COLOR PICKER POPUP
+    ═══════════════════════════════════════════════════════ -->
+    <div id="colorPicker" class="bg-base-100 border border-base-300 flex">
+        <button style="background:#facc15;" title="Yellow" onclick="saveHighlight('yellow')"></button>
+        <button style="background:#4ade80;" title="Green"  onclick="saveHighlight('green')"></button>
+        <button style="background:#f472b6;" title="Pink"   onclick="saveHighlight('pink')"></button>
+        <button class="btn btn-ghost btn-xs ml-1" onclick="hideColorPicker()">✕</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         NOTE INPUT MODAL
+    ═══════════════════════════════════════════════════════ -->
+    <dialog id="noteInputModal" class="modal">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-sm uppercase tracking-widest mb-3">Add Note</h3>
+            <textarea id="noteTextInput" class="textarea textarea-bordered w-full h-28 text-sm" placeholder="Type your note…"></textarea>
+            <div class="modal-action mt-3">
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('noteInputModal'); cancelNoteMode()">Cancel</button>
+                <button class="btn btn-primary btn-sm" onclick="confirmNote()">Save</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- ══════════════════════════════════════════════════════
+         NOTE VIEW MODAL
+    ═══════════════════════════════════════════════════════ -->
+    <dialog id="noteViewModal" class="modal">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-sm uppercase tracking-widest mb-3">Note — Page <span id="noteViewPage"></span></h3>
+            <p id="noteViewText" class="text-sm whitespace-pre-wrap min-h-[48px]"></p>
+            <div class="modal-action mt-3">
+                <button class="btn btn-error btn-sm" onclick="deleteCurrentNote()">Delete</button>
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('noteViewModal')">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- Scripts -->
+    <script src="shared.js"></script>
+    <script src="nav.js"></script>
+    <script src="pdfs.js"></script>
+</body>
+</html>
