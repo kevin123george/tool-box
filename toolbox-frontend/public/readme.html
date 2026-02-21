@@ -823,9 +823,17 @@
 <script src="nav.js"></script>
 <script>
 // Public page — show nav if authenticated, back-link if not
-if (!localStorage.getItem('authToken')) {
-    document.getElementById('nav-placeholder').style.display = 'none';
+const _authed = !!localStorage.getItem('authToken');
+if (!_authed) {
     document.getElementById('guest-bar').classList.remove('hidden');
+
+    // Intercept nav link clicks — show sign-in toast instead of navigating
+    document.addEventListener('click', e => {
+        const link = e.target.closest('#nav-placeholder a');
+        if (!link) return;
+        e.preventDefault();
+        showToast('You need an account to use ToolBox. <a href="/login.html" class="underline font-semibold ml-1">Sign in / Register →</a>', 'info', null, 5000);
+    }, true);
 }
 
 // Tag-limited clouds: show data-limit tags, rest hidden behind "+N more" button
