@@ -7,20 +7,28 @@ import com.example.mongo.models.PdfDocument;
 import com.example.mongo.models.dto.PdfDocumentDTO;
 import com.example.mongo.repos.PdfAnnotationRepository;
 import com.example.mongo.repos.PdfDocumentRepository;
+import com.mongodb.client.gridfs.model.GridFSFile;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.gridfs.GridFsResource;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PdfService {
 
-  private static final long MAX_FILE_SIZE = 14L * 1024 * 1024; // 14 MB
+  private static final long MAX_FILE_SIZE = 500L * 1024 * 1024; // 500 MB
 
   @Autowired private PdfDocumentRepository pdfDocumentRepository;
   @Autowired private PdfAnnotationRepository pdfAnnotationRepository;
+  @Autowired private GridFsTemplate gridFsTemplate;
   @Autowired private AuthUtils authUtils;
 
   private PdfDocument findOwned(String id) {
@@ -40,14 +48,17 @@ public class PdfService {
       throw new IllegalArgumentException("Only PDF files are allowed");
     }
     if (file.getSize() > MAX_FILE_SIZE) {
-      throw new IllegalArgumentException("File exceeds 14 MB limit");
+      throw new IllegalArgumentException("File exceeds 500 MB limit");
     }
+
+    ObjectId gridFsId =
+        gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), "application/pdf");
 
     PdfDocument doc = new PdfDocument();
     doc.setUserId(authUtils.getCurrentUserId());
     doc.setFilename(file.getOriginalFilename());
     doc.setFileSize(file.getSize());
-    doc.setData(file.getBytes());
+    doc.setGridFsFileId(gridFsId.toString());
     doc.setTotalPages(0);
     doc.setLastPage(1);
 
@@ -59,13 +70,26 @@ public class PdfService {
     return pdfDocumentRepository.findAllByUserId(userId).stream().map(PdfDocumentDTO::new).toList();
   }
 
-  public byte[] getFileBytes(String id) {
-    return findOwned(id).getData();
+  public InputStream getFileStream(String id) throws IOException {
+    PdfDocument doc = findOwned(id);
+    GridFSFile gridFsFile =
+        gridFsTemplate.findOne(
+            new Query(Criteria.where("_id").is(new ObjectId(doc.getGridFsFileId()))));
+    if (gridFsFile == null) {
+      throw new ResourceNotFoundException("PdfFile", "id", id);
+    }
+    GridFsResource resource = gridFsTemplate.getResource(gridFsFile);
+    return resource.getInputStream();
   }
 
   public void delete(String id) {
     PdfDocument doc = findOwned(id);
     String userId = authUtils.getCurrentUserId();
+    // Delete GridFS file
+    if (doc.getGridFsFileId() != null) {
+      gridFsTemplate.delete(
+          new Query(Criteria.where("_id").is(new ObjectId(doc.getGridFsFileId()))));
+    }
     pdfAnnotationRepository.deleteByPdfIdAndUserId(id, userId);
     pdfDocumentRepository.delete(doc);
   }

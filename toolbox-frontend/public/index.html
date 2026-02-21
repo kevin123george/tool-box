@@ -124,6 +124,17 @@
             </div>
         </div>
 
+        <!-- Currently Reading -->
+        <div class="card bg-base-200 shadow-sm" id="pdfCard" style="display:none">
+            <div class="card-body p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-sm uppercase tracking-widest opacity-50">Currently Reading</h2>
+                    <a href="/pdfs.html" class="btn btn-ghost btn-xs opacity-50 hover:opacity-100">Library →</a>
+                </div>
+                <div id="pdfBody"></div>
+            </div>
+        </div>
+
         <!-- FIRE goal -->
         <div class="card bg-base-200 shadow-sm" id="goalCard" style="display:none">
             <div class="card-body p-5">
@@ -205,14 +216,16 @@ function progressBar(label, value, max, color = 'bg-primary') {
 
 /* ---- Main loader ---- */
 async function loadDashboard() {
-    const [summaryRes, dashRes] = await Promise.allSettled([
+    const [summaryRes, dashRes, pdfRes] = await Promise.allSettled([
         authFetch('/api/finance/summary'),
-        authFetch('/api/dashboard')
+        authFetch('/api/dashboard'),
+        authFetch('/api/pdfs')
     ]);
 
-    let summary = null, dash = null;
+    let summary = null, dash = null, pdfs = [];
     if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) summary = await summaryRes.value.json();
     if (dashRes.status === 'fulfilled'    && dashRes.value.ok)    dash    = await dashRes.value.json();
+    if (pdfRes.status === 'fulfilled'     && pdfRes.value.ok)     pdfs    = await pdfRes.value.json();
 
     /* ---- KPI row ---- */
     const netWorth   = dash?.netWorth        ?? summary?.totalBalance ?? null;
@@ -372,6 +385,31 @@ async function loadDashboard() {
             <div class="text-xs opacity-40 mb-3">${pct.toFixed(1)}% to target${dash.goalFireAge ? ` · FIRE at ${dash.goalFireAge}` : ''}</div>
             <div class="h-2.5 bg-base-300 rounded-full overflow-hidden">
                 <div class="h-full bg-warning rounded-full transition-all duration-700" style="width:${pct.toFixed(1)}%"></div>
+            </div>
+        `;
+    }
+
+    /* ---- Currently Reading (PDF) ---- */
+    const readPdfs = pdfs.filter(p => p.lastReadAt).sort((a, b) => new Date(b.lastReadAt) - new Date(a.lastReadAt));
+    if (readPdfs.length > 0) {
+        document.getElementById('pdfCard').style.display = '';
+        const p   = readPdfs[0];
+        const pct = p.totalPages > 0 ? Math.min(100, (p.lastPage / p.totalPages) * 100) : 0;
+        const lastRead = new Date(p.lastReadAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        document.getElementById('pdfBody').innerHTML = `
+            <div class="flex items-start gap-2 mb-3">
+                <span class="text-2xl shrink-0">📄</span>
+                <div class="min-w-0">
+                    <div class="font-semibold text-sm truncate" title="${p.filename}">${p.filename}</div>
+                    <div class="text-xs opacity-40 mt-0.5">${p.totalPages > 0 ? `Page ${p.lastPage} of ${p.totalPages}` : 'Not yet opened'} · ${lastRead}</div>
+                </div>
+            </div>
+            <div class="h-1.5 bg-base-300 rounded-full overflow-hidden mb-3">
+                <div class="h-full bg-primary rounded-full transition-all duration-700" style="width:${pct.toFixed(1)}%"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-xs opacity-40">${pct.toFixed(0)}% complete</span>
+                ${pdfs.length > 1 ? `<span class="text-xs opacity-30">+${pdfs.length - 1} more in library</span>` : ''}
             </div>
         `;
     }

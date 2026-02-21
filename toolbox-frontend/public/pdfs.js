@@ -115,8 +115,8 @@ async function handlePdfUpload(input) {
     if (!file) return;
     input.value = '';
 
-    if (file.size > 14 * 1024 * 1024) {
-        showToast('File exceeds 14 MB limit', 'error');
+    if (file.size > 500 * 1024 * 1024) {
+        showToast('File exceeds 500 MB limit', 'error');
         return;
     }
     if (file.type !== 'application/pdf') {

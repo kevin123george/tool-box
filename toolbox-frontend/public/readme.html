@@ -65,6 +65,7 @@
             <a href="#screener"     class="pl-5 px-2 py-0.5 rounded-lg hover:bg-base-200 opacity-40 hover:opacity-80 text-xs transition-all">↳ Screener</a>
             <a href="#fitness"      class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Fitness</a>
             <a href="#memos"        class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Memos</a>
+            <a href="#pdfs"         class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">PDF Reader</a>
             <a href="#system"       class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">System</a>
             <a href="#admin"        class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Admin</a>
             <a href="#glossary"     class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Glossary</a>
@@ -80,7 +81,7 @@
                 <div class="card-body">
                     <h2 class="text-lg font-bold mb-3">What is ToolBox?</h2>
                     <p class="text-sm opacity-70 leading-relaxed mb-4">ToolBox is a self-hosted personal management hub. All your data stays on your own server — nothing is shared with third parties. It covers four main areas:</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                         <div class="bg-base-300 rounded-xl p-3 text-center">
                             <div class="text-xl mb-1">💰</div>
                             <div class="text-xs font-semibold">Finance</div>
@@ -100,6 +101,11 @@
                             <div class="text-xl mb-1">📝</div>
                             <div class="text-xs font-semibold">Memos</div>
                             <div class="text-xs opacity-40">Rich notes with categories</div>
+                        </div>
+                        <div class="bg-base-300 rounded-xl p-3 text-center">
+                            <div class="text-xl mb-1">📄</div>
+                            <div class="text-xs font-semibold">PDF Reader</div>
+                            <div class="text-xs opacity-40">Read, highlight &amp; annotate</div>
                         </div>
                     </div>
                 </div>
@@ -437,6 +443,70 @@
                         <li>Copy memo text to clipboard with one click</li>
                         <li>Paginated list — choose 10 / 20 / 30 / 50 per page</li>
                     </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- PDF Reader -->
+        <section id="pdfs" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">PDF Reader</h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-4">
+                    <p class="text-sm opacity-70">Upload PDFs and read them across any device — phone, tablet, or desktop — with your position, highlights, and notes synced to the server.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Library</p>
+                            <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                                <li>Upload PDFs up to 500 MB — stored in MongoDB GridFS (chunked, no document size limit)</li>
+                                <li>Library grid shows filename, file size, reading progress bar, and last read date</li>
+                                <li>Delete a PDF and all its annotations in one click</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Reader</p>
+                            <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
+                                <li>Rendered page-by-page with PDF.js — no browser plugins needed</li>
+                                <li>Pages load lazily as you scroll (±2 pages ahead)</li>
+                                <li>Reading position auto-saved after 2 seconds — reopening resumes where you left off, on any device</li>
+                                <li>Zoom in / out with recalculated page layout</li>
+                                <li>Jump to any page with the page input</li>
+                                <li>Download the original PDF file</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Annotations</p>
+                        <div class="overflow-x-auto">
+                            <table class="table table-sm">
+                                <thead><tr class="opacity-40 text-xs uppercase"><th>Type</th><th>How to use</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="font-medium whitespace-nowrap">
+                                            <span class="inline-flex gap-1">
+                                                <span class="badge badge-xs" style="background:#facc15;color:#000">Yellow</span>
+                                                <span class="badge badge-xs" style="background:#4ade80;color:#000">Green</span>
+                                                <span class="badge badge-xs" style="background:#f472b6;color:#000">Pink</span>
+                                                Highlight
+                                            </span>
+                                        </td>
+                                        <td class="text-sm opacity-60">Select any text on a page → color picker appears → choose a color. Highlight is saved and redrawn at any zoom level.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="font-medium">📝 Note</td>
+                                        <td class="text-sm opacity-60">Click <strong>Note</strong> in the toolbar → cursor turns to crosshair → click anywhere on a page → type your note and save. A 📝 icon marks the spot; click it to view or delete.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs opacity-40 mt-2">All annotations are stored per-user and per-PDF. The annotation sidebar (desktop) lists every highlight and note with its page number.</p>
+                    </div>
+
+                    <div class="alert py-2 text-xs bg-base-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 shrink-0 opacity-50"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/></svg>
+                        <span class="opacity-60">PDFs are stored privately per user. No one else can access your files or annotations.</span>
+                    </div>
                 </div>
             </div>
         </section>

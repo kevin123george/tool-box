@@ -4,9 +4,11 @@ import com.example.mongo.models.PdfAnnotation;
 import com.example.mongo.models.dto.PdfDocumentDTO;
 import com.example.mongo.services.PdfService;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,12 +33,12 @@ public class PdfController {
   }
 
   @GetMapping("/{id}/file")
-  public ResponseEntity<byte[]> getFile(@PathVariable String id) {
-    byte[] data = pdfService.getFileBytes(id);
+  public ResponseEntity<InputStreamResource> getFile(@PathVariable String id) throws IOException {
+    InputStream stream = pdfService.getFileStream(id);
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_PDF)
         .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
-        .body(data);
+        .body(new InputStreamResource(stream));
   }
 
   @DeleteMapping("/{id}")
