@@ -14,6 +14,13 @@ const HIGHLIGHT_COLORS = {
     pink:   'rgba(244, 114, 182, 0.45)',
 };
 
+// Pages to keep rendered on each side of current page (7 total window)
+const PAGE_WINDOW = 3;
+
+// LRU cache: keep up to 3 recently opened PDF.js document objects
+// so re-opening the same PDF is instant (no re-fetch).
+const _pdfDocCache = new Map(); // pdfId → pdfJsDoc
+
 /* ── State ─────────────────────────────────────────────── */
 let currentPdfId        = null;
 let currentPdfMeta      = null;
@@ -414,19 +421,7 @@ async function openReader(id) {
     showLoading('Loading PDF…');
     try {
         await ensurePdfJs();
-        const pdfjsLib = await getPdfJs();
-
-        // Pass the URL + auth header directly to PDF.js.
-        // PDF.js issues HTTP Range requests under the hood so it fetches
-        // only the cross-reference table first (~a few KB), then each page
-        // stream on demand — a 200 MB book renders page 1 in under a second.
-        pdfJsDoc = await pdfjsLib.getDocument({
-            url: `${location.origin}${API}/api/pdfs/${id}/file`,
-            httpHeaders: { Authorization: `Bearer ${getToken()}` },
-            rangeChunkSize: 65536,   // 64 KB per range request
-            disableRange: false,
-            disableStream: false,
-        }).promise;
+        pdfJsDoc = await getOrLoadPdfDoc(id);
         totalPages = pdfJsDoc.numPages;
 
         document.getElementById('totalPagesLabel').textContent = totalPages;
@@ -496,6 +491,31 @@ async function getPdfJs() {
     throw new Error('PDF.js failed to load');
 }
 
+/** Returns a cached PDF.js document or fetches it fresh (LRU-3 cache). */
+async function getOrLoadPdfDoc(id) {
+    if (_pdfDocCache.has(id)) {
+        // Move to end (most-recently-used)
+        const doc = _pdfDocCache.get(id);
+        _pdfDocCache.delete(id);
+        _pdfDocCache.set(id, doc);
+        return doc;
+    }
+    const pdfjsLib = await getPdfJs();
+    const doc = await pdfjsLib.getDocument({
+        url: `${location.origin}${API}/api/pdfs/${id}/file`,
+        httpHeaders: { Authorization: `Bearer ${getToken()}` },
+        rangeChunkSize: 65536,
+        disableRange: false,
+        disableStream: false,
+    }).promise;
+    // Evict oldest if over capacity
+    if (_pdfDocCache.size >= 3) {
+        _pdfDocCache.delete(_pdfDocCache.keys().next().value);
+    }
+    _pdfDocCache.set(id, doc);
+    return doc;
+}
+
 /* ── Pages ─────────────────────────────────────────────── */
 async function buildPagePlaceholders() {
     const viewport = document.getElementById('pdfViewport');
@@ -520,7 +540,7 @@ async function buildPagePlaceholders() {
         container.appendChild(dl);
         viewport.appendChild(container);
     }
-    for (let n = 1; n <= Math.min(3, totalPages); n++) renderPage(n);
+    for (let n = 1; n <= Math.min(PAGE_WINDOW + 1, totalPages); n++) renderPage(n);
 }
 
 async function renderPage(pageNum) {
@@ -543,10 +563,43 @@ async function renderPage(pageNum) {
 }
 
 async function rerenderAllPages() {
-    document.querySelectorAll('.pdf-page-container').forEach(c => { c.dataset.rendered = 'false'; });
-    for (let n = Math.max(1, currentPage - 1); n <= Math.min(totalPages, currentPage + 2); n++) {
-        await renderPage(n);
-    }
+    // Resize ALL containers to the new scale so scroll layout stays correct,
+    // even for pages that won't be re-rendered right now.
+    const fp = await pdfJsDoc.getPage(1);
+    const vp = fp.getViewport({ scale });
+    document.querySelectorAll('.pdf-page-container').forEach(c => {
+        c.dataset.rendered = 'false';
+        c.style.width  = vp.width  + 'px';
+        c.style.height = vp.height + 'px';
+    });
+    // Re-render only the current window
+    const wS = Math.max(1, currentPage - PAGE_WINDOW);
+    const wE = Math.min(totalPages, currentPage + PAGE_WINDOW);
+    for (let n = wS; n <= wE; n++) await renderPage(n);
+}
+
+/** Clears canvas pixels for a page outside the window (placeholder stays sized). */
+function unloadPage(container) {
+    if (container.dataset.rendered !== 'true') return;
+    container.dataset.rendered = 'false';
+    const canvas = container.querySelector('canvas');
+    if (canvas && canvas.width > 0) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    const dl = container.querySelector('.draw-layer');
+    if (dl && dl.width > 0) dl.getContext('2d').clearRect(0, 0, dl.width, dl.height);
+}
+
+/** Renders pages [cur-WINDOW, cur+WINDOW] and unloads everything outside. */
+function managePageWindow(pageNum) {
+    const wS = Math.max(1, pageNum - PAGE_WINDOW);
+    const wE = Math.min(totalPages, pageNum + PAGE_WINDOW);
+    document.querySelectorAll('.pdf-page-container').forEach(c => {
+        const n = parseInt(c.dataset.page);
+        if (n >= wS && n <= wE) {
+            renderPage(n); // no-op if already rendered
+        } else {
+            unloadPage(c);
+        }
+    });
 }
 
 /* ── Scroll observer ───────────────────────────────────── */
@@ -559,9 +612,7 @@ function setupScrollObserver() {
             const n = parseInt(entry.target.dataset.page);
             currentPage = n;
             document.getElementById('pageInput').value = n;
-            for (let i = n - 2; i <= n + 2; i++) {
-                if (i >= 1 && i <= totalPages) renderPage(i);
-            }
+            managePageWindow(n);
             scheduleProgressSave();
         });
     }, { root: document.getElementById('pdfViewport'), threshold: 0.3 });
@@ -583,7 +634,11 @@ function scheduleProgressSave() {
 
 function scrollToPage(n) {
     const c = document.querySelector(`.pdf-page-container[data-page="${n}"]`);
-    if (c) { c.scrollIntoView({ behavior: 'instant', block: 'start' }); currentPage = n; document.getElementById('pageInput').value = n; }
+    if (!c) return;
+    c.scrollIntoView({ behavior: 'instant', block: 'start' });
+    currentPage = n;
+    document.getElementById('pageInput').value = n;
+    managePageWindow(n); // render window immediately, don't wait for observer
 }
 function readerPageStep(delta) { scrollToPage(Math.max(1, Math.min(totalPages, currentPage + delta))); }
 function readerGoToPage(val) { const n = parseInt(val); if (n >= 1 && n <= totalPages) scrollToPage(n); }
