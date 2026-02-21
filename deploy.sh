@@ -113,6 +113,10 @@ else
     echo "⚠️  stock_fetcher.py not found"
 fi
 
+### Loading environment variables for Java process
+echo "🔐 Loading environment variables for Java process..."
+source load_env.fish
+
 ### Start backend
 echo "▶️ Starting backend..."
 cd build/libs
