@@ -113,9 +113,16 @@ else
     echo "⚠️  stock_fetcher.py not found"
 fi
 
-### Loading environment variables for Java process
+### Load environment variables for Java process
 echo "🔐 Loading environment variables for Java process..."
-source load_env.fish
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+    echo "✓ Loaded $(grep -c -v '^\s*#\|^\s*$' "$SCRIPT_DIR/.env") variables from .env"
+else
+    echo "⚠️  .env not found at $SCRIPT_DIR/.env — Java may be missing secrets"
+fi
 
 ### Start backend
 echo "▶️ Starting backend..."
