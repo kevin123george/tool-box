@@ -62,7 +62,11 @@ let activeGroup    = null; // null = All
 /* ── Init ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     requireAuth();
-    loadLibrary();
+    // After library loads, check URL hash to restore an open reader on refresh
+    loadLibrary().then(() => {
+        const id = location.hash.slice(1);
+        if (id) openReader(id);
+    });
 
     // Close floating pickers/bubbles on outside click
     document.addEventListener('click', e => {
@@ -406,6 +410,8 @@ function uploadFileWithProgress(file, group, onProgress) {
 ========================================================== */
 
 async function openReader(id) {
+    // Persist open PDF in URL so page refresh restores the reader
+    history.replaceState(null, '', '#' + id);
     currentPdfId   = id;
     allAnnotations = [];
     pdfJsDoc       = null;
@@ -461,6 +467,7 @@ async function openReader(id) {
 }
 
 function closeReader() {
+    history.replaceState(null, '', location.pathname + location.search);
     cancelNoteMode();
     deactivateMarker();
     deactivatePen();
@@ -878,14 +885,17 @@ function hideColorPicker() {
 }
 
 async function saveHighlight(color) {
+    // Capture before hideColorPicker() nulls them out
+    const range  = _savedRange;
+    const pageEl = _savedPageEl;
     hideColorPicker();
-    if (!_savedRange || !_savedPageEl) return;
-    const pageNum = parseInt(_savedPageEl.dataset.page);
-    const canvas  = _savedPageEl.querySelector('canvas');
-    const pageW   = canvas?.width  || _savedPageEl.offsetWidth;
-    const pageH   = canvas?.height || _savedPageEl.offsetHeight;
-    const containerRect = _savedPageEl.getBoundingClientRect();
-    const rects = Array.from(_savedRange.getClientRects())
+    if (!range || !pageEl) return;
+    const pageNum = parseInt(pageEl.dataset.page);
+    const canvas  = pageEl.querySelector('canvas');
+    const pageW   = canvas?.width  || pageEl.offsetWidth;
+    const pageH   = canvas?.height || pageEl.offsetHeight;
+    const containerRect = pageEl.getBoundingClientRect();
+    const rects = Array.from(range.getClientRects())
         .filter(r => r.width > 0 && r.height > 0)
         .map(r => ({
             x:      (r.left - containerRect.left) / pageW,
@@ -893,7 +903,7 @@ async function saveHighlight(color) {
             width:  r.width  / pageW,
             height: r.height / pageH,
         }));
-    const selectedText = _savedRange.toString();
+    const selectedText = range.toString();
     window.getSelection()?.removeAllRanges();
     if (!rects.length) return;
     try {
@@ -906,7 +916,7 @@ async function saveHighlight(color) {
         const saved = await res.json();
         allAnnotations.push(saved);
         _annotHistory.push(saved.id);
-        drawAnnotationsForPage(pageNum, _savedPageEl, pageW, pageH);
+        drawAnnotationsForPage(pageNum, pageEl, pageW, pageH);
         renderAnnotSidebar();
     } catch { showToast('Failed to save highlight', 'error'); }
 }
