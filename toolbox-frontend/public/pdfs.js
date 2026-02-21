@@ -564,6 +564,61 @@ async function buildPagePlaceholders(startPage = 1) {
     // Annotations are also loaded before that call, so first render is complete.
 }
 
+/**
+ * Renders selectable/copyable text over the canvas.
+ * Tries the PDF.js 4.x TextLayer class first; falls back to building spans
+ * manually from page.getTextContent() if TextLayer is not exported by the
+ * CDN build (it lives in pdf_viewer.mjs in some versions).
+ */
+async function renderTextLayer(page, vp, container) {
+    const div = container.querySelector('.textLayer');
+    if (!div) return;
+    div.innerHTML = '';
+    const lib = window.__pdfjsLib;
+
+    if (lib?.TextLayer) {
+        try {
+            const tl = new lib.TextLayer({
+                textContentSource: page.streamTextContent(),
+                container: div,
+                viewport: vp,
+            });
+            await tl.render();
+            return;
+        } catch (_) { /* fall through to manual */ }
+    }
+
+    // Manual fallback: position spans using viewport coordinate math
+    try {
+        const tc = await page.getTextContent();
+        for (const item of tc.items) {
+            if (!('str' in item) || !item.str) continue;
+            const span = document.createElement('span');
+            span.textContent = item.str;
+
+            // Convert PDF text-matrix origin to CSS pixel position
+            const [x, y] = vp.convertToViewportPoint(item.transform[4], item.transform[5]);
+            // Font height in CSS pixels (a/b components encode font scale in PDF units)
+            const fontH = Math.hypot(item.transform[0], item.transform[1]) * scale;
+            const angle = Math.atan2(item.transform[1], item.transform[0]);
+
+            span.style.position       = 'absolute';
+            span.style.left           = x + 'px';
+            span.style.top            = (y - fontH) + 'px';
+            span.style.fontSize       = fontH + 'px';
+            span.style.fontFamily     = 'sans-serif';
+            span.style.color          = 'transparent';
+            span.style.whiteSpace     = 'pre';
+            span.style.cursor         = 'text';
+            span.style.transformOrigin = '0% 0%';
+            if (Math.abs(angle) > 0.01) {
+                span.style.transform = `rotate(${-angle}rad)`;
+            }
+            div.appendChild(span);
+        }
+    } catch (_) { /* scanned / image-only page — no text */ }
+}
+
 async function renderPage(pageNum) {
     const container = document.querySelector(`.pdf-page-container[data-page="${pageNum}"]`);
     if (!container || container.dataset.rendered === 'true') return;
@@ -582,23 +637,7 @@ async function renderPage(pageNum) {
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
 
     // Text layer — makes page text selectable/copyable
-    const textLayerDiv = container.querySelector('.textLayer');
-    if (textLayerDiv) {
-        textLayerDiv.innerHTML = '';
-        textLayerDiv.style.width  = vp.width  + 'px';
-        textLayerDiv.style.height = vp.height + 'px';
-        const lib = window.__pdfjsLib;
-        if (lib?.TextLayer) {
-            try {
-                const tl = new lib.TextLayer({
-                    textContentSource: page.streamTextContent(),
-                    container: textLayerDiv,
-                    viewport: vp,
-                });
-                await tl.render();
-            } catch (_) { /* page has no text layer (e.g. scanned image) */ }
-        }
-    }
+    await renderTextLayer(page, vp, container);
 
     drawAnnotationsForPage(pageNum, container, vp.width, vp.height);
 }
