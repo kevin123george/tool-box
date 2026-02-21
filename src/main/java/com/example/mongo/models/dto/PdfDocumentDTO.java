@@ -11,6 +11,7 @@ public class PdfDocumentDTO {
   private long fileSize;
   private int totalPages;
   private int lastPage;
+  private String group;
   private Instant lastReadAt;
   private Instant createdAt;
   private Instant updatedAt;
@@ -24,6 +25,7 @@ public class PdfDocumentDTO {
     this.fileSize = doc.getFileSize();
     this.totalPages = doc.getTotalPages();
     this.lastPage = doc.getLastPage();
+    this.group = doc.getGroup();
     this.lastReadAt = doc.getLastReadAt();
     this.createdAt = doc.getCreatedAt();
     this.updatedAt = doc.getUpdatedAt();
@@ -56,6 +58,10 @@ public class PdfDocumentDTO {
 
   public int getLastPage() {
     return lastPage;
+  }
+
+  public String getGroup() {
+    return group;
   }
 
   public Instant getLastReadAt() {

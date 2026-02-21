@@ -22,6 +22,7 @@ public class PdfDocument {
   private long fileSize;
   private int totalPages;
   private String gridFsFileId;
+  private String group;
   private int lastPage = 1;
   private Instant lastReadAt;
 

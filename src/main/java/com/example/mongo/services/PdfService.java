@@ -8,6 +8,7 @@ import com.example.mongo.models.dto.PdfDocumentDTO;
 import com.example.mongo.repos.PdfAnnotationRepository;
 import com.example.mongo.repos.PdfDocumentRepository;
 import com.mongodb.client.gridfs.model.GridFSFile;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -39,17 +40,13 @@ public class PdfService {
         .orElseThrow(() -> new ResourceNotFoundException("PdfDocument", "id", id));
   }
 
-  public PdfDocumentDTO upload(MultipartFile file) throws IOException {
-    if (file.isEmpty()) {
-      throw new IllegalArgumentException("File is empty");
-    }
-    String contentType = file.getContentType();
-    if (contentType == null || !contentType.equals("application/pdf")) {
+  public PdfDocumentDTO upload(MultipartFile file, String group) throws IOException {
+    if (file.isEmpty()) throw new IllegalArgumentException("File is empty");
+    String ct = file.getContentType();
+    if (ct == null || !ct.equals("application/pdf"))
       throw new IllegalArgumentException("Only PDF files are allowed");
-    }
-    if (file.getSize() > MAX_FILE_SIZE) {
+    if (file.getSize() > MAX_FILE_SIZE)
       throw new IllegalArgumentException("File exceeds 500 MB limit");
-    }
 
     ObjectId gridFsId =
         gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), "application/pdf");
@@ -59,6 +56,7 @@ public class PdfService {
     doc.setFilename(file.getOriginalFilename());
     doc.setFileSize(file.getSize());
     doc.setGridFsFileId(gridFsId.toString());
+    doc.setGroup(group != null && !group.isBlank() ? group.trim() : null);
     doc.setTotalPages(0);
     doc.setLastPage(1);
 
@@ -70,22 +68,67 @@ public class PdfService {
     return pdfDocumentRepository.findAllByUserId(userId).stream().map(PdfDocumentDTO::new).toList();
   }
 
+  /** Returns the stored file size without loading the blob. */
+  public long getFileSize(String id) {
+    return findOwned(id).getFileSize();
+  }
+
+  /** Full file stream. */
   public InputStream getFileStream(String id) throws IOException {
-    PdfDocument doc = findOwned(id);
+    return openGridFsStream(findOwned(id));
+  }
+
+  /** Partial (range) stream: skips to {@code start} and limits to {@code length} bytes. */
+  public InputStream getFileStreamRange(String id, long start, long length) throws IOException {
+    InputStream full = openGridFsStream(findOwned(id));
+    // skip() on GridFsInputStream reads + discards, but GridFS chunks are small (255 KB)
+    // so this is acceptable for typical range sizes PDF.js requests (64 KB chunks).
+    if (start > 0) {
+      long skipped = 0;
+      while (skipped < start) {
+        long n = full.skip(start - skipped);
+        if (n <= 0) break;
+        skipped += n;
+      }
+    }
+    return bounded(full, length);
+  }
+
+  private InputStream openGridFsStream(PdfDocument doc) throws IOException {
     GridFSFile gridFsFile =
         gridFsTemplate.findOne(
             new Query(Criteria.where("_id").is(new ObjectId(doc.getGridFsFileId()))));
-    if (gridFsFile == null) {
-      throw new ResourceNotFoundException("PdfFile", "id", id);
-    }
+    if (gridFsFile == null) throw new ResourceNotFoundException("PdfFile", "id", doc.getId());
     GridFsResource resource = gridFsTemplate.getResource(gridFsFile);
     return resource.getInputStream();
+  }
+
+  /** Wraps a stream so at most {@code limit} bytes can be read. */
+  private static InputStream bounded(InputStream in, long limit) {
+    return new FilterInputStream(in) {
+      private long remaining = limit;
+
+      @Override
+      public int read() throws IOException {
+        if (remaining <= 0) return -1;
+        int b = super.read();
+        if (b != -1) remaining--;
+        return b;
+      }
+
+      @Override
+      public int read(byte[] b, int off, int len) throws IOException {
+        if (remaining <= 0) return -1;
+        int n = super.read(b, off, (int) Math.min(len, remaining));
+        if (n > 0) remaining -= n;
+        return n;
+      }
+    };
   }
 
   public void delete(String id) {
     PdfDocument doc = findOwned(id);
     String userId = authUtils.getCurrentUserId();
-    // Delete GridFS file
     if (doc.getGridFsFileId() != null) {
       gridFsTemplate.delete(
           new Query(Criteria.where("_id").is(new ObjectId(doc.getGridFsFileId()))));
@@ -110,21 +153,26 @@ public class PdfService {
     return new PdfDocumentDTO(doc);
   }
 
+  public PdfDocumentDTO updateGroup(String id, String group) {
+    PdfDocument doc = findOwned(id);
+    doc.setGroup(group != null && !group.isBlank() ? group.trim() : null);
+    return new PdfDocumentDTO(pdfDocumentRepository.save(doc));
+  }
+
   public List<PdfAnnotation> getAnnotations(String pdfId) {
     PdfDocument doc = findOwned(pdfId);
     return pdfAnnotationRepository.findAllByPdfIdAndUserId(pdfId, doc.getUserId());
   }
 
   public PdfAnnotation createAnnotation(String pdfId, PdfAnnotation annotation) {
-    findOwned(pdfId); // ownership guard
-    String userId = authUtils.getCurrentUserId();
+    findOwned(pdfId);
     annotation.setPdfId(pdfId);
-    annotation.setUserId(userId);
+    annotation.setUserId(authUtils.getCurrentUserId());
     return pdfAnnotationRepository.save(annotation);
   }
 
   public void deleteAnnotation(String pdfId, String annotId) {
-    findOwned(pdfId); // ownership guard
+    findOwned(pdfId);
     String userId = authUtils.getCurrentUserId();
     pdfAnnotationRepository
         .findById(annotId)

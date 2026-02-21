@@ -10,25 +10,14 @@
     <link rel="stylesheet" href="styles.css">
     <style>
         /* ─── PDF viewport ─────────────────────────────────── */
-        #pdfViewport {
-            overflow-y: auto;
-            flex: 1;
-        }
+        #pdfViewport { overflow-y: auto; flex: 1; }
         .pdf-page-container {
             position: relative;
             margin: 0 auto 16px;
             display: block;
         }
-        .pdf-page-container canvas {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-        .annot-layer {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
+        .pdf-page-container canvas { display: block; width: 100%; height: auto; }
+        .annot-layer { position: absolute; inset: 0; pointer-events: none; }
         .annot-layer .hl-rect {
             position: absolute;
             mix-blend-mode: multiply;
@@ -55,8 +44,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
         #colorPicker button {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border-radius: 50%;
             border: 2px solid transparent;
             cursor: pointer;
@@ -65,8 +53,30 @@
         #colorPicker button:hover { transform: scale(1.2); }
         /* ─── Note mode cursor ─────────────────────────────── */
         body.note-mode #pdfViewport { cursor: crosshair; }
-        /* ─── Progress bar ─────────────────────────────────── */
+        /* ─── Marker mode ──────────────────────────────────── */
+        body.marker-mode #pdfViewport { cursor: crosshair; user-select: none; }
+        /* ─── Fullscreen ────────────────────────────────────── */
+        #readerView:fullscreen { height: 100vh !important; margin: 0 !important; }
+        #readerView:-moz-full-screen { height: 100vh !important; margin: 0 !important; }
+        /* ─── Reading progress bar ─────────────────────────── */
         .pdf-progress { height: 4px; background: oklch(var(--p)); border-radius: 2px; }
+        /* ─── Upload queue panel ───────────────────────────── */
+        #uploadQueue {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 8000;
+            width: 340px;
+            max-height: 420px;
+            overflow-y: auto;
+            display: none;
+        }
+        .upload-item-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: oklch(var(--p));
+            transition: width 0.2s;
+        }
     </style>
 </head>
 <body>
@@ -84,19 +94,22 @@
     ═══════════════════════════════════════════════════════ -->
     <div id="libraryView">
         <!-- Header -->
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight">PDF Reader</h1>
                 <p class="text-sm opacity-40 mt-0.5">Upload and read PDFs across all devices</p>
             </div>
-            <label class="btn btn-primary btn-sm gap-2" for="pdfUploadInput">
+            <label class="btn btn-primary btn-sm gap-2 cursor-pointer" for="pdfUploadInput">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/>
                 </svg>
-                Upload PDF
+                Upload PDFs
             </label>
-            <input id="pdfUploadInput" type="file" accept="application/pdf" class="hidden" onchange="handlePdfUpload(this)">
+            <input id="pdfUploadInput" type="file" accept="application/pdf" multiple class="hidden" onchange="handlePdfUpload(this)">
         </div>
+
+        <!-- Group filter tabs -->
+        <div id="groupTabs" class="flex flex-wrap gap-2 mb-5"></div>
 
         <!-- Grid -->
         <div id="pdfGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -111,49 +124,50 @@
 
         <!-- Sticky toolbar -->
         <div class="navbar bg-base-200 border-b border-base-300 px-3 gap-2 min-h-[48px] shrink-0 flex-wrap">
-            <!-- Back -->
             <button class="btn btn-ghost btn-sm btn-square" onclick="closeReader()" title="Back to library">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
                 </svg>
             </button>
-
-            <!-- Title -->
             <span id="readerTitle" class="text-sm font-medium truncate max-w-[140px] sm:max-w-xs opacity-70"></span>
-
             <div class="flex-1"></div>
-
-            <!-- Page nav -->
             <div class="flex items-center gap-1">
-                <button class="btn btn-ghost btn-xs btn-square" onclick="readerPageStep(-1)" title="Previous page">‹</button>
+                <button class="btn btn-ghost btn-xs btn-square" onclick="readerPageStep(-1)">‹</button>
                 <input id="pageInput" type="number" min="1" class="input input-bordered input-xs w-14 text-center" onchange="readerGoToPage(this.value)">
                 <span class="text-xs opacity-50">/ <span id="totalPagesLabel">—</span></span>
-                <button class="btn btn-ghost btn-xs btn-square" onclick="readerPageStep(1)" title="Next page">›</button>
+                <button class="btn btn-ghost btn-xs btn-square" onclick="readerPageStep(1)">›</button>
             </div>
-
-            <!-- Zoom -->
             <div class="flex items-center gap-1">
-                <button class="btn btn-ghost btn-xs" onclick="readerZoom(-0.25)" title="Zoom out">−</button>
+                <button class="btn btn-ghost btn-xs" onclick="readerZoom(-0.25)">−</button>
                 <span id="zoomLabel" class="text-xs opacity-50 w-10 text-center">150%</span>
-                <button class="btn btn-ghost btn-xs" onclick="readerZoom(+0.25)" title="Zoom in">+</button>
+                <button class="btn btn-ghost btn-xs" onclick="readerZoom(+0.25)">+</button>
             </div>
-
-            <!-- Add Note -->
-            <button id="addNoteBtn" class="btn btn-ghost btn-xs gap-1" onclick="startNoteMode()" title="Add sticky note">
-                <span>📝</span>
-                <span class="hidden sm:inline">Note</span>
+            <button id="addNoteBtn" class="btn btn-ghost btn-xs gap-1" onclick="startNoteMode()">
+                <span>📝</span><span class="hidden sm:inline">Note</span>
             </button>
-
-            <!-- Download -->
-            <button class="btn btn-ghost btn-xs gap-1" onclick="downloadCurrentPdf()" title="Download PDF">
+            <!-- Marker tool -->
+            <div class="relative">
+                <button id="markerBtn" class="btn btn-ghost btn-xs gap-1" onclick="toggleMarkerPicker()" title="Marker highlight">
+                    <span>🖊️</span><span class="hidden sm:inline">Marker</span>
+                </button>
+                <div id="markerColorRow" class="hidden absolute top-full left-0 mt-1 flex gap-1.5 p-2 bg-base-100 border border-base-300 rounded-lg shadow-xl z-[9999]">
+                    <button style="background:#facc15" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activateMarker('yellow')" title="Yellow"></button>
+                    <button style="background:#4ade80" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activateMarker('green')" title="Green"></button>
+                    <button style="background:#f472b6" class="w-5 h-5 rounded-full border-2 border-transparent hover:scale-110 transition-transform" onclick="activateMarker('pink')" title="Pink"></button>
+                </div>
+            </div>
+            <button class="btn btn-ghost btn-xs gap-1" onclick="downloadCurrentPdf()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
                 </svg>
                 <span class="hidden sm:inline">Download</span>
             </button>
-
-            <!-- Sidebar toggle (lg+) -->
-            <button class="btn btn-ghost btn-xs hidden lg:flex" onclick="toggleAnnotSidebar()" title="Annotations">
+            <button id="fullscreenBtn" class="btn btn-ghost btn-xs" onclick="toggleFullscreen()" title="Fullscreen">
+                <svg id="fullscreenIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
+                </svg>
+            </button>
+            <button class="btn btn-ghost btn-xs hidden lg:flex" onclick="toggleAnnotSidebar()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
                 </svg>
@@ -162,18 +176,35 @@
 
         <!-- Reader body -->
         <div class="flex flex-1 overflow-hidden">
-            <!-- PDF viewport -->
-            <div id="pdfViewport" class="flex-1 overflow-y-auto p-4 bg-base-300">
-                <!-- page containers injected by JS -->
-            </div>
-
-            <!-- Annotation sidebar (lg+) -->
+            <div id="pdfViewport" class="flex-1 overflow-y-auto p-4 bg-base-300"></div>
             <aside id="annotSidebar" class="hidden lg:flex flex-col w-72 shrink-0 border-l border-base-300 bg-base-100 overflow-y-auto">
                 <div class="p-3 border-b border-base-300 text-xs font-semibold uppercase tracking-widest opacity-50">Annotations</div>
-                <div id="annotSidebarList" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-                    <!-- populated by JS -->
-                </div>
+                <div id="annotSidebarList" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2"></div>
             </aside>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         UPLOAD QUEUE PANEL (fixed, bottom-right)
+    ═══════════════════════════════════════════════════════ -->
+    <div id="uploadQueue" class="card bg-base-100 border border-base-300 shadow-2xl">
+        <div class="card-body p-4 gap-3">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold" id="uploadQueueTitle">Uploading…</span>
+                <button class="btn btn-ghost btn-xs btn-square" onclick="dismissUploadQueue()" id="uploadQueueClose" style="display:none">✕</button>
+            </div>
+
+            <!-- Group assignment for this batch -->
+            <div class="flex items-center gap-2">
+                <span class="text-xs opacity-50 shrink-0">Group:</span>
+                <input id="uploadGroupInput" type="text" placeholder="e.g. Fiction (optional)"
+                       list="groupSuggestions"
+                       class="input input-bordered input-xs flex-1" />
+                <datalist id="groupSuggestions"></datalist>
+            </div>
+
+            <!-- File list -->
+            <div id="uploadQueueList" class="flex flex-col gap-2.5"></div>
         </div>
     </div>
 
