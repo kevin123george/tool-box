@@ -82,7 +82,7 @@
             group: 'Workspace',
             items: [
                 { key: 'memos', label: 'Memos', href: '/memos.html', icon: 'memos' },
-                { key: 'guide', label: 'README', href: '/guide.html', icon: 'guide' }
+                { key: 'guide', label: 'README', href: '/readme.html', icon: 'guide' }
             ]
         },
         {
