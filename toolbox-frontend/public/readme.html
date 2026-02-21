@@ -829,8 +829,10 @@ if (!_authed) {
 
     // Intercept nav link clicks — show sign-in toast instead of navigating
     document.addEventListener('click', e => {
-        const link = e.target.closest('#nav-placeholder a');
+        const link = e.target.closest('#drawerRoot a[href]');
         if (!link) return;
+        const href = link.getAttribute('href');
+        if (href === '/readme.html' || href === '#' || href === '') return;
         e.preventDefault();
         showToast('You need an account to use ToolBox. <a href="/login.html" class="underline font-semibold ml-1">Sign in / Register →</a>', 'info', null, 5000);
     }, true);
