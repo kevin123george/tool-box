@@ -99,9 +99,9 @@ public class DashboardController {
     SubscriptionSummaryDTO subSummary = subscriptionService.getSummary();
 
     // Get savings goals
-    double savingsGoalsSaved  = savingsGoalService.getTotalSaved();
+    double savingsGoalsSaved = savingsGoalService.getTotalSaved();
     double savingsGoalsTarget = savingsGoalService.getTotalTarget();
-    int savingsGoalsCount     = savingsGoalService.getAllGoals().size();
+    int savingsGoalsCount = savingsGoalService.getAllGoals().size();
 
     // Get fitness stats
     FitnessStats fitnessStats = fitnessService.calculateStats();

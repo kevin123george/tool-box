@@ -36,8 +36,13 @@ public class SystemStatsController {
             .map(
                 u ->
                     new UserSummaryDTO(
-                        u.getId(), u.getName(), u.getEmail(), u.getRole(),
-                        u.getCreatedAt(), u.getLastLoginAt(), u.getLastSeenAt()))
+                        u.getId(),
+                        u.getName(),
+                        u.getEmail(),
+                        u.getRole(),
+                        u.getCreatedAt(),
+                        u.getLastLoginAt(),
+                        u.getLastSeenAt()))
             .toList();
     return ResponseEntity.ok(users);
   }
@@ -67,62 +72,84 @@ public class SystemStatsController {
   }
 
   @PatchMapping("/users/{id}")
-  public ResponseEntity<?> editUser(@PathVariable String id, @RequestBody Map<String, String> body) {
+  public ResponseEntity<?> editUser(
+      @PathVariable String id, @RequestBody Map<String, String> body) {
     String currentUserId = authUtils.getCurrentUserId();
 
-    return userRepo.findById(id).map(user -> {
-      String name = body.get("name");
-      String email = body.get("email");
-      String newPassword = body.get("newPassword");
-      String role = body.get("role");
+    return userRepo
+        .findById(id)
+        .map(
+            user -> {
+              String name = body.get("name");
+              String email = body.get("email");
+              String newPassword = body.get("newPassword");
+              String role = body.get("role");
 
-      if (name != null && !name.isBlank()) user.setName(name.trim());
+              if (name != null && !name.isBlank()) user.setName(name.trim());
 
-      if (email != null && !email.isBlank() && !email.equalsIgnoreCase(user.getEmail())) {
-        if (userRepo.existsByEmail(email.trim())) {
-          return ResponseEntity.badRequest().body(Map.of("error", "Email already in use"));
-        }
-        user.setEmail(email.trim());
-      }
+              if (email != null && !email.isBlank() && !email.equalsIgnoreCase(user.getEmail())) {
+                if (userRepo.existsByEmail(email.trim())) {
+                  return ResponseEntity.badRequest().body(Map.of("error", "Email already in use"));
+                }
+                user.setEmail(email.trim());
+              }
 
-      if (newPassword != null && !newPassword.isBlank()) {
-        if (newPassword.length() < 6) {
-          return ResponseEntity.badRequest().body(Map.of("error", "Password must be at least 6 characters"));
-        }
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
-      }
+              if (newPassword != null && !newPassword.isBlank()) {
+                if (newPassword.length() < 6) {
+                  return ResponseEntity.badRequest()
+                      .body(Map.of("error", "Password must be at least 6 characters"));
+                }
+                user.setPasswordHash(passwordEncoder.encode(newPassword));
+              }
 
-      if (role != null && !role.equals(user.getRole())) {
-        if (!role.equals("USER") && !role.equals("ADMIN")) {
-          return ResponseEntity.badRequest().body(Map.of("error", "role must be USER or ADMIN"));
-        }
-        if (id.equals(currentUserId)) {
-          return ResponseEntity.badRequest().body(Map.of("error", "Cannot change your own role"));
-        }
-        user.setRole(role);
-      }
+              if (role != null && !role.equals(user.getRole())) {
+                if (!role.equals("USER") && !role.equals("ADMIN")) {
+                  return ResponseEntity.badRequest()
+                      .body(Map.of("error", "role must be USER or ADMIN"));
+                }
+                if (id.equals(currentUserId)) {
+                  return ResponseEntity.badRequest()
+                      .body(Map.of("error", "Cannot change your own role"));
+                }
+                user.setRole(role);
+              }
 
-      userRepo.save(user);
-      return ResponseEntity.ok(new UserSummaryDTO(
-          user.getId(), user.getName(), user.getEmail(), user.getRole(),
-          user.getCreatedAt(), user.getLastLoginAt(), user.getLastSeenAt()));
-    }).orElse(ResponseEntity.notFound().build());
+              userRepo.save(user);
+              return ResponseEntity.ok(
+                  new UserSummaryDTO(
+                      user.getId(),
+                      user.getName(),
+                      user.getEmail(),
+                      user.getRole(),
+                      user.getCreatedAt(),
+                      user.getLastLoginAt(),
+                      user.getLastSeenAt()));
+            })
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @PostMapping("/users/{id}/reset-link")
   public ResponseEntity<?> generateResetLink(@PathVariable String id, HttpServletRequest request) {
-    return userRepo.findById(id).map(user -> {
-      String token = UUID.randomUUID().toString();
-      user.setResetToken(token);
-      user.setResetTokenExpiry(Instant.now().plusSeconds(86400)); // 24h
-      userRepo.save(user);
+    return userRepo
+        .findById(id)
+        .map(
+            user -> {
+              String token = UUID.randomUUID().toString();
+              user.setResetToken(token);
+              user.setResetTokenExpiry(Instant.now().plusSeconds(86400)); // 24h
+              userRepo.save(user);
 
-      String baseUrl = request.getScheme() + "://" + request.getServerName()
-          + (request.getServerPort() != 80 && request.getServerPort() != 443
-              ? ":" + request.getServerPort() : "");
-      String resetUrl = baseUrl + "/reset-password.html?token=" + token;
-      return ResponseEntity.ok(Map.of("resetUrl", resetUrl, "expiresIn", "24 hours"));
-    }).orElse(ResponseEntity.notFound().build());
+              String baseUrl =
+                  request.getScheme()
+                      + "://"
+                      + request.getServerName()
+                      + (request.getServerPort() != 80 && request.getServerPort() != 443
+                          ? ":" + request.getServerPort()
+                          : "");
+              String resetUrl = baseUrl + "/reset-password.html?token=" + token;
+              return ResponseEntity.ok(Map.of("resetUrl", resetUrl, "expiresIn", "24 hours"));
+            })
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @DeleteMapping("/users/{id}")

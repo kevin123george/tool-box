@@ -82,7 +82,9 @@ public class FinancialCalendarService {
     }
 
     // Add workouts
-    List<WorkoutLog> workouts = workoutLogRepository.findByWorkoutDateBetweenAndUserId(start, end, authUtils.getCurrentUserId());
+    List<WorkoutLog> workouts =
+        workoutLogRepository.findByWorkoutDateBetweenAndUserId(
+            start, end, authUtils.getCurrentUserId());
     for (WorkoutLog workout : workouts) {
       if (workout.getWorkoutDate() != null) {
         String exerciseType =

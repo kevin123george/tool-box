@@ -48,10 +48,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         Long lastWrite = lastSeenWritten.get(userId);
         if (lastWrite == null || now - lastWrite > SEEN_THROTTLE_MS) {
           lastSeenWritten.put(userId, now);
-          userRepo.findById(userId).ifPresent(user -> {
-            user.setLastSeenAt(Instant.ofEpochMilli(now));
-            userRepo.save(user);
-          });
+          userRepo
+              .findById(userId)
+              .ifPresent(
+                  user -> {
+                    user.setLastSeenAt(Instant.ofEpochMilli(now));
+                    userRepo.save(user);
+                  });
         }
       }
     }

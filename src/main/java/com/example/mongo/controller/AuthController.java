@@ -56,30 +56,43 @@ public class AuthController {
   }
 
   @GetMapping("/reset-password/validate")
-  public ResponseEntity<?> validateResetToken(@org.springframework.web.bind.annotation.RequestParam String token) {
-    return userRepo.findByResetToken(token)
-        .filter(u -> u.getResetTokenExpiry() != null && Instant.now().isBefore(u.getResetTokenExpiry()))
-        .map(u -> ResponseEntity.ok(Map.of("valid", true, "name", u.getName(), "email", u.getEmail())))
-        .orElse(ResponseEntity.badRequest().body(Map.of("valid", false, "error", "Reset link is invalid or has expired")));
+  public ResponseEntity<?> validateResetToken(
+      @org.springframework.web.bind.annotation.RequestParam String token) {
+    return userRepo
+        .findByResetToken(token)
+        .filter(
+            u -> u.getResetTokenExpiry() != null && Instant.now().isBefore(u.getResetTokenExpiry()))
+        .map(
+            u ->
+                ResponseEntity.ok(
+                    Map.of("valid", true, "name", u.getName(), "email", u.getEmail())))
+        .orElse(
+            ResponseEntity.badRequest()
+                .body(Map.of("valid", false, "error", "Reset link is invalid or has expired")));
   }
 
   @PostMapping("/reset-password")
   public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
-    String token    = body.get("token");
+    String token = body.get("token");
     String password = body.get("newPassword");
     if (token == null || password == null || password.length() < 6) {
       return ResponseEntity.badRequest().body("Password must be at least 6 characters");
     }
-    return userRepo.findByResetToken(token)
-        .filter(u -> u.getResetTokenExpiry() != null && Instant.now().isBefore(u.getResetTokenExpiry()))
-        .map(u -> {
-          u.setPasswordHash(passwordEncoder.encode(password));
-          u.setResetToken(null);
-          u.setResetTokenExpiry(null);
-          userRepo.save(u);
-          return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
-        })
-        .orElse(ResponseEntity.badRequest().body(Map.of("error", "Reset link is invalid or has expired")));
+    return userRepo
+        .findByResetToken(token)
+        .filter(
+            u -> u.getResetTokenExpiry() != null && Instant.now().isBefore(u.getResetTokenExpiry()))
+        .map(
+            u -> {
+              u.setPasswordHash(passwordEncoder.encode(password));
+              u.setResetToken(null);
+              u.setResetTokenExpiry(null);
+              userRepo.save(u);
+              return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
+            })
+        .orElse(
+            ResponseEntity.badRequest()
+                .body(Map.of("error", "Reset link is invalid or has expired")));
   }
 
   @GetMapping("/me")
