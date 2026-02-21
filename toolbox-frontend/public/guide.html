@@ -11,6 +11,8 @@
     <style>
         .guide-toc a.active { color: oklch(var(--p)); font-weight: 600; }
         .guide-section { scroll-margin-top: 80px; }
+        .jargon-tag { cursor: pointer; transition: opacity .15s; }
+        .jargon-tag:hover { opacity: .7; }
     </style>
 </head>
 <body>
@@ -59,6 +61,7 @@
             <a href="#memos"        class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Memos</a>
             <a href="#system"       class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">System</a>
             <a href="#admin"        class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Admin</a>
+            <a href="#glossary"     class="px-2 py-1 rounded-lg hover:bg-base-200 opacity-60 hover:opacity-100 transition-all">Glossary</a>
         </nav>
     </aside>
 
@@ -144,6 +147,16 @@
                         <p class="text-sm opacity-70">Set your retirement target. Fill in your target yearly income, expected return rate, tax rate, yearly contribution, and current age. ToolBox calculates your required corpus, years to goal, and projected FIRE age automatically. The current corpus is pulled live from your bank balances.</p>
                         <div class="divider my-2 text-xs opacity-30">Savings Goals</div>
                         <p class="text-sm opacity-70">Create named savings goals (e.g. "Holiday fund") with a target amount and optional deadline. Contribute to them incrementally and track progress with a bar.</p>
+                        <!-- Key terms -->
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="4">
+                                <a href="#term-fire" class="badge badge-ghost badge-sm jargon-tag tag-link">FIRE</a>
+                                <a href="#term-corpus" class="badge badge-ghost badge-sm jargon-tag tag-link">Corpus</a>
+                                <a href="#term-savings-rate" class="badge badge-ghost badge-sm jargon-tag tag-link">Savings Rate</a>
+                                <a href="#term-net-worth" class="badge badge-ghost badge-sm jargon-tag tag-link">Net Worth</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -160,6 +173,13 @@
                             <li>Set up recurring transactions (weekly / monthly / yearly) for predictable income or expenses</li>
                             <li>Compare multiple months with the budget comparison chart</li>
                         </ul>
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="4">
+                                <a href="#term-savings-rate" class="badge badge-ghost badge-sm jargon-tag tag-link">Savings Rate</a>
+                                <a href="#term-budget-adherence" class="badge badge-ghost badge-sm jargon-tag tag-link">Budget Adherence</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -227,6 +247,15 @@
                             <li><strong>Capital Gains</strong> — see realised and unrealised gains broken down by holding.</li>
                             <li><strong>Allocation</strong> — pie chart of your portfolio split. Set target % per stock and see rebalancing suggestions.</li>
                         </ul>
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="4">
+                                <a href="#term-dividend-yield" class="badge badge-ghost badge-sm jargon-tag tag-link">Dividend Yield</a>
+                                <a href="#term-capital-gains" class="badge badge-ghost badge-sm jargon-tag tag-link">Capital Gains</a>
+                                <a href="#term-unrealised" class="badge badge-ghost badge-sm jargon-tag tag-link">Unrealised P&amp;L</a>
+                                <a href="#term-market-cap" class="badge badge-ghost badge-sm jargon-tag tag-link">Market Cap</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -240,6 +269,21 @@
                             <li>Performance metrics: CAGR, Sharpe ratio, max drawdown, alpha, beta</li>
                             <li>Export chart as PNG</li>
                         </ul>
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="5">
+                                <a href="#term-sma" class="badge badge-ghost badge-sm jargon-tag tag-link">SMA</a>
+                                <a href="#term-ema" class="badge badge-ghost badge-sm jargon-tag tag-link">EMA</a>
+                                <a href="#term-bollinger" class="badge badge-ghost badge-sm jargon-tag tag-link">Bollinger Bands</a>
+                                <a href="#term-rsi" class="badge badge-ghost badge-sm jargon-tag tag-link">RSI</a>
+                                <a href="#term-macd" class="badge badge-ghost badge-sm jargon-tag tag-link">MACD</a>
+                                <a href="#term-cagr" class="badge badge-ghost badge-sm jargon-tag tag-link">CAGR</a>
+                                <a href="#term-sharpe" class="badge badge-ghost badge-sm jargon-tag tag-link">Sharpe Ratio</a>
+                                <a href="#term-drawdown" class="badge badge-ghost badge-sm jargon-tag tag-link">Max Drawdown</a>
+                                <a href="#term-alpha" class="badge badge-ghost badge-sm jargon-tag tag-link">Alpha</a>
+                                <a href="#term-beta" class="badge badge-ghost badge-sm jargon-tag tag-link">Beta</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -265,6 +309,19 @@
                             <li>Charts: Revenue history, EPS beat/miss, Free Cash Flow, Margin trends</li>
                             <li>Historical price chart with SMA/EMA/Bollinger toggle</li>
                         </ul>
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="5">
+                                <a href="#term-pe" class="badge badge-ghost badge-sm jargon-tag tag-link">P/E Ratio</a>
+                                <a href="#term-eps" class="badge badge-ghost badge-sm jargon-tag tag-link">EPS</a>
+                                <a href="#term-roe" class="badge badge-ghost badge-sm jargon-tag tag-link">ROE</a>
+                                <a href="#term-dividend-yield" class="badge badge-ghost badge-sm jargon-tag tag-link">Dividend Yield</a>
+                                <a href="#term-fcf" class="badge badge-ghost badge-sm jargon-tag tag-link">Free Cash Flow</a>
+                                <a href="#term-profit-margin" class="badge badge-ghost badge-sm jargon-tag tag-link">Profit Margin</a>
+                                <a href="#term-pb" class="badge badge-ghost badge-sm jargon-tag tag-link">P/B Ratio</a>
+                                <a href="#term-roa" class="badge badge-ghost badge-sm jargon-tag tag-link">ROA</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -278,6 +335,17 @@
                             <li>Result: intrinsic value per share, margin of safety, verdict (Undervalued / Fair / Overvalued)</li>
                             <li>Sensitivity analysis table showing how value changes with different assumptions</li>
                         </ul>
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="4">
+                                <a href="#term-dcf" class="badge badge-ghost badge-sm jargon-tag tag-link">DCF</a>
+                                <a href="#term-fcf" class="badge badge-ghost badge-sm jargon-tag tag-link">Free Cash Flow</a>
+                                <a href="#term-wacc" class="badge badge-ghost badge-sm jargon-tag tag-link">WACC</a>
+                                <a href="#term-terminal-growth" class="badge badge-ghost badge-sm jargon-tag tag-link">Terminal Growth Rate</a>
+                                <a href="#term-intrinsic" class="badge badge-ghost badge-sm jargon-tag tag-link">Intrinsic Value</a>
+                                <a href="#term-mos" class="badge badge-ghost badge-sm jargon-tag tag-link">Margin of Safety</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -291,6 +359,17 @@
                             <li>Sort by: Market Cap, P/E, Dividend Yield, ROE, Profit Margin</li>
                             <li>Click any row to view the full fundamentals for that stock</li>
                         </ul>
+                        <div class="mt-3 pt-3 border-t border-base-300">
+                            <span class="text-xs opacity-30 uppercase tracking-widest mr-2">Key terms</span>
+                            <div class="inline-flex flex-wrap gap-1 items-center terms-cloud" data-limit="4">
+                                <a href="#term-pe" class="badge badge-ghost badge-sm jargon-tag tag-link">P/E Ratio</a>
+                                <a href="#term-market-cap" class="badge badge-ghost badge-sm jargon-tag tag-link">Market Cap</a>
+                                <a href="#term-dividend-yield" class="badge badge-ghost badge-sm jargon-tag tag-link">Dividend Yield</a>
+                                <a href="#term-roe" class="badge badge-ghost badge-sm jargon-tag tag-link">ROE</a>
+                                <a href="#term-de" class="badge badge-ghost badge-sm jargon-tag tag-link">Debt/Equity</a>
+                                <a href="#term-profit-margin" class="badge badge-ghost badge-sm jargon-tag tag-link">Profit Margin</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -315,7 +394,7 @@
                             </ul>
                         </div>
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Plans & Templates</p>
+                            <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Plans &amp; Templates</p>
                             <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
                                 <li>Create <strong>templates</strong> — a named workout with type, estimated duration, and exercise list</li>
                                 <li>Create <strong>plans</strong> — assign templates to days of the week (e.g. Push on Mon/Thu, Pull on Tue/Fri)</li>
@@ -325,7 +404,7 @@
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Stats & Analytics</p>
+                        <p class="text-xs font-semibold uppercase tracking-widest opacity-40 mb-2">Stats &amp; Analytics</p>
                         <ul class="text-sm opacity-70 space-y-1 list-disc list-inside">
                             <li>KPIs: current streak, longest streak, workouts this week, total workouts</li>
                             <li>Workouts by type pie chart</li>
@@ -415,6 +494,320 @@
             </div>
         </section>
 
+        <!-- Glossary -->
+        <section id="glossary" class="guide-section">
+            <h2 class="text-base font-bold uppercase tracking-widest opacity-40 mb-3">Financial Glossary</h2>
+            <div class="card bg-base-200 shadow-sm">
+                <div class="card-body gap-2">
+                    <p class="text-sm opacity-50 mb-2">Plain-English explanations for every financial term used in ToolBox.</p>
+
+                    <!-- Valuation -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-2 mb-1">Valuation</p>
+
+                    <div id="term-pe" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">P/E Ratio <span class="text-xs font-normal opacity-40 ml-1">Price-to-Earnings</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Stock price divided by annual earnings per share (EPS). It tells you how many dollars investors pay for each $1 of profit the company makes.</p>
+                            <p class="mt-1 text-xs opacity-60">Rule of thumb: &lt;15 = cheap, 15–25 = fair, &gt;25 = expensive — but always compare within the same sector. A tech growth company at P/E 40 can still be reasonable.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-eps" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">EPS <span class="text-xs font-normal opacity-40 ml-1">Earnings Per Share</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Net profit ÷ total shares outstanding. Shows how profitable a company is on a per-share basis. Growing EPS over time is a key sign of a healthy business.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-pb" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">P/B Ratio <span class="text-xs font-normal opacity-40 ml-1">Price-to-Book</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Stock price ÷ book value per share. Book value is what the company would be worth if it sold all assets and paid off all debt. P/B &lt; 1 may signal undervaluation — or that the company has serious problems.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-market-cap" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Market Cap <span class="text-xs font-normal opacity-40 ml-1">Market Capitalisation</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Total market value of all a company's shares: stock price × shares outstanding.</p>
+                            <ul class="list-disc list-inside mt-1 text-xs opacity-60 space-y-0.5">
+                                <li>Small-cap: under $2 billion — higher risk, higher growth potential</li>
+                                <li>Mid-cap: $2–10 billion</li>
+                                <li>Large-cap: over $10 billion — more stable</li>
+                                <li>Mega-cap: over $200 billion (Apple, Microsoft, etc.)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="term-intrinsic" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Intrinsic Value</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The "true" estimated worth of a stock based on fundamentals (cash flows, growth, risk), not what the market currently prices it at. If intrinsic value &gt; market price, the stock may be undervalued.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-mos" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Margin of Safety</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>(Intrinsic Value − Current Price) ÷ Intrinsic Value × 100. A buffer to protect against estimation errors. Buying at a big margin of safety means even if your projections are slightly off, you still don't overpay.</p>
+                            <p class="mt-1 text-xs opacity-60">Rule of thumb: &gt;30% is considered conservative. Coined by Benjamin Graham (Warren Buffett's mentor).</p>
+                        </div>
+                    </div>
+
+                    <div id="term-dcf" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">DCF <span class="text-xs font-normal opacity-40 ml-1">Discounted Cash Flow</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>A valuation method that estimates a company's value by projecting its future free cash flows and then "discounting" them back to today's money (because a dollar tomorrow is worth less than a dollar today). The discount rate used is usually the WACC.</p>
+                        </div>
+                    </div>
+
+                    <!-- Profitability -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-4 mb-1">Profitability</p>
+
+                    <div id="term-roe" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">ROE <span class="text-xs font-normal opacity-40 ml-1">Return on Equity</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Net income ÷ shareholders' equity. Measures how efficiently a company uses the money shareholders have invested to generate profit.</p>
+                            <p class="mt-1 text-xs opacity-60">Rule of thumb: &gt;15% is generally good. Warren Buffett looks for companies with consistently high ROE.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-roa" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">ROA <span class="text-xs font-normal opacity-40 ml-1">Return on Assets</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Net income ÷ total assets. Shows how well a company uses all its assets (including debt-financed ones) to generate profit. Useful for comparing asset-heavy industries like manufacturing.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-profit-margin" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Profit Margin</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Net profit ÷ revenue × 100. Shows what percentage of every dollar of sales ends up as actual profit. A 20% margin means the company keeps $0.20 for every $1 it earns.</p>
+                            <p class="mt-1 text-xs opacity-60">Varies widely by industry. Software companies can exceed 30%; grocery stores might be under 3%.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-fcf" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">FCF <span class="text-xs font-normal opacity-40 ml-1">Free Cash Flow</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Operating cash flow minus capital expenditures (money spent on buildings, equipment, etc.). Often called the "real" profit because it's the cash actually available to reward shareholders, pay debt, or reinvest — before any accounting adjustments.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-de" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Debt/Equity Ratio</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Total debt ÷ shareholders' equity. Measures how much of the company is financed by debt vs owner money. High D/E = more leverage = amplified gains and losses.</p>
+                            <p class="mt-1 text-xs opacity-60">Rule of thumb: &lt;1 is conservative. Some stable industries (utilities, real estate) tolerate higher ratios.</p>
+                        </div>
+                    </div>
+
+                    <!-- Income -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-4 mb-1">Income</p>
+
+                    <div id="term-dividend-yield" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Dividend Yield</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Annual dividend per share ÷ current stock price × 100. Shows the income return you earn just from holding the stock. A 4% yield means you earn $4/year per $100 invested, regardless of price movement.</p>
+                            <p class="mt-1 text-xs opacity-60">Very high yields (&gt;8%) can be a warning sign — the market may be pricing in a dividend cut.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-capital-gains" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Capital Gains</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Profit from selling an investment for more than you paid. If you buy a stock at $50 and sell at $70, your capital gain is $20. Capital gains are usually taxable.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-unrealised" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Unrealised P&amp;L</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Profit or loss on holdings you still own (not yet sold). It exists "on paper" and becomes realised only when you sell. Unrealised gains are not taxable until you sell.</p>
+                        </div>
+                    </div>
+
+                    <!-- DCF Inputs -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-4 mb-1">DCF Inputs</p>
+
+                    <div id="term-wacc" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">WACC <span class="text-xs font-normal opacity-40 ml-1">Weighted Average Cost of Capital</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The blended rate a company is expected to pay across all its sources of financing (debt + equity), weighted by proportion. Used as the discount rate in DCF — it represents the minimum return the business must earn to satisfy all investors.</p>
+                            <p class="mt-1 text-xs opacity-60">Typical range: 6–12% for most companies. Higher WACC → lower intrinsic value.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-terminal-growth" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Terminal Growth Rate</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The assumed annual growth rate of a company's cash flows after the explicit forecast period (typically 5–10 years), running forever. Usually set close to long-run GDP growth.</p>
+                            <p class="mt-1 text-xs opacity-60">Rule of thumb: 2–3%. Never higher than the overall economy's long-run growth — a company can't grow faster than the economy forever.</p>
+                        </div>
+                    </div>
+
+                    <!-- Technical Analysis -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-4 mb-1">Technical Analysis</p>
+
+                    <div id="term-sma" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">SMA <span class="text-xs font-normal opacity-40 ml-1">Simple Moving Average</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The average closing price over the last N days, updated daily. Smooths out daily noise. Common periods: 50-day (short trend) and 200-day (long trend).</p>
+                            <p class="mt-1 text-xs opacity-60">Signal: price above SMA = bullish momentum. "Golden cross" (50-day crossing above 200-day) = strong bullish signal.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-ema" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">EMA <span class="text-xs font-normal opacity-40 ml-1">Exponential Moving Average</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Like SMA but recent prices are weighted more heavily. Reacts faster to new price moves. Traders often prefer EMA when they want a more responsive indicator.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-bollinger" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Bollinger Bands</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Three lines: a 20-day SMA in the middle, and upper/lower bands set 2 standard deviations away. The bands widen when volatility is high and squeeze when it's low.</p>
+                            <p class="mt-1 text-xs opacity-60">Signal: price near the upper band = potentially overbought. Price near lower band = potentially oversold. A "Bollinger squeeze" often precedes a big move.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-rsi" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">RSI <span class="text-xs font-normal opacity-40 ml-1">Relative Strength Index</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>A momentum oscillator on a 0–100 scale that compares the size of recent gains vs recent losses. Measures how fast and how much a price has moved.</p>
+                            <p class="mt-1 text-xs opacity-60">Signal: &gt;70 = overbought (possible pullback). &lt;30 = oversold (possible bounce). Works best in sideways markets; in strong trends, RSI can stay extreme for a long time.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-macd" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">MACD <span class="text-xs font-normal opacity-40 ml-1">Moving Average Convergence Divergence</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Shows the relationship between two EMAs (typically 12-day and 26-day). The MACD line is their difference; the Signal line is a 9-day EMA of MACD. The histogram shows the gap between them.</p>
+                            <p class="mt-1 text-xs opacity-60">Signal: MACD crossing above Signal line = bullish. Crossing below = bearish. Divergence between MACD and price can warn of trend reversals.</p>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-4 mb-1">Performance &amp; Risk</p>
+
+                    <div id="term-cagr" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">CAGR <span class="text-xs font-normal opacity-40 ml-1">Compound Annual Growth Rate</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The steady year-on-year rate at which an investment would have grown from its start to its end value, assuming compounding. Smooths out volatile yearly returns into a single representative number.</p>
+                            <p class="mt-1 text-xs opacity-60">Example: $10,000 growing to $16,105 over 5 years = CAGR of 10% per year. The S&amp;P 500's long-run CAGR is roughly 10% before inflation.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-sharpe" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Sharpe Ratio</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>(Portfolio Return − Risk-free Rate) ÷ Standard Deviation of Returns. Measures how much return you earn per unit of risk taken. A higher Sharpe ratio means better risk-adjusted performance.</p>
+                            <p class="mt-1 text-xs opacity-60">Rule of thumb: &lt;1 = subpar, 1–2 = good, &gt;2 = excellent. The risk-free rate is typically the current government bond yield (~4–5%).</p>
+                        </div>
+                    </div>
+
+                    <div id="term-drawdown" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Max Drawdown</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The largest peak-to-trough decline in portfolio value during a period — your worst-case scenario if you bought at the top and sold at the bottom. Measures downside risk.</p>
+                            <p class="mt-1 text-xs opacity-60">Example: if a $10,000 portfolio dropped to $6,000 before recovering, the max drawdown is −40%.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-alpha" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Alpha</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The excess return of an investment compared to its benchmark (e.g. S&amp;P 500). Alpha of +5% means the investment beat the market by 5 percentage points. Negative alpha means it underperformed.</p>
+                            <p class="mt-1 text-xs opacity-60">Most actively managed funds consistently produce negative alpha after fees — one reason index funds are popular.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-beta" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Beta</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Measures a stock's price sensitivity relative to the overall market. Beta of 1.0 = moves in line with the market. Beta of 1.5 = 50% more volatile. Beta of 0.5 = half as volatile.</p>
+                            <p class="mt-1 text-xs opacity-60">High-beta stocks amplify both gains and losses. Useful for managing portfolio risk — mix low-beta (defensive) and high-beta (growth) holdings.</p>
+                        </div>
+                    </div>
+
+                    <!-- Personal Finance -->
+                    <p class="text-xs font-semibold uppercase tracking-widest opacity-30 mt-4 mb-1">Personal Finance</p>
+
+                    <div id="term-savings-rate" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Savings Rate</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>(Income − Expenses) ÷ Income × 100. The single most powerful lever in personal finance — a higher savings rate means faster wealth accumulation and earlier financial independence.</p>
+                            <p class="mt-1 text-xs opacity-60">Common targets: 20% = good, 30–40% = great, 50%+ = on track for early retirement. The FIRE community often targets 50–70%.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-fire" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">FIRE <span class="text-xs font-normal opacity-40 ml-1">Financial Independence, Retire Early</span></div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>A personal finance movement focused on extreme saving and investing to retire much earlier than the traditional retirement age. The goal is to accumulate a portfolio large enough that investment returns cover your living expenses indefinitely.</p>
+                            <p class="mt-1 text-xs opacity-60">The "4% rule" is central to FIRE: if you withdraw 4% of your portfolio per year, history suggests it will last 30+ years. So if you need $40,000/year, your FIRE number is $1,000,000.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-corpus" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Corpus</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>The total investment portfolio required to sustain your retirement income indefinitely (or for a target number of years) without running out of money. Calculated as: Annual Expenses ÷ Safe Withdrawal Rate.</p>
+                            <p class="mt-1 text-xs opacity-60">Example: need €30,000/year, safe withdrawal rate 4% → corpus = €750,000.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-net-worth" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Net Worth</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>Total assets minus total liabilities. Your assets include cash, investments, property; liabilities include loans, mortgages, credit card debt. Tracking net worth over time is the clearest measure of financial progress.</p>
+                        </div>
+                    </div>
+
+                    <div id="term-budget-adherence" class="collapse collapse-arrow bg-base-300 rounded-xl guide-section">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-semibold py-2 min-h-0">Budget Adherence</div>
+                        <div class="collapse-content text-sm opacity-70 leading-relaxed">
+                            <p>How closely your actual spending matched your planned budget, expressed as a percentage. 100% means you spent exactly what you planned. Under 100% means you overspent in some categories; over 100% means you were under budget (good for expenses, only for expenses).</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
         <div class="pb-10 text-xs opacity-20 text-center">ToolBox · Self-hosted · Your data stays yours</div>
 
     </div>
@@ -424,6 +817,19 @@
 <script src="nav.js"></script>
 <script>
 requireAuth();
+
+// Tag-limited clouds: show data-limit tags, rest hidden behind "+N more" button
+document.querySelectorAll('.terms-cloud[data-limit]').forEach(cloud => {
+    const limit = +cloud.dataset.limit;
+    const tags = [...cloud.querySelectorAll('.tag-link')];
+    if (tags.length <= limit) return;
+    tags.slice(limit).forEach(t => t.hidden = true);
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs btn-ghost opacity-40 ml-1';
+    btn.textContent = `+${tags.length - limit} more`;
+    btn.onclick = () => { tags.forEach(t => t.hidden = false); btn.remove(); };
+    cloud.appendChild(btn);
+});
 
 // Highlight active TOC link on scroll
 const sections = document.querySelectorAll('.guide-section[id]');
