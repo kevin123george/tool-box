@@ -54,10 +54,12 @@ let _bubblePageEl    = null;
 let _pinch           = null; // { dist, startScale }
 let _pinchLastScale  = null;
 let _wheelZoomTimer  = null;
+let _renderScale     = scale; // scale at which canvases are currently rendered
 
 // Library state
 let allPdfs        = [];
 let activeGroup    = null; // null = All
+let searchQuery    = '';
 
 /* ── Init ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -151,6 +153,11 @@ function setGroupFilter(group) {
     renderLibrary();
 }
 
+function onPdfSearch(val) {
+    searchQuery = val.trim().toLowerCase();
+    renderLibrary();
+}
+
 /* ── Library grid ──────────────────────────────────────── */
 function renderLibrary() {
     const grid = document.getElementById('pdfGrid');
@@ -160,13 +167,23 @@ function renderLibrary() {
     } else if (activeGroup !== null) {
         list = allPdfs.filter(p => p.group === activeGroup);
     }
+    if (searchQuery) {
+        list = list.filter(p =>
+            p.filename.toLowerCase().includes(searchQuery) ||
+            (p.group || '').toLowerCase().includes(searchQuery)
+        );
+    }
 
     if (!list.length) {
+        const msg = searchQuery
+            ? `No PDFs match "<span class="font-semibold">${escHtml(searchQuery)}</span>"`
+            : activeGroup !== null ? 'No PDFs in this group' : 'No PDFs yet';
+        const sub = searchQuery ? 'Try a different search term' : 'Upload a PDF to get started';
         grid.innerHTML = `
             <div class="col-span-full flex flex-col items-center p-12 border-2 border-dashed border-base-300 rounded-xl text-center">
-                <div class="text-5xl mb-4 opacity-30">📄</div>
-                <div class="font-bold uppercase mb-1">${activeGroup !== null ? 'No PDFs in this group' : 'No PDFs yet'}</div>
-                <div class="text-sm opacity-50">Upload a PDF to get started</div>
+                <div class="text-5xl mb-4 opacity-30">${searchQuery ? '🔍' : '📄'}</div>
+                <div class="font-bold uppercase mb-1">${msg}</div>
+                <div class="text-sm opacity-50">${sub}</div>
             </div>`;
         return;
     }
@@ -416,6 +433,7 @@ async function openReader(id) {
     allAnnotations = [];
     pdfJsDoc       = null;
     currentPdfMeta = allPdfs.find(p => p.id === id) || null;
+    _renderScale   = scale; // sync so first CSS-transform preview is a no-op
 
     showView('reader');
     document.getElementById('readerTitle').textContent =
@@ -650,6 +668,11 @@ async function renderPage(pageNum) {
 }
 
 async function rerenderAllPages() {
+    // Drop the CSS-transform preview — canvases are about to be re-rendered at
+    // the real scale, so the visual shortcut is no longer needed.
+    const viewport = document.getElementById('pdfViewport');
+    if (viewport) { viewport.style.transform = ''; viewport.style.transformOrigin = ''; }
+
     // Resize ALL containers to the new scale so scroll layout stays correct,
     // even for pages that won't be re-rendered right now.
     const fp = await pdfJsDoc.getPage(1);
@@ -663,6 +686,10 @@ async function rerenderAllPages() {
     const wS = Math.max(1, currentPage - PAGE_WINDOW);
     const wE = Math.min(totalPages, currentPage + PAGE_WINDOW);
     for (let n = wS; n <= wE; n++) await renderPage(n);
+
+    // Canvases are now rendered at this scale — record it so CSS-transform
+    // previews during the next zoom gesture are computed correctly.
+    _renderScale = scale;
 }
 
 /** Clears canvas pixels for a page outside the window (placeholder stays sized). */
@@ -735,8 +762,22 @@ function readerGoToPage(val) { const n = parseInt(val); if (n >= 1 && n <= total
 async function readerZoom(delta) {
     scale = Math.max(0.5, Math.min(4.0, scale + delta));
     document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
-    showLoading('Rendering…');
-    try { await rerenderAllPages(); } finally { hideLoading(); }
+
+    // Instant GPU preview — scale the whole viewport relative to the last
+    // rendered scale so the user sees the change immediately with no canvas work.
+    const vp = document.getElementById('pdfViewport');
+    if (vp) {
+        vp.style.transform       = `scale(${scale / _renderScale})`;
+        vp.style.transformOrigin = 'center top';
+    }
+
+    // Debounce the expensive canvas re-render so rapid +/- clicks only
+    // trigger one full re-render once the user pauses.
+    if (_wheelZoomTimer) clearTimeout(_wheelZoomTimer);
+    _wheelZoomTimer = setTimeout(async () => {
+        showLoading('Rendering…');
+        try { await rerenderAllPages(); } finally { hideLoading(); }
+    }, 400);
 }
 
 async function downloadCurrentPdf() {
@@ -1380,6 +1421,11 @@ function setupPinchZoom() {
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         scale = Math.max(0.5, Math.min(4.0, scale + delta));
         document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+
+        // CSS-transform preview — instant GPU feedback while the user scrolls
+        vp.style.transform       = `scale(${scale / _renderScale})`;
+        vp.style.transformOrigin = 'center top';
+
         if (_wheelZoomTimer) clearTimeout(_wheelZoomTimer);
         _wheelZoomTimer = setTimeout(async () => {
             showLoading('Rendering…');
@@ -1415,8 +1461,9 @@ function setupPinchZoom() {
             e.touches[0].clientY - e.touches[1].clientY
         );
         _pinchLastScale = Math.max(0.5, Math.min(4.0, _pinch.startScale * dist / _pinch.dist));
-        // Live CSS scale for smooth visual feedback
-        vp.style.transform       = `scale(${_pinchLastScale / scale})`;
+        // Live CSS scale for smooth visual feedback — divide by _renderScale,
+        // not scale, because the canvases were rendered at _renderScale.
+        vp.style.transform       = `scale(${_pinchLastScale / _renderScale})`;
         vp.style.transformOrigin = 'center top';
         document.getElementById('zoomLabel').textContent = Math.round(_pinchLastScale * 100) + '%';
     }, { passive: false });
