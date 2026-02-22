@@ -84,6 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bubble && !bubble.classList.contains('hidden') && !bubble.contains(e.target)) {
             hideAnnotDeleteBubble();
         }
+        const bmMenu = document.getElementById('bookmarkMenu');
+        if (bmMenu && !bmMenu.classList.contains('hidden') &&
+            !document.getElementById('bookmarkMenuBtn')?.contains(e.target) &&
+            !bmMenu.contains(e.target)) {
+            closeBookmarkMenu();
+        }
     });
 
     // Ctrl/Cmd+Z → undo last annotation
@@ -1305,6 +1311,48 @@ async function _savePenStroke(stroke) {
 /* ── Bookmarks ──────────────────────────────────────────── */
 let _pendingBookmarkPage = null;
 
+function toggleBookmarkMenu() {
+    const menu = document.getElementById('bookmarkMenu');
+    if (menu.classList.contains('hidden')) {
+        openBookmarkMenu();
+    } else {
+        closeBookmarkMenu();
+    }
+}
+
+function openBookmarkMenu() {
+    document.getElementById('bookmarkMenuCurPage').textContent = currentPage;
+    renderBookmarkMenu();
+    document.getElementById('bookmarkMenu').classList.remove('hidden');
+}
+
+function closeBookmarkMenu() {
+    document.getElementById('bookmarkMenu').classList.add('hidden');
+}
+
+function renderBookmarkMenu() {
+    const list = document.getElementById('bookmarkMenuList');
+    const bookmarks = [...allAnnotations]
+        .filter(a => a.type === 'BOOKMARK')
+        .sort((a, b) => a.page - b.page);
+    if (!bookmarks.length) {
+        list.innerHTML = `<div class="text-xs opacity-40 text-center py-4 px-3">No bookmarks yet</div>`;
+        return;
+    }
+    list.innerHTML = bookmarks.map(b => `
+        <div class="flex items-center gap-2 px-3 py-2 hover:bg-base-200 cursor-pointer group"
+             onclick="closeBookmarkMenu(); scrollToPage(${b.page})">
+            <span class="text-sm leading-none shrink-0">🔖</span>
+            <div class="flex-1 min-w-0">
+                <div class="text-xs font-medium truncate">${escHtml(b.text || 'Page ' + b.page)}</div>
+                <div class="text-[10px] opacity-40">Page ${b.page}</div>
+            </div>
+            <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-60 hover:!opacity-100 text-error shrink-0"
+                    onclick="event.stopPropagation(); _deleteAnnotationById('${escHtml(b.id)}', null).then(renderBookmarkMenu)"
+                    title="Remove">✕</button>
+        </div>`).join('');
+}
+
 function addBookmark() {
     _pendingBookmarkPage = currentPage;
     document.getElementById('bookmarkPageLabel').textContent = currentPage;
@@ -1340,6 +1388,7 @@ async function confirmBookmark() {
             drawAnnotationsForPage(page, container, canvas?.width || container.offsetWidth, canvas?.height || container.offsetHeight);
         }
         renderAnnotSidebar();
+        renderBookmarkMenu();
         showToast('Bookmark saved', 'success');
     } catch { showToast('Failed to save bookmark', 'error'); }
 }

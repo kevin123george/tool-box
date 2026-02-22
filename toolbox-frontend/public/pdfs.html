@@ -189,9 +189,21 @@
                 <span id="zoomLabel" class="text-xs opacity-50 w-10 text-center">150%</span>
                 <button class="btn btn-ghost btn-xs" onclick="readerZoom(+0.25)">+</button>
             </div>
-            <button id="addBookmarkBtn" class="btn btn-ghost btn-xs gap-1" onclick="addBookmark()" title="Bookmark current page">
-                <span>🔖</span><span class="hidden sm:inline">Bookmark</span>
-            </button>
+            <!-- Bookmark dropdown -->
+            <div class="relative">
+                <button id="bookmarkMenuBtn" class="btn btn-ghost btn-xs gap-1" onclick="toggleBookmarkMenu()" title="Bookmarks">
+                    <span>🔖</span><span class="hidden sm:inline">Bookmarks</span>
+                </button>
+                <div id="bookmarkMenu" class="hidden absolute top-full right-0 mt-1 w-64 bg-base-100 border border-base-300 rounded-xl shadow-2xl z-[9999] flex flex-col overflow-hidden">
+                    <div id="bookmarkMenuList" class="flex flex-col max-h-64 overflow-y-auto"></div>
+                    <div class="border-t border-base-300 p-1.5">
+                        <button class="btn btn-ghost btn-xs w-full justify-start gap-2" onclick="closeBookmarkMenu(); addBookmark()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 opacity-60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            Add bookmark for page <span id="bookmarkMenuCurPage"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
             <button id="addNoteBtn" class="btn btn-ghost btn-xs gap-1" onclick="startNoteMode()">
                 <span>📝</span><span class="hidden sm:inline">Note</span>
             </button>
