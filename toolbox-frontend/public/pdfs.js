@@ -827,6 +827,21 @@ function drawAnnotationsForPage(pageNum, container, pageW, pageH) {
     const layer = container.querySelector('.annot-layer');
     if (!layer) return;
     layer.innerHTML = '';
+
+    // Bookmark ribbon — one tab per bookmark on this page
+    const pageBookmarks = allAnnotations.filter(a => a.page === pageNum && a.type === 'BOOKMARK');
+    pageBookmarks.forEach((bm, i) => {
+        const ribbon = document.createElement('div');
+        ribbon.className = 'bookmark-ribbon';
+        ribbon.style.right = (14 + i * 26) + 'px'; // offset multiple ribbons
+        ribbon.title = bm.text || ('Page ' + pageNum);
+        ribbon.addEventListener('click', e => {
+            e.stopPropagation();
+            showAnnotDeleteBubble(bm.id, container, e.clientX, e.clientY, escHtml(bm.text || 'Bookmark'));
+        });
+        layer.appendChild(ribbon);
+    });
+
     allAnnotations.filter(a => a.page === pageNum).forEach(a => {
         if (a.type === 'HIGHLIGHT' && a.rects) {
             const bg = HIGHLIGHT_COLORS[a.color] || HIGHLIGHT_COLORS.yellow;
@@ -872,27 +887,53 @@ function renderAnnotSidebar() {
         list.innerHTML = '<div class="text-xs opacity-40 text-center py-4">No annotations yet</div>';
         return;
     }
-    list.innerHTML = [...allAnnotations].sort((a,b) => a.page - b.page).map(a => {
-        if (a.type === 'HIGHLIGHT') {
-            const dot = HIGHLIGHT_COLORS[a.color] || HIGHLIGHT_COLORS.yellow;
-            return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
-                         onclick="scrollToPage(${a.page})">
-                <span style="width:10px;height:10px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0;margin-top:2px;"></span>
-                <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Highlight</div>
-                <div class="opacity-70 line-clamp-2">${escHtml(truncate(a.selectedText || '', 80))}</div></div></div>`;
-        } else if (a.type === 'FREEHAND') {
-            return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
-                         onclick="scrollToPage(${a.page})">
-                <span style="width:10px;height:10px;border-radius:50%;background:${escHtml(a.color||'#1e1e1e')};display:inline-block;flex-shrink:0;margin-top:2px;"></span>
-                <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Drawing</div></div></div>`;
-        } else {
-            return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
-                         onclick="scrollToPage(${a.page}); openNoteView('${escHtml(a.id)}')">
-                <span class="shrink-0 mt-0.5">📝</span>
-                <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Note</div>
-                <div class="opacity-70 line-clamp-2">${escHtml(truncate(a.text || '', 80))}</div></div></div>`;
-        }
-    }).join('');
+
+    const sorted     = [...allAnnotations].sort((a,b) => a.page - b.page);
+    const bookmarks  = sorted.filter(a => a.type === 'BOOKMARK');
+    const annots     = sorted.filter(a => a.type !== 'BOOKMARK');
+    let html = '';
+
+    if (bookmarks.length) {
+        html += `<div class="text-xs font-semibold uppercase tracking-widest opacity-40 px-1 pt-1 pb-0.5">Bookmarks</div>`;
+        html += bookmarks.map(a => `
+            <div class="flex items-center gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300 group"
+                 onclick="scrollToPage(${a.page})">
+                <span class="shrink-0 text-base leading-none">🔖</span>
+                <div class="flex-1 min-w-0">
+                    <div class="font-medium truncate">${escHtml(a.text || 'Page ' + a.page)}</div>
+                    <div class="opacity-40 mt-0.5">Page ${a.page}</div>
+                </div>
+                <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-60 hover:!opacity-100 text-error shrink-0"
+                        onclick="event.stopPropagation(); _deleteAnnotationById('${escHtml(a.id)}', null)" title="Remove">✕</button>
+            </div>`).join('');
+    }
+
+    if (annots.length) {
+        if (bookmarks.length) html += `<div class="divider my-1 text-xs opacity-30 text-[10px]">Annotations</div>`;
+        html += annots.map(a => {
+            if (a.type === 'HIGHLIGHT') {
+                const dot = HIGHLIGHT_COLORS[a.color] || HIGHLIGHT_COLORS.yellow;
+                return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
+                             onclick="scrollToPage(${a.page})">
+                    <span style="width:10px;height:10px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0;margin-top:2px;"></span>
+                    <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Highlight</div>
+                    <div class="opacity-70 line-clamp-2">${escHtml(truncate(a.selectedText || '', 80))}</div></div></div>`;
+            } else if (a.type === 'FREEHAND') {
+                return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
+                             onclick="scrollToPage(${a.page})">
+                    <span style="width:10px;height:10px;border-radius:50%;background:${escHtml(a.color||'#1e1e1e')};display:inline-block;flex-shrink:0;margin-top:2px;"></span>
+                    <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Drawing</div></div></div>`;
+            } else {
+                return `<div class="flex items-start gap-2 p-2 rounded-lg border border-base-300 bg-base-200 text-xs cursor-pointer hover:bg-base-300"
+                             onclick="scrollToPage(${a.page}); openNoteView('${escHtml(a.id)}')">
+                    <span class="shrink-0 mt-0.5">📝</span>
+                    <div><div class="font-semibold opacity-50 mb-0.5">Page ${a.page} · Note</div>
+                    <div class="opacity-70 line-clamp-2">${escHtml(truncate(a.text || '', 80))}</div></div></div>`;
+            }
+        }).join('');
+    }
+
+    list.innerHTML = html;
 }
 
 /* ── Highlights ────────────────────────────────────────── */
@@ -1259,6 +1300,48 @@ async function _savePenStroke(stroke) {
         drawAnnotationsForPage(pageNum, pageEl, pageW, pageH);
         renderAnnotSidebar();
     } catch { showToast('Failed to save stroke', 'error'); }
+}
+
+/* ── Bookmarks ──────────────────────────────────────────── */
+let _pendingBookmarkPage = null;
+
+function addBookmark() {
+    _pendingBookmarkPage = currentPage;
+    document.getElementById('bookmarkPageLabel').textContent = currentPage;
+    document.getElementById('bookmarkLabelInput').value = 'Page ' + currentPage;
+    openModal('bookmarkModal');
+    // Select the text so user can immediately type their label
+    setTimeout(() => {
+        const inp = document.getElementById('bookmarkLabelInput');
+        inp?.select();
+    }, 50);
+}
+
+async function confirmBookmark() {
+    closeModal('bookmarkModal');
+    const label = document.getElementById('bookmarkLabelInput').value.trim();
+    const page  = _pendingBookmarkPage;
+    _pendingBookmarkPage = null;
+    if (!page || !currentPdfId) return;
+    try {
+        const res = await authFetch(`${API}/api/pdfs/${currentPdfId}/annotations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'BOOKMARK', page, text: label || ('Page ' + page) })
+        });
+        if (!res || !res.ok) throw new Error();
+        const saved = await res.json();
+        allAnnotations.push(saved);
+        _annotHistory.push(saved.id);
+        // Refresh ribbon on the page
+        const container = document.querySelector(`.pdf-page-container[data-page="${page}"]`);
+        if (container) {
+            const canvas = container.querySelector('canvas');
+            drawAnnotationsForPage(page, container, canvas?.width || container.offsetWidth, canvas?.height || container.offsetHeight);
+        }
+        renderAnnotSidebar();
+        showToast('Bookmark saved', 'success');
+    } catch { showToast('Failed to save bookmark', 'error'); }
 }
 
 /* ── Notes ─────────────────────────────────────────────── */

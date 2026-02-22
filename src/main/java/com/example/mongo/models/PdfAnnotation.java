@@ -44,7 +44,8 @@ public class PdfAnnotation {
   public enum AnnotationType {
     HIGHLIGHT,
     NOTE,
-    FREEHAND
+    FREEHAND,
+    BOOKMARK
   }
 
   @Data
