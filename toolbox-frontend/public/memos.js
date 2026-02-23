@@ -27,38 +27,58 @@ let quillEdit = null;
 /* Initialize Quill Editors */
 (window.__pageInits = window.__pageInits || {}).memos = function () {
     requireAuth();
-    // Re-create Quill instances on each page visit (DOM is replaced on SPA nav)
-    quillMain = new Quill('#memoContent', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'header': 1 }, { 'header': 2 }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'align': [] }],
-                ['link'],
-                ['clean']
-            ]
-        },
-        placeholder: 'Write your memo content here...'
-    });
-    quillEdit = new Quill('#editMemoContent', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'header': 1 }, { 'header': 2 }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'align': [] }],
-                ['link'],
-                ['clean']
-            ]
-        },
-        placeholder: 'Edit memo content...'
-    });
-    loadMemos();
+
+    // Wait until the router has injected the HTML
+    setTimeout(() => {
+
+        if (typeof Quill === "undefined") {
+            console.error("Quill not loaded");
+            return;
+        }
+
+        const mainEl = document.querySelector('#memoContent');
+        const editEl = document.querySelector('#editMemoContent');
+
+        if (!mainEl || !editEl) {
+            console.error("Memo DOM not ready yet");
+            return;
+        }
+
+        quillMain = new Quill(mainEl, {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ header: 1 }, { header: 2 }],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    [{ align: [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Write your memo content here...'
+        });
+
+        quillEdit = new Quill(editEl, {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ header: 1 }, { header: 2 }],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    [{ align: [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Edit memo content...'
+        });
+
+        loadMemos();
+
+    }, 0);
 };
 
 /* Escape key handler for memo modals */
