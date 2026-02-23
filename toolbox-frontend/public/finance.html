@@ -39,7 +39,6 @@
         <button class="tab tab-active" onclick="switchFinanceTab('accounts')">Accounts</button>
         <button class="tab" onclick="switchFinanceTab('budget')">Budget</button>
         <button class="tab" onclick="switchFinanceTab('subscriptions')">Subscriptions</button>
-        <button class="tab" onclick="switchFinanceTab('calendar')">Calendar</button>
         <button class="tab" onclick="switchFinanceTab('analytics')">Analytics</button>
     </div>
 
@@ -324,27 +323,6 @@
             <button class="btn btn-primary btn-sm" onclick="showAddSubscriptionModal()">ADD SUBSCRIPTION</button>
         </div>
         <div id="subscriptionsList"></div>
-    </div>
-
-    <!-- =================== CALENDAR SUB-TAB =================== -->
-    <div id="financeCalendarContent" class="hidden">
-        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Financial Calendar</div>
-        <div class="card bg-base-200 shadow p-4 mb-4">
-            <div class="flex justify-between items-center">
-                <button class="btn btn-sm" onclick="prevMonth()">PREV</button>
-                <h3 id="calendarMonthLabel" class="font-bold"></h3>
-                <button class="btn btn-sm" onclick="nextMonth()">NEXT</button>
-            </div>
-        </div>
-        <div id="calendarGrid" class="calendar-grid"></div>
-        <div class="card bg-base-200 shadow p-4 mt-4">
-            <div class="flex gap-4 flex-wrap text-xs">
-                <span><span class="inline-block w-3 h-3 bg-success mr-1"></span>Income / Workout Done</span>
-                <span><span class="inline-block w-3 h-3 bg-error mr-1"></span>Expense</span>
-                <span><span class="inline-block w-3 h-3 bg-warning mr-1"></span>Subscription / Workout Pending</span>
-                <span><span class="inline-block w-3 h-3 bg-info mr-1"></span>Dividend</span>
-            </div>
-        </div>
     </div>
 
     <!-- =================== ANALYTICS SUB-TAB =================== -->

@@ -13,7 +13,7 @@ let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
 
 function switchFinanceTab(tab) {
     localStorage.setItem('finance_active_tab', tab);
-    const tabs = ['accounts', 'budget', 'subscriptions', 'calendar', 'analytics'];
+    const tabs = ['accounts', 'budget', 'subscriptions', 'analytics'];
     tabs.forEach(t => {
         const el = document.getElementById('finance' + t.charAt(0).toUpperCase() + t.slice(1) + 'Content');
         if (el) el.classList.toggle('hidden', t !== tab);
@@ -25,7 +25,6 @@ function switchFinanceTab(tab) {
     if (tab === 'accounts') { loadFinance(); loadGoalList(); loadSavingsGoals(); loadNetWorthHistory(); loadSavingsRateHistory(); }
     else if (tab === 'budget') { goToCurrentMonth(); loadRecurringTransactions(); }
     else if (tab === 'subscriptions') { loadSubscriptions(); }
-    else if (tab === 'calendar') { loadCalendar(); }
     else if (tab === 'analytics') { loadAnalytics(); }
 }
 
@@ -1496,124 +1495,6 @@ function showImportModal() {
 }
 
 /* ===========================================================
-   FINANCIAL CALENDAR (from features.js)
-   ============================================================ */
-
-let calendarYear = new Date().getFullYear();
-let calendarMonth = new Date().getMonth() + 1;
-let calendarEvents = [];
-
-async function loadCalendar() {
-    try {
-        const res = await authFetch(`${API}/api/calendar/${calendarYear}/${calendarMonth}`);
-        if (res.ok) {
-            calendarEvents = await res.json();
-            renderCalendar();
-        }
-    } catch (e) {
-        console.error("Failed to load calendar:", e);
-    }
-}
-
-function renderCalendar() {
-    const container = document.getElementById('calendarGrid');
-    const monthLabel = document.getElementById('calendarMonthLabel');
-    if (!container) return;
-
-    // Update month label
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                        'July', 'August', 'September', 'October', 'November', 'December'];
-    if (monthLabel) {
-        monthLabel.textContent = `${monthNames[calendarMonth - 1]} ${calendarYear}`;
-    }
-
-    // Get first day of month and total days
-    const firstDay = new Date(calendarYear, calendarMonth - 1, 1).getDay();
-    const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
-
-    // Group events by day
-    const eventsByDay = {};
-    calendarEvents.forEach(event => {
-        if (!eventsByDay[event.day]) eventsByDay[event.day] = [];
-        eventsByDay[event.day].push(event);
-    });
-
-    // Build calendar HTML
-    let html = `
-        <div class="calendar-header">
-            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-        </div>
-        <div class="calendar-days">
-    `;
-
-    // Empty cells for days before first of month
-    for (let i = 0; i < firstDay; i++) {
-        html += '<div class="calendar-day empty"></div>';
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayEvents = eventsByDay[day] || [];
-        const isToday = day === new Date().getDate() &&
-                        calendarMonth === new Date().getMonth() + 1 &&
-                        calendarYear === new Date().getFullYear();
-
-        html += `
-            <div class="calendar-day ${isToday ? 'today' : ''}">
-                <div class="calendar-day-number">${day}</div>
-                <div class="calendar-events">
-                    ${dayEvents.slice(0, 3).map(e => {
-                        const color = getEventColor(e.type, e.completed);
-                        const titleText = e.type === 'WORKOUT'
-                            ? `${e.title}${e.completed ? ' \u2713' : ''} (${e.amount} min)`
-                            : `${e.title}: \u20AC${e.amount.toFixed(2)}`;
-                        const displayText = e.type === 'WORKOUT'
-                            ? `${e.completed ? '\u2713' : '\u25CB'} ${e.title.substring(0, 8)}`
-                            : e.title.substring(0, 10);
-                        return `<div class="calendar-event" style="background:${color};" title="${titleText}">
-                            ${displayText}
-                        </div>`;
-                    }).join('')}
-                    ${dayEvents.length > 3 ? `<div class="calendar-event-more">+${dayEvents.length - 3} more</div>` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    html += '</div>';
-    container.innerHTML = html;
-}
-
-function getEventColor(type, completed) {
-    switch (type) {
-        case 'INCOME': return '#0f0';
-        case 'EXPENSE': return '#f33';
-        case 'SUBSCRIPTION': return '#f90';
-        case 'DIVIDEND': return '#39f';
-        case 'WORKOUT': return completed ? '#0f0' : '#f90';
-        default: return '#888';
-    }
-}
-
-function prevMonth() {
-    calendarMonth--;
-    if (calendarMonth < 1) {
-        calendarMonth = 12;
-        calendarYear--;
-    }
-    loadCalendar();
-}
-
-function nextMonth() {
-    calendarMonth++;
-    if (calendarMonth > 12) {
-        calendarMonth = 1;
-        calendarYear++;
-    }
-    loadCalendar();
-}
-
-/* ===========================================================
    EXPENSE ANALYTICS (from features.js)
    ============================================================ */
 
@@ -1789,6 +1670,7 @@ function renderCategoryBreakdownChart(monthly) {
 
 document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
+    const validTabs = ['accounts', 'budget', 'subscriptions', 'analytics'];
     const saved = localStorage.getItem('finance_active_tab') || 'accounts';
-    switchFinanceTab(saved);
+    switchFinanceTab(validTabs.includes(saved) ? saved : 'accounts');
 });

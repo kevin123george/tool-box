@@ -1,6 +1,7 @@
 package com.example.mongo.services;
 
 import com.example.mongo.config.AuthUtils;
+import com.example.mongo.models.CalendarEvent;
 import com.example.mongo.models.DividendRecord;
 import com.example.mongo.models.RecurringTransaction;
 import com.example.mongo.models.Subscription;
@@ -23,6 +24,7 @@ public class FinancialCalendarService {
   @Autowired private DividendService dividendService;
 
   @Autowired private WorkoutLogRepository workoutLogRepository;
+  @Autowired private CalendarEventService calendarEventService;
   @Autowired private AuthUtils authUtils;
 
   public List<CalendarEventDTO> getEventsForMonth(int year, int month) {
@@ -103,6 +105,19 @@ public class FinancialCalendarService {
         event.setCompleted(workout.isCompleted());
         events.add(event);
       }
+    }
+
+    // Add personal / custom events
+    for (CalendarEvent ce : calendarEventService.getForMonth(year, month)) {
+      CalendarEventDTO dto = new CalendarEventDTO();
+      dto.setId(ce.getId());
+      dto.setDay(ce.getDate().getDayOfMonth());
+      dto.setTitle(ce.getTitle());
+      dto.setDescription(ce.getDescription());
+      dto.setAmount(0);
+      dto.setType(ce.getEventType() != null ? ce.getEventType().name() : "OTHER");
+      dto.setSource("Personal");
+      events.add(dto);
     }
 
     // Sort by day

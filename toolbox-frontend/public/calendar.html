@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox — Calendar</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ─── Calendar grid ────────────────────────────────── */
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        .cal-day-header {
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.4;
+            padding: 6px 0;
+        }
+        .cal-day {
+            min-height: 96px;
+            padding: 6px;
+            border-radius: 8px;
+            background: oklch(var(--b2));
+            cursor: pointer;
+            transition: background 0.15s;
+            position: relative;
+        }
+        .cal-day:hover { background: oklch(var(--b3)); }
+        .cal-day.empty { background: transparent; cursor: default; pointer-events: none; }
+        .cal-day.today { outline: 2px solid oklch(var(--p)); outline-offset: -2px; }
+        .cal-day-num {
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0.6;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .cal-day.today .cal-day-num {
+            color: oklch(var(--p));
+            opacity: 1;
+        }
+        /* ─── Event chips ──────────────────────────────────── */
+        .cal-chip {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 500;
+            padding: 1px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+            cursor: pointer;
+            line-height: 1.5;
+            color: #fff;
+        }
+        .cal-chip:hover { opacity: 0.85; }
+        .cal-more {
+            font-size: 0.6rem;
+            opacity: 0.45;
+            padding-left: 2px;
+            margin-top: 1px;
+        }
+        /* ─── Chip color classes ───────────────────────────── */
+        .chip-income      { background: oklch(var(--su)); }
+        .chip-expense     { background: oklch(var(--er)); }
+        .chip-subscription{ background: oklch(var(--wa)); color: #111; }
+        .chip-dividend    { background: oklch(var(--in)); }
+        .chip-workout-done{ background: oklch(var(--su)); }
+        .chip-workout-pend{ background: oklch(var(--wa)); color: #111; }
+        .chip-vacation    { background: #7c3aed; }
+        .chip-holiday     { background: #0d9488; }
+        .chip-appointment { background: #0284c7; }
+        .chip-reminder    { background: #b45309; }
+        .chip-birthday    { background: #be185d; }
+        .chip-other       { background: oklch(var(--bc) / 0.3); }
+        /* ─── Legend dot ───────────────────────────────────── */
+        .legend-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
+    <div id="loadingOverlay" class="loading-overlay" role="status" aria-label="Loading">
+        <div class="flex flex-col items-center gap-4">
+            <span class="loading loading-spinner loading-lg"></span>
+            <span class="text-sm uppercase tracking-widest" id="loadingText">Loading...</span>
+        </div>
+    </div>
+    <div id="nav-placeholder" data-active="calendar"></div>
+
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">Calendar</h1>
+            <p class="text-sm opacity-40 mt-0.5">Events, schedules &amp; financial dates</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button class="btn btn-ghost btn-sm btn-square" onclick="prevMonth()" title="Previous month">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+                </svg>
+            </button>
+            <h2 id="calMonthLabel" class="text-lg font-bold min-w-[160px] text-center"></h2>
+            <button class="btn btn-ghost btn-sm btn-square" onclick="nextMonth()" title="Next month">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                </svg>
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="goToToday()">Today</button>
+        </div>
+    </div>
+
+    <!-- Calendar grid -->
+    <div id="calGrid" class="cal-grid mb-4"></div>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs opacity-60 mt-2 mb-6">
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-income"></span>Income</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-expense"></span>Expense</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-subscription"></span>Subscription</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-dividend"></span>Dividend</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-workout-done"></span>Workout</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-vacation"></span>Vacation</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-holiday"></span>Holiday</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-appointment"></span>Appointment</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-reminder"></span>Reminder</span>
+        <span class="flex items-center gap-1.5"><span class="legend-dot chip-birthday"></span>Birthday</span>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         ADD EVENT MODAL
+    ═══════════════════════════════════════════════════════ -->
+    <dialog id="addEventModal" class="modal">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-sm uppercase tracking-widest mb-4">Add Event</h3>
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="label label-text text-xs font-semibold opacity-50 uppercase tracking-wide pb-1">Date</label>
+                    <input id="addEventDate" type="date" class="input input-bordered w-full input-sm" readonly>
+                </div>
+                <div>
+                    <label class="label label-text text-xs font-semibold opacity-50 uppercase tracking-wide pb-1">Title</label>
+                    <input id="addEventTitle" type="text" class="input input-bordered w-full input-sm" placeholder="e.g. Summer vacation">
+                </div>
+                <div>
+                    <label class="label label-text text-xs font-semibold opacity-50 uppercase tracking-wide pb-1">Type</label>
+                    <select id="addEventType" class="select select-bordered w-full select-sm">
+                        <option value="VACATION">🏖️ Vacation</option>
+                        <option value="HOLIDAY">🎉 Holiday</option>
+                        <option value="APPOINTMENT">📅 Appointment</option>
+                        <option value="REMINDER">🔔 Reminder</option>
+                        <option value="BIRTHDAY">🎂 Birthday</option>
+                        <option value="OTHER">📌 Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label label-text text-xs font-semibold opacity-50 uppercase tracking-wide pb-1">Notes <span class="normal-case opacity-50">(optional)</span></label>
+                    <textarea id="addEventDesc" class="textarea textarea-bordered w-full text-sm h-20" placeholder="Any additional details…"></textarea>
+                </div>
+            </div>
+            <div class="modal-action mt-4">
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('addEventModal')">Cancel</button>
+                <button class="btn btn-primary btn-sm" onclick="confirmAddEvent()">Save</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- ══════════════════════════════════════════════════════
+         EVENT DETAIL MODAL
+    ═══════════════════════════════════════════════════════ -->
+    <dialog id="eventDetailModal" class="modal">
+        <div class="modal-box max-w-sm">
+            <div class="flex items-start justify-between gap-2 mb-3">
+                <div class="flex-1 min-w-0">
+                    <div id="detailType" class="badge badge-sm mb-2"></div>
+                    <h3 id="detailTitle" class="font-bold text-base leading-snug"></h3>
+                    <div id="detailDate" class="text-xs opacity-40 mt-1"></div>
+                </div>
+            </div>
+            <p id="detailDesc" class="text-sm opacity-70 whitespace-pre-wrap mb-1"></p>
+            <div id="detailAmount" class="text-sm tabular-nums font-medium mt-2 hidden"></div>
+            <div class="modal-action mt-4">
+                <button id="detailDeleteBtn" class="btn btn-error btn-sm hidden" onclick="deleteEvent()">Delete</button>
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('eventDetailModal')">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- Scripts -->
+    <script src="shared.js"></script>
+    <script src="nav.js"></script>
+    <script src="calendar.js"></script>
+</body>
+</html>

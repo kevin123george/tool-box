@@ -33,6 +33,9 @@
         pdfs: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
         </svg>`,
+        calendar: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"/>
+        </svg>`,
         users: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
         </svg>`,
@@ -64,6 +67,7 @@
         home:        'Dashboard',
         memos:       'Memos',
         pdfs:        'PDF Reader',
+        calendar:    'Calendar',
         finance:     'Finance',
         investments: 'Investments',
         fitness:     'Fitness',
@@ -85,9 +89,10 @@
         {
             group: 'Workspace',
             items: [
-                { key: 'memos', label: 'Memos', href: '/memos.html', icon: 'memos' },
-                { key: 'pdfs',  label: 'PDF Reader', href: '/pdfs.html', icon: 'pdfs' },
-                { key: 'guide', label: 'README', href: '/readme.html', icon: 'guide' }
+                { key: 'memos',    label: 'Memos',      href: '/memos.html',    icon: 'memos'    },
+                { key: 'pdfs',     label: 'PDF Reader', href: '/pdfs.html',     icon: 'pdfs'     },
+                { key: 'calendar', label: 'Calendar',   href: '/calendar.html', icon: 'calendar' },
+                { key: 'guide',    label: 'README',     href: '/readme.html',   icon: 'guide'    }
             ]
         },
         {
@@ -99,7 +104,6 @@
                         { label: 'Accounts',      href: '/finance.html?tab=accounts' },
                         { label: 'Budget',        href: '/finance.html?tab=budget' },
                         { label: 'Subscriptions', href: '/finance.html?tab=subscriptions' },
-                        { label: 'Calendar',      href: '/finance.html?tab=calendar' },
                         { label: 'Analytics',     href: '/finance.html?tab=analytics' }
                     ]
                 },
