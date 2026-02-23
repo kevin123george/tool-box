@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,7 +63,42 @@ public class StockService {
     stock.setBuyDate(req.getBuyDate());
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setUserId(authUtils.getCurrentUserId());
-    return stockRepository.save(stock);
+    StockHolding saved = stockRepository.save(stock);
+    final StockHolding ref = saved;
+    CompletableFuture.runAsync(() -> backfillHistory(ref));
+    return saved;
+  }
+
+  private void backfillHistory(StockHolding holding) {
+    try {
+      // Use buyDate if available, otherwise fall back to 2 years ago
+      String startDate =
+          holding.getBuyDate() != null
+              ? holding.getBuyDate().toString()
+              : LocalDate.now().minusYears(2).toString();
+      List<Map<String, Object>> history =
+          stockPriceService.getStockHistory(holding.getSymbol(), startDate, "EUR");
+      List<StockHoldingHistory> records = new ArrayList<>();
+      for (Map<String, Object> entry : history) {
+        StockHoldingHistory h = new StockHoldingHistory();
+        h.setStockHoldingId(holding.getId());
+        h.setUserId(holding.getUserId());
+        h.setSymbol(holding.getSymbol());
+        h.setQuantity(holding.getQuantity());
+        h.setBuyPrice(holding.getBuyPrice());
+        h.setBuyDate(holding.getBuyDate());
+        h.setCurrentPrice((Double) entry.get("price"));
+        LocalDate date = LocalDate.parse((String) entry.get("date"));
+        h.setUpdatedAt(date.atTime(23, 59, 59));
+        records.add(h);
+      }
+      stockHoldingHistoryRepository.saveAll(records);
+      System.out.printf(
+          "Backfilled %d history records for %s%n", records.size(), holding.getSymbol());
+    } catch (Exception e) {
+      System.err.printf(
+          "Failed to backfill history for %s: %s%n", holding.getSymbol(), e.getMessage());
+    }
   }
 
   public StockHolding updatePrice(String id, StockRequest req) {

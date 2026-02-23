@@ -107,17 +107,44 @@ public class FinancialCalendarService {
       }
     }
 
-    // Add personal / custom events
+    // Add personal / custom events — expand multi-day events across each day they cover
+    String[] monthAbbr = {
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
     for (CalendarEvent ce : calendarEventService.getForMonth(year, month)) {
-      CalendarEventDTO dto = new CalendarEventDTO();
-      dto.setId(ce.getId());
-      dto.setDay(ce.getDate().getDayOfMonth());
-      dto.setTitle(ce.getTitle());
-      dto.setDescription(ce.getDescription());
-      dto.setAmount(0);
-      dto.setType(ce.getEventType() != null ? ce.getEventType().name() : "OTHER");
-      dto.setSource("Personal");
-      events.add(dto);
+      LocalDate evtEnd = (ce.getEndDate() != null) ? ce.getEndDate() : ce.getDate();
+      boolean isRange = !evtEnd.equals(ce.getDate());
+
+      // Build a human-readable range label once (e.g. "Mar 3 – Mar 7")
+      String rangeLabel = null;
+      if (isRange) {
+        rangeLabel =
+            monthAbbr[ce.getDate().getMonthValue() - 1]
+                + " "
+                + ce.getDate().getDayOfMonth()
+                + " – "
+                + monthAbbr[evtEnd.getMonthValue() - 1]
+                + " "
+                + evtEnd.getDayOfMonth();
+      }
+
+      // Clip to the requested month so we only emit days that fall within [start, end]
+      LocalDate dayIter = ce.getDate().isBefore(start) ? start : ce.getDate();
+      LocalDate dayLast = evtEnd.isAfter(end) ? end : evtEnd;
+
+      while (!dayIter.isAfter(dayLast)) {
+        CalendarEventDTO dto = new CalendarEventDTO();
+        dto.setId(ce.getId());
+        dto.setDay(dayIter.getDayOfMonth());
+        dto.setTitle(ce.getTitle());
+        dto.setDescription(ce.getDescription());
+        dto.setAmount(0);
+        dto.setType(ce.getEventType() != null ? ce.getEventType().name() : "OTHER");
+        dto.setSource("Personal");
+        dto.setRangeLabel(rangeLabel);
+        events.add(dto);
+        dayIter = dayIter.plusDays(1);
+      }
     }
 
     // Sort by day

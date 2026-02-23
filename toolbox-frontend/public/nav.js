@@ -91,8 +91,7 @@
             items: [
                 { key: 'memos',    label: 'Memos',      href: '/memos.html',    icon: 'memos'    },
                 { key: 'pdfs',     label: 'PDF Reader', href: '/pdfs.html',     icon: 'pdfs'     },
-                { key: 'calendar', label: 'Calendar',   href: '/calendar.html', icon: 'calendar' },
-                { key: 'guide',    label: 'README',     href: '/readme.html',   icon: 'guide'    }
+                { key: 'calendar', label: 'Calendar',   href: '/calendar.html', icon: 'calendar' }
             ]
         },
         {
@@ -308,8 +307,16 @@
                     </nav>
 
                     <!-- Sidebar footer -->
-                    <div class="border-t border-base-200 p-3 shrink-0">
-                        <div class="is-drawer-close:hidden text-[10px] opacity-25 text-center uppercase tracking-widest">v1.0</div>
+                    <div class="border-t border-base-200 p-3 shrink-0 flex flex-col gap-1">
+                        <a href="/readme.html"
+                           class="flex items-center gap-3 rounded-lg px-2.5 py-2 transition-colors
+                                  ${activeKey === 'guide' ? 'bg-primary/10 text-primary font-semibold' : 'text-base-content/50 hover:text-base-content hover:bg-base-300/50'}
+                                  tooltip is-drawer-open:tooltip-none tooltip-right"
+                           data-tip="README">
+                            <span class="${activeKey === 'guide' ? 'text-primary' : 'opacity-50'}">${ICONS.guide}</span>
+                            <span class="is-drawer-close:hidden text-sm">README</span>
+                        </a>
+                        <div class="is-drawer-close:hidden text-[10px] opacity-25 text-center uppercase tracking-widest pt-1">v1.0</div>
                     </div>
 
                 </aside>

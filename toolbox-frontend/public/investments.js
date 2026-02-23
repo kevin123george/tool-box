@@ -178,6 +178,11 @@ async function loadHoldings() {
             const pl = (h.currentPrice - h.buyPrice) * h.quantity;
             const plPercent = ((h.currentPrice - h.buyPrice) / h.buyPrice * 100) || 0;
             const plClass = pl >= 0 ? "positive" : "negative";
+            const buyDateStr = h.buyDate
+                ? (Array.isArray(h.buyDate)
+                    ? `${h.buyDate[0]}-${String(h.buyDate[1]).padStart(2,'0')}-${String(h.buyDate[2]).padStart(2,'0')}`
+                    : String(h.buyDate).substring(0, 10))
+                : '';
 
             html += `
             <div class="stock-row">
@@ -193,7 +198,7 @@ async function loadHoldings() {
                     <div class="profit-bar-fill ${plClass}" style="width:${Math.min(Math.abs(plPercent), 100)}%; background:${pl >= 0 ? '#0f0' : '#f33'};"></div>
                 </div>
                 <div style="text-align:right; margin-top:4px;">
-                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice})" aria-label="Edit ${h.symbol}">EDIT</button>
+                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice}, '${buyDateStr}')" aria-label="Edit ${h.symbol}">EDIT</button>
                     <button class="btn" onclick="delHolding('${h.id}')" aria-label="Delete ${h.symbol}">DEL</button>
                 </div>
             </div>`;
@@ -271,7 +276,7 @@ function showAddHolding() {
     openModal("stockHoldingModal");
 }
 
-function showEditHolding(id, symbol, quantity, buyPrice) {
+function showEditHolding(id, symbol, quantity, buyPrice, buyDate) {
     editingHoldingId = id;
     document.getElementById('stockHoldingModalTitle').textContent = "Edit Holding";
     document.getElementById('stockSymbol').value = symbol;

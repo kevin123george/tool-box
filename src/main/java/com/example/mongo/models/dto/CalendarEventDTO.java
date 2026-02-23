@@ -8,9 +8,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalendarEventDTO {
-  private String id;          // non-null only for custom (personal) events
+  private String id; // non-null only for custom (personal) events
   private String description; // optional note for custom events
   private int day;
+  private String rangeLabel; // e.g. "Mar 3 – Mar 7" for multi-day events, null otherwise
   private String title;
   private double amount;
   private String type; // INCOME, EXPENSE, SUBSCRIPTION, DIVIDEND, WORKOUT

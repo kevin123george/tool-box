@@ -91,12 +91,13 @@ function renderCalendar() {
         const dd  = String(day).padStart(2, '0');
         const dateStr = `${calYear}-${mm}-${dd}`;
 
-        const chips = visible.map((e, idx) => {
-            const cls   = chipClass(e);
-            const label = eventLabel(e);
+        const chips = visible.map((e) => {
+            const cls     = chipClass(e);
+            const label   = eventLabel(e);
+            const tooltip = e.rangeLabel ? `${label} (${e.rangeLabel})` : label;
             return `<span class="cal-chip ${cls}"
                          onclick="event.stopPropagation(); onChipClick(${encodeEvent(e)})"
-                         title="${escHtml(label)}">${escHtml(label)}</span>`;
+                         title="${escHtml(tooltip)}">${escHtml(label)}</span>`;
         }).join('');
 
         const more = overflow > 0
@@ -149,25 +150,43 @@ function goToToday() {
 
 /* ── Day click → add event ──────────────────────────────── */
 function onDayClick(dateStr) {
-    document.getElementById('addEventDate').value  = dateStr;
-    document.getElementById('addEventTitle').value = '';
-    document.getElementById('addEventType').value  = 'VACATION';
-    document.getElementById('addEventDesc').value  = '';
+    document.getElementById('addEventDate').value    = dateStr;
+    document.getElementById('addEventEndDate').value = dateStr; // default end = start
+    document.getElementById('addEventEndDate').min   = dateStr;
+    document.getElementById('addEventTitle').value   = '';
+    document.getElementById('addEventType').value    = 'VACATION';
+    document.getElementById('addEventDesc').value    = '';
     openModal('addEventModal');
 }
 
+/** Keep end-date min in sync when start date changes. */
+function onStartDateChange() {
+    const start  = document.getElementById('addEventDate').value;
+    const endEl  = document.getElementById('addEventEndDate');
+    endEl.min    = start;
+    if (endEl.value && endEl.value < start) endEl.value = start;
+}
+
 async function confirmAddEvent() {
-    const date  = document.getElementById('addEventDate').value;
-    const title = document.getElementById('addEventTitle').value.trim();
-    const type  = document.getElementById('addEventType').value;
-    const desc  = document.getElementById('addEventDesc').value.trim();
+    const date    = document.getElementById('addEventDate').value;
+    const endDate = document.getElementById('addEventEndDate').value;
+    const title   = document.getElementById('addEventTitle').value.trim();
+    const type    = document.getElementById('addEventType').value;
+    const desc    = document.getElementById('addEventDesc').value.trim();
     if (!title) { showToast('Please enter a title', 'warning'); return; }
     closeModal('addEventModal');
+    // Only send endDate if it's actually different (i.e. a range)
+    const body = {
+        date, title,
+        description: desc || null,
+        eventType: type,
+        endDate: (endDate && endDate !== date) ? endDate : null
+    };
     try {
         const res = await authFetch(`${API}/api/events`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date, title, description: desc || null, eventType: type })
+            body: JSON.stringify(body)
         });
         if (!res || !res.ok) throw new Error();
         showToast('Event saved', 'success');
@@ -178,29 +197,36 @@ async function confirmAddEvent() {
 /* ── Chip click → event detail ──────────────────────────── */
 function onChipClick(e) {
     _detailEvent = e;
-    const cfg  = EVENT_TYPE_CFG[e.type] || EVENT_TYPE_CFG.OTHER;
-    const isCustom = !!e.id;  // only custom events have an id from the backend
+    const cfg     = EVENT_TYPE_CFG[e.type] || EVENT_TYPE_CFG.OTHER;
+    const isCustom = !!e.id; // only custom (personal) events have an id
 
     document.getElementById('detailTitle').textContent = e.title || '';
-    document.getElementById('detailDate').textContent  =
-        `${MONTH_NAMES[calMonth - 1]} ${e.day}, ${calYear}`;
+
+    // Date line: show full range if present, otherwise just the clicked day
+    const dateLine = e.rangeLabel
+        ? e.rangeLabel
+        : `${MONTH_NAMES[calMonth - 1]} ${e.day}, ${calYear}`;
+    document.getElementById('detailDate').textContent = dateLine;
+
+    // Range sub-line (hidden for single-day)
+    const rangeEl = document.getElementById('detailRange');
+    rangeEl.classList.toggle('hidden', !e.rangeLabel);
 
     const typeBadge = document.getElementById('detailType');
-    typeBadge.textContent  = cfg.label;
-    typeBadge.className    = `badge badge-sm ${cfg.badge}`;
+    typeBadge.textContent = cfg.label;
+    typeBadge.className   = `badge badge-sm ${cfg.badge}`;
 
     const descEl = document.getElementById('detailDesc');
     descEl.textContent = e.description || '';
     descEl.classList.toggle('hidden', !e.description);
 
-    // Amount row for financial events
+    // Amount / duration row for financial / workout events
     const amtEl = document.getElementById('detailAmount');
-    if ((e.type === 'INCOME' || e.type === 'EXPENSE' ||
-         e.type === 'SUBSCRIPTION' || e.type === 'DIVIDEND') && e.amount) {
-        amtEl.textContent = `€${e.amount.toFixed(2)}`;
+    if (['INCOME','EXPENSE','SUBSCRIPTION','DIVIDEND'].includes(e.type) && e.amount) {
+        amtEl.textContent = `€${Number(e.amount).toFixed(2)}`;
         amtEl.classList.remove('hidden');
     } else if (e.type === 'WORKOUT' && e.amount) {
-        amtEl.textContent = `${e.amount} min${e.completed ? ' · completed' : ' · pending'}`;
+        amtEl.textContent = `${e.amount} min · ${e.completed ? 'completed ✓' : 'pending'}`;
         amtEl.classList.remove('hidden');
     } else {
         amtEl.classList.add('hidden');

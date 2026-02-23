@@ -19,6 +19,7 @@ public class CalendarEvent {
   @Indexed private String userId;
 
   private LocalDate date;
+  private LocalDate endDate; // null = single-day; set for multi-day ranges (vacation etc.)
   private String title;
   private String description;
   private EventType eventType;

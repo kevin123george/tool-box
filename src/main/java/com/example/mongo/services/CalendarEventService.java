@@ -23,7 +23,7 @@ public class CalendarEventService {
   public List<CalendarEvent> getForMonth(int year, int month) {
     LocalDate start = LocalDate.of(year, month, 1);
     LocalDate end = start.plusMonths(1).minusDays(1);
-    return repo.findByUserIdAndDateBetween(authUtils.getCurrentUserId(), start, end);
+    return repo.findOverlappingByUserId(authUtils.getCurrentUserId(), start, end);
   }
 
   public void delete(String id) {

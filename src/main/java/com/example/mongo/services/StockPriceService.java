@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
@@ -77,6 +79,43 @@ public class StockPriceService {
     result.put("base_price_usd", jsonNode.get("base_price_usd").asDouble());
     result.put("exchange_rate", jsonNode.get("exchange_rate").asDouble());
 
+    return result;
+  }
+
+  public List<Map<String, Object>> getStockHistory(String ticker, String startDate, String currency)
+      throws IOException, InterruptedException {
+    String pythonScript = "stock_history_fetcher.py";
+    String pythonExecutable = findPythonExecutable();
+
+    ProcessBuilder processBuilder =
+        new ProcessBuilder(
+            pythonExecutable, pythonScript, ticker, startDate, currency != null ? currency : "USD");
+    processBuilder.redirectErrorStream(true);
+
+    Process process = processBuilder.start();
+    StringBuilder output = new StringBuilder();
+    try (BufferedReader reader =
+        new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+      String line;
+      while ((line = reader.readLine()) != null) output.append(line);
+    }
+
+    int exitCode = process.waitFor();
+    if (exitCode != 0) {
+      throw new RuntimeException(
+          "History script failed with exit code: " + exitCode + ", output: " + output);
+    }
+
+    JsonNode root = objectMapper.readTree(output.toString());
+    List<Map<String, Object>> result = new ArrayList<>();
+    if (root.isArray()) {
+      for (JsonNode node : root) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("date", node.get("date").asText());
+        entry.put("price", node.get("price").asDouble());
+        result.add(entry);
+      }
+    }
     return result;
   }
 }
