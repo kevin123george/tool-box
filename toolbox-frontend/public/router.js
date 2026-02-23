@@ -170,10 +170,10 @@
         const p = url.pathname;
         if (!SPA_PATHS.has(p)) return;
 
-        // Skip if a same-page tab-switch function is already defined
-        // (means we're on that page and nav.js will handle it without a full nav)
+        // Skip if a same-page tab-switch function is already defined AND we're on that page
+        // (nav.js will handle it without a full nav)
         const tab = link.dataset.navTab;
-        if (tab) {
+        if (tab && location.pathname === p) {
             const fnName = TAB_FN_MAP[p];
             if (fnName && typeof window[fnName] === 'function') return;
         }

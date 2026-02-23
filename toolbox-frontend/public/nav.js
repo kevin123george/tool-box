@@ -160,7 +160,7 @@
                 if (item.children) {
                     html += `
                     <li class="px-1.5">
-                        <details ${isActive ? 'open' : ''} class="is-drawer-close:[&>ul]:hidden">
+                        <details data-nav-key="${item.key}" open class="is-drawer-close:[&>ul]:hidden">
                             <summary class="flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer select-none
                                            ${activeClasses} list-none [&::-webkit-details-marker]:hidden
                                            tooltip is-drawer-open:tooltip-none tooltip-right"
@@ -362,7 +362,18 @@
     ------------------------------------------------------- */
     window.__navUpdate = function (activeKey) {
         const navEl = document.querySelector('#drawerRoot aside nav');
-        if (navEl) navEl.innerHTML = buildMenuHTML(activeKey);
+        if (navEl) {
+            // Preserve which sections the user has open/closed
+            const closedKeys = new Set(
+                Array.from(navEl.querySelectorAll('details[data-nav-key]:not([open])')).map(d => d.dataset.navKey)
+            );
+            navEl.innerHTML = buildMenuHTML(activeKey);
+            // Re-apply closed state (buildMenuHTML defaults all to open)
+            closedKeys.forEach(k => {
+                const d = navEl.querySelector(`details[data-nav-key="${k}"]`);
+                if (d) d.open = false;
+            });
+        }
 
         const titleEl = document.querySelector('#drawerRoot header .navbar-start h1');
         if (titleEl) titleEl.textContent = PAGE_TITLES[activeKey] || 'ToolBox';
@@ -408,13 +419,13 @@
         // Derive function name from the link's target page
         const fnName = TAB_FN_MAP[link.pathname];
 
-        // If the function is defined, we're already on that page — intercept
-        if (fnName && typeof window[fnName] === 'function') {
+        // Only intercept if we're currently on that page (function defined + pathname matches)
+        if (fnName && typeof window[fnName] === 'function' && location.pathname === link.pathname) {
             e.preventDefault();
             window[fnName](tab);
             history.pushState({}, '', link.href);
         }
-        // Otherwise let the browser navigate normally
+        // Otherwise let the browser (or router) navigate normally
     });
 
     // Close mobile drawer on Escape
