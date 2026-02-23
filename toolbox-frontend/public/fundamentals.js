@@ -65,7 +65,8 @@ function fmtRatio(n) {
    =============================================================*/
 
 (function initTickerSearch() {
-    document.addEventListener('DOMContentLoaded', () => {
+    // Exposed globally so investments __pageInits can re-run on SPA navigation
+    window.__initTickerSearch = function () {
         document.querySelectorAll('input[data-ticker-search]').forEach(input => {
             const dropdown = input.parentElement.querySelector('.ticker-search-dropdown');
             if (!dropdown) return;
@@ -109,7 +110,13 @@ function fmtRatio(n) {
                 }
             });
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', window.__initTickerSearch);
+    } else {
+        window.__initTickerSearch();
+    }
 
     async function _fetchTickerResults(input, dropdown, query, resetIdx) {
         try {

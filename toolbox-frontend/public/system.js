@@ -421,10 +421,12 @@ function arrayBufferToBase64(buffer) {
    INITIALIZE
 =============================================================*/
 
-document.addEventListener('DOMContentLoaded', function() {
+(window.__pageInits = window.__pageInits || {}).system = function () {
     requireAuth();
     initSystemStatsTab();
     initPushNotifications();
-});
+    // Register cleanup for SPA navigation away from this page
+    window.__pageCleanup = cleanupSystemStats;
+};
 
 window.addEventListener('beforeunload', cleanupSystemStats);

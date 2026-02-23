@@ -1325,7 +1325,7 @@ function renderWeeklyVolumeChart(data) {
    INIT
 =============================================================*/
 
-document.addEventListener('DOMContentLoaded', function() {
+(window.__pageInits = window.__pageInits || {}).fitness = function () {
     requireAuth();
     loadFitnessTab();
-});
+};

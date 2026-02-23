@@ -62,44 +62,50 @@ let activeGroup    = null; // null = All
 let searchQuery    = '';
 
 /* ── Init ──────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
+let _pdfGlobalListenersAdded = false;
+
+(window.__pageInits = window.__pageInits || {}).pdfs = function () {
     requireAuth();
-    // After library loads, check URL hash to restore an open reader on refresh
     loadLibrary().then(() => {
         const id = location.hash.slice(1);
         if (id) openReader(id);
     });
 
-    // Close floating pickers/bubbles on outside click
-    document.addEventListener('click', e => {
-        for (const [btnId, rowId] of [['markerBtn','markerColorRow'],['penBtn','penColorRow']]) {
-            const row = document.getElementById(rowId);
-            if (row && !row.classList.contains('hidden') &&
-                !document.getElementById(btnId)?.contains(e.target) &&
-                !row.contains(e.target)) {
-                row.classList.add('hidden');
-            }
-        }
-        const bubble = document.getElementById('annotDeleteBubble');
-        if (bubble && !bubble.classList.contains('hidden') && !bubble.contains(e.target)) {
-            hideAnnotDeleteBubble();
-        }
-        const bmMenu = document.getElementById('bookmarkMenu');
-        if (bmMenu && !bmMenu.classList.contains('hidden') &&
-            !document.getElementById('bookmarkMenuBtn')?.contains(e.target) &&
-            !bmMenu.contains(e.target)) {
-            closeBookmarkMenu();
-        }
-    });
+    // Global listeners are attached to document — add only once
+    if (!_pdfGlobalListenersAdded) {
+        _pdfGlobalListenersAdded = true;
 
-    // Ctrl/Cmd+Z → undo last annotation
-    document.addEventListener('keydown', e => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && currentPdfId) {
-            e.preventDefault();
-            undoLastAnnotation();
-        }
-    });
-});
+        // Close floating pickers/bubbles on outside click
+        document.addEventListener('click', e => {
+            for (const [btnId, rowId] of [['markerBtn','markerColorRow'],['penBtn','penColorRow']]) {
+                const row = document.getElementById(rowId);
+                if (row && !row.classList.contains('hidden') &&
+                    !document.getElementById(btnId)?.contains(e.target) &&
+                    !row.contains(e.target)) {
+                    row.classList.add('hidden');
+                }
+            }
+            const bubble = document.getElementById('annotDeleteBubble');
+            if (bubble && !bubble.classList.contains('hidden') && !bubble.contains(e.target)) {
+                hideAnnotDeleteBubble();
+            }
+            const bmMenu = document.getElementById('bookmarkMenu');
+            if (bmMenu && !bmMenu.classList.contains('hidden') &&
+                !document.getElementById('bookmarkMenuBtn')?.contains(e.target) &&
+                !bmMenu.contains(e.target)) {
+                closeBookmarkMenu();
+            }
+        });
+
+        // Ctrl/Cmd+Z → undo last annotation
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && currentPdfId) {
+                e.preventDefault();
+                undoLastAnnotation();
+            }
+        });
+    }
+};
 
 /* ==========================================================
    LIBRARY

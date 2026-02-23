@@ -25,9 +25,9 @@ let quillMain = null;
 let quillEdit = null;
 
 /* Initialize Quill Editors */
-document.addEventListener('DOMContentLoaded', function() {
+(window.__pageInits = window.__pageInits || {}).memos = function () {
     requireAuth();
-    // Main editor
+    // Re-create Quill instances on each page visit (DOM is replaced on SPA nav)
     quillMain = new Quill('#memoContent', {
         theme: 'snow',
         modules: {
@@ -43,8 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         placeholder: 'Write your memo content here...'
     });
-
-    // Edit editor
     quillEdit = new Quill('#editMemoContent', {
         theme: 'snow',
         modules: {
@@ -60,10 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         placeholder: 'Edit memo content...'
     });
-
-    // Load memos on page load
     loadMemos();
-});
+};
 
 /* Escape key handler for memo modals */
 document.addEventListener("keydown", function(e) {

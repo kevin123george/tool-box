@@ -350,5 +350,7 @@ function escapeHtml(str) {
     return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Init
-loadUsers();
+// Page init — called by nav.js on first load and by router.js on SPA navigation
+(window.__pageInits = window.__pageInits || {}).admin = function () {
+    loadUsers();
+};

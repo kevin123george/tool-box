@@ -1682,19 +1682,24 @@ window.refreshHistoryChart = async function() {
    INITIALIZATION
 =============================================================*/
 
-document.addEventListener('DOMContentLoaded', () => {
+(window.__pageInits = window.__pageInits || {}).investments = function () {
     requireAuth();
     populateHistorySymbols();
+    // Re-initialize supporting modules (idempotent)
+    if (typeof window.__advChartInit === 'function') window.__advChartInit();
+    if (typeof window.__initTickerSearch === 'function') window.__initTickerSearch();
+    if (typeof initPrivacy === 'function') initPrivacy();
 
     const savedTab = localStorage.getItem('investments_active_tab');
     const validTabs = ['stocks', 'stockhistory', 'research', 'fundamentals', 'dcf', 'screener'];
+    switchInvestmentTab(validTabs.includes(savedTab) ? savedTab : 'stocks');
 
-    if (savedTab && validTabs.includes(savedTab)) {
-        switchInvestmentTab(savedTab);
-    } else {
-        switchInvestmentTab('stocks');
-    }
-});
+    // Register cleanup for when SPA-navigating away from this page
+    window.__pageCleanup = function () {
+        if (stocksRefreshInterval)  { clearInterval(stocksRefreshInterval);  stocksRefreshInterval  = null; }
+        if (historyRefreshInterval) { clearInterval(historyRefreshInterval); historyRefreshInterval = null; }
+    };
+};
 
 // Cleanup on page leave
 window.addEventListener('beforeunload', () => {

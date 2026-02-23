@@ -1668,9 +1668,10 @@ function renderCategoryBreakdownChart(monthly) {
    INITIALIZATION
    ============================================================ */
 
-document.addEventListener('DOMContentLoaded', function() {
+(window.__pageInits = window.__pageInits || {}).finance = function () {
     requireAuth();
+    if (typeof initPrivacy === 'function') initPrivacy();
     const validTabs = ['accounts', 'budget', 'subscriptions', 'analytics'];
     const saved = localStorage.getItem('finance_active_tab') || 'accounts';
     switchFinanceTab(validTabs.includes(saved) ? saved : 'accounts');
-});
+};

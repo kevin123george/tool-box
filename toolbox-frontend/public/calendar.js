@@ -36,10 +36,10 @@ let calEvents = [];
 let _detailEvent = null; // event currently shown in detail modal
 
 /* ── Init ───────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
+(window.__pageInits = window.__pageInits || {}).calendar = function () {
     requireAuth();
     loadCalendar();
-});
+};
 
 /* ── Data ───────────────────────────────────────────────── */
 async function loadCalendar() {

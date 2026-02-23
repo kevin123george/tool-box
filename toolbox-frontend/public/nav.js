@@ -351,7 +351,25 @@
         if (initialsEl) initialsEl.textContent = initials;
         if (nameEl)     nameEl.textContent     = userName;
         if (emailEl)    emailEl.textContent    = userEmail;
+
+        // Call page init if registered (supports SPA pattern)
+        const initFn = window.__pageInits && window.__pageInits[activeKey];
+        if (typeof initFn === 'function') initFn();
     }
+
+    /* -------------------------------------------------------
+       SPA: update sidebar active state without full re-render
+    ------------------------------------------------------- */
+    window.__navUpdate = function (activeKey) {
+        const navEl = document.querySelector('#drawerRoot aside nav');
+        if (navEl) navEl.innerHTML = buildMenuHTML(activeKey);
+
+        const titleEl = document.querySelector('#drawerRoot header .navbar-start h1');
+        if (titleEl) titleEl.textContent = PAGE_TITLES[activeKey] || 'ToolBox';
+
+        const ph = document.getElementById('nav-placeholder');
+        if (ph) ph.dataset.active = activeKey;
+    };
 
     /* -------------------------------------------------------
        Toggle sidebar

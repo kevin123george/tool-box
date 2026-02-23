@@ -173,6 +173,7 @@
 
 <script src="shared.js"></script>
 <script src="nav.js"></script>
+<script src="router.js"></script>
 <script>
 /* ---- Greeting + date ---- */
 (function () {
@@ -443,11 +444,11 @@ async function loadDashboard() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+(window.__pageInits = window.__pageInits || {}).home = function () {
     requireAuth();
     loadDashboard();
     initPrivacy();
-});
+};
 </script>
 </body>
 </html>

@@ -39,12 +39,16 @@ let bbMiddleSeries = null;
 // INITIALIZATION
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[AdvChart] DOMContentLoaded');
-
+window.__advChartInit = function () {
     loadSymbolsForFilter();
     setupRangeButtons();
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.__advChartInit);
+} else {
+    window.__advChartInit();
+}
 
 function updateDebug(msg) {
     const el = document.getElementById('chartDebug');
