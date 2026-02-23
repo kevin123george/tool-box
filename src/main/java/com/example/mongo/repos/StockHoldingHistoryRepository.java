@@ -30,4 +30,6 @@ public interface StockHoldingHistoryRepository
   List<StockHoldingHistory> findBySymbolAndUserIdOrderByUpdatedAtAsc(String symbol, String userId);
 
   List<StockHoldingHistory> findBySymbolAndUserIdOrderByUpdatedAtDesc(String symbol, String userId);
+
+  boolean existsByStockHoldingId(String stockHoldingId);
 }

@@ -103,7 +103,7 @@ public class MarketDataService {
     for (Map<String, Object> item : data) {
       OHLCData d =
           OHLCData.builder()
-              .time(null)
+              .time(0L)
               .open(dblVal(item.get("open")))
               .high(dblVal(item.get("high")))
               .low(dblVal(item.get("low")))

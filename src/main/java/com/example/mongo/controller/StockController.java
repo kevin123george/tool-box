@@ -96,4 +96,11 @@ public class StockController {
   public ResponseEntity<PortfolioTarget> setTargetAllocation(@RequestBody PortfolioTarget target) {
     return ResponseEntity.ok(service.savePortfolioTarget(target));
   }
+
+  @PostMapping("/backfill-history")
+  public ResponseEntity<String> backfillHistory() {
+    service.backfillAllHistory();
+    return ResponseEntity.ok(
+        "Backfill started for all holdings with no history. Check back in ~30s.");
+  }
 }

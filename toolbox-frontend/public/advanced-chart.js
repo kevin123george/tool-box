@@ -310,10 +310,10 @@ async function loadAdvancedChart() {
 
         currentOHLCData = ohlcData;
 
-        // Format for Lightweight Charts (time must be in seconds, sorted ascending)
+        // Format for Lightweight Charts (time is already epoch seconds from backend)
         const candleData = ohlcData
             .map(d => ({
-                time: Math.floor(new Date(d.time).getTime() / 1000),
+                time: d.time,
                 open: d.open,
                 high: d.high,
                 low: d.low,
@@ -331,7 +331,7 @@ async function loadAdvancedChart() {
         if (volumeSeries && indicatorStates.volume) {
             const volData = ohlcData
                 .map(d => ({
-                    time: Math.floor(new Date(d.time).getTime() / 1000),
+                    time: d.time,
                     value: d.volume || 1,
                     color: d.close >= d.open ? 'rgba(0,255,136,0.5)' : 'rgba(255,68,68,0.5)'
                 }))

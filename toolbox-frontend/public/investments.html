@@ -191,10 +191,11 @@
             </div>
             <div>
                 <label class="label text-xs">Actions</label>
-                <div class="flex gap-1">
+                <div class="flex gap-1 flex-wrap">
                     <div class="tooltip" data-tip="Fullscreen"><button class="btn btn-sm btn-square" onclick="toggleFullscreen()">&#x26F6;</button></div>
                     <div class="tooltip" data-tip="Export PNG"><button class="btn btn-sm btn-square" onclick="exportChartImage()">&#128202;</button></div>
-                    <div class="tooltip" data-tip="Refresh"><button class="btn btn-sm btn-square" onclick="loadAdvancedChart()">&#128260;</button></div>
+                    <div class="tooltip" data-tip="Refresh chart"><button class="btn btn-sm btn-square" onclick="loadAdvancedChart()">&#128260;</button></div>
+                    <div class="tooltip" data-tip="Fetch 2yr history for all holdings"><button class="btn btn-sm btn-outline" onclick="fetchAllHistory()">&#128229; History</button></div>
                 </div>
             </div>
         </div>

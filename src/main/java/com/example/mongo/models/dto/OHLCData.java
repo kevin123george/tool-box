@@ -1,6 +1,5 @@
 package com.example.mongo.models.dto;
 
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OHLCData {
-  private LocalDateTime time;
+  private long time; // Unix epoch seconds
   private double open;
   private double high;
   private double low;

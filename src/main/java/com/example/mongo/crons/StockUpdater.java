@@ -4,9 +4,11 @@ import com.example.mongo.repos.StockWatchRepository;
 import com.example.mongo.services.PriceAlertService;
 import com.example.mongo.services.StockService;
 import com.example.mongo.services.StockWatchService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class StockUpdater {
 
@@ -31,19 +33,19 @@ public class StockUpdater {
 
   @Scheduled(fixedDelay = 10000)
   public void updateStock() {
-    System.out.println("Running stock price update cron job...");
+    log.info("[StockUpdater] Running stock price update");
     stockService.updateHoldingCurrentPrice();
   }
 
   @Scheduled(fixedDelay = 240000)
   public void updatedWatcher() {
-    System.out.println("Running watchlist price update cron job...");
+    log.info("[StockUpdater] Running watchlist price update");
     stockWatchRepository.findDistinctStockSymbols().forEach(stockWatchService::recordCurrentPrice);
   }
 
   @Scheduled(fixedDelay = 60000)
   public void checkPriceAlerts() {
-    System.out.println("Checking price alerts...");
+    log.debug("[StockUpdater] Checking price alerts");
     priceAlertService.checkAlerts();
   }
 }

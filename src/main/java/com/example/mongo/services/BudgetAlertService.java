@@ -4,9 +4,11 @@ import com.example.mongo.models.MonthlyBudget;
 import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class BudgetAlertService {
 
@@ -24,7 +26,7 @@ public class BudgetAlertService {
   // Run daily at 8 PM (20:00)
   @Scheduled(cron = "0 0 20 * * *")
   public void checkBudgetThresholds() {
-    System.out.println("Running daily budget threshold check...");
+    log.info("[BudgetAlert] Running daily budget threshold check");
     YearMonth currentMonth = YearMonth.now();
     checkAndAlert(currentMonth);
   }
@@ -43,7 +45,7 @@ public class BudgetAlertService {
         lastAlertLevelByMonth.put(month, alertLevel);
       }
     } catch (Exception e) {
-      System.err.println("Error checking budget thresholds: " + e.getMessage());
+      log.error("[BudgetAlert] Error checking thresholds: {}", e.getMessage());
     }
   }
 
@@ -93,9 +95,9 @@ public class BudgetAlertService {
 
     try {
       webPushService.sendNotificationToAll(title, body, type);
-      System.out.println("Budget alert sent: " + title);
+      log.info("[BudgetAlert] Sent: {}", title);
     } catch (Exception e) {
-      System.err.println("Failed to send budget alert: " + e.getMessage());
+      log.error("[BudgetAlert] Failed to send alert: {}", e.getMessage());
     }
   }
 

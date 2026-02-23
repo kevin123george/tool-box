@@ -199,7 +199,7 @@ async function loadHoldings() {
                 </div>
                 <div style="text-align:right; margin-top:4px;">
                     <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice}, '${buyDateStr}')" aria-label="Edit ${h.symbol}">EDIT</button>
-                    <button class="btn" onclick="delHolding('${h.id}')" aria-label="Delete ${h.symbol}">DEL</button>
+                    <button class="btn" onclick="delHolding('${h.id}', '${h.symbol}')" aria-label="Delete ${h.symbol}">DEL</button>
                 </div>
             </div>`;
         });
@@ -267,6 +267,20 @@ function refreshStocks() {
     loadStocks();
 }
 
+async function fetchAllHistory() {
+    try {
+        const res = await authFetch(`${API}/api/stocks/backfill-history`, { method: 'POST' });
+        if (!res || !res.ok) throw new Error();
+        showToast('Fetching history in background — refresh the chart in ~30s', 'info');
+        // Reload symbols after delay to pick up newly created records
+        setTimeout(() => {
+            if (typeof loadSymbolsForFilter === 'function') loadSymbolsForFilter();
+        }, 35000);
+    } catch {
+        showToast('Failed to start history fetch', 'error');
+    }
+}
+
 function showAddHolding() {
     editingHoldingId = null;
     document.getElementById('stockHoldingModalTitle').textContent = "Add Holding";
@@ -291,16 +305,15 @@ function closeStockHoldingModal() {
 }
 
 async function saveStockHolding() {
-    const data = {
-        symbol: document.getElementById('stockSymbol').value.toUpperCase(),
-        quantity: parseFloat(document.getElementById('stockQuantity').value),
-        buyPrice: parseFloat(document.getElementById('stockBuyPrice').value)
-    };
+    const symbol   = document.getElementById('stockSymbol').value.toUpperCase().trim();
+    const quantity = parseFloat(document.getElementById('stockQuantity').value);
+    const buyPrice = parseFloat(document.getElementById('stockBuyPrice').value);
 
-    if (!data.symbol || !data.quantity || !data.buyPrice) {
-        showToast("Please fill all fields", "warning");
-        return;
-    }
+    if (!symbol)         { showToast('Enter a stock symbol', 'warning'); return; }
+    if (!quantity || quantity <= 0) { showToast('Enter a valid quantity', 'warning'); return; }
+    if (!buyPrice || buyPrice <= 0) { showToast('Enter a valid buy price', 'warning'); return; }
+
+    const data = { symbol, quantity, buyPrice };
 
     try {
         if (editingHoldingId) {
@@ -309,27 +322,39 @@ async function saveStockHolding() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             });
+            closeStockHoldingModal();
+            loadStocks();
+            showToast(`${symbol} updated`, 'success');
         } else {
-            await authFetch(`${API}/api/stocks`, {
+            showLoading(`Fetching live price for ${symbol}…`);
+            const res = await authFetch(`${API}/api/stocks`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             });
+            const saved = await res.json();
+            closeStockHoldingModal();
+            loadStocks();
+            const priceStr = saved.currentPrice > 0 ? ` · €${saved.currentPrice.toFixed(2)}` : '';
+            showToast(`${symbol} added${priceStr}`, 'success');
         }
-
-        closeStockHoldingModal();
-        loadStocks();
-        showToast("Stock holding saved successfully!", "success");
     } catch (e) {
-        showToast("Error saving holding: " + e.message, "error");
+        showToast(`Could not save ${symbol}: ${e.message}`, 'error');
+    } finally {
+        hideLoading();
     }
 }
 
-async function delHolding(id) {
-    if (!confirm("Delete this holding?")) return;
+async function delHolding(id, symbol) {
+    if (!confirm(`Remove ${symbol || 'this holding'} from your portfolio?`)) return;
 
-    await authFetch(`${API}/api/stocks/${id}`, { method: "DELETE" });
-    loadStocks();
+    try {
+        await authFetch(`${API}/api/stocks/${id}`, { method: "DELETE" });
+        loadStocks();
+        showToast(`${symbol || 'Holding'} removed from portfolio`, 'success');
+    } catch (e) {
+        showToast(`Could not remove ${symbol || 'holding'}`, 'error');
+    }
 }
 
 function showAddWatchlist() {
@@ -351,10 +376,8 @@ async function saveWatchlist() {
         initialPrice: parseFloat(document.getElementById('watchInitialPrice').value)
     };
 
-    if (!data.symbol || !data.initialPrice) {
-        showToast("Please fill all fields", "warning");
-        return;
-    }
+    if (!data.symbol)       { showToast('Enter a stock symbol', 'warning'); return; }
+    if (!data.initialPrice || data.initialPrice <= 0) { showToast('Enter a valid initial price', 'warning'); return; }
 
     try {
         await authFetch(`${API}/api/stocks-watch`, {
@@ -365,9 +388,9 @@ async function saveWatchlist() {
 
         closeWatchlistModal();
         loadStocks();
-        showToast("Watchlist item saved successfully!", "success");
+        showToast(`${data.symbol} added to watchlist`, 'success');
     } catch (e) {
-        showToast("Error saving watchlist item: " + e.message, "error");
+        showToast(`Could not add ${data.symbol} to watchlist`, 'error');
     }
 }
 

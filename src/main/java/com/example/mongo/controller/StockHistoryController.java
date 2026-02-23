@@ -256,9 +256,10 @@ public class StockHistoryController {
           candle.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).min().orElse(open);
       double volume = candle.size(); // Use count as volume proxy
 
+      long epochSeconds = entry.getKey().atZone(ZoneId.systemDefault()).toEpochSecond();
       ohlcList.add(
           OHLCData.builder()
-              .time(entry.getKey())
+              .time(epochSeconds)
               .open(open)
               .high(high)
               .low(low)

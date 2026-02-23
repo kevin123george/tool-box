@@ -9,9 +9,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class StockWatchService {
 
@@ -37,26 +39,26 @@ public class StockWatchService {
       double price = (double) priceData.get("price");
       return Optional.of(price);
     } catch (Exception e) {
-      System.err.println("Error fetching price for symbol: " + symbol + " - " + e.getMessage());
+      log.error("[WatchService] Error fetching price for {}: {}", symbol, e.getMessage());
       return Optional.empty();
     }
   }
 
   public void recordCurrentPrice(String symbol) {
     if (symbol == null || symbol.isEmpty()) {
-      System.err.println("Invalid stock symbol provided.");
+      log.warn("[WatchService] Invalid stock symbol provided");
       return;
     }
-    System.out.println("Recording current price for: " + symbol);
+    log.debug("[WatchService] Recording current price for: {}", symbol);
     // Find ALL watches for this symbol across all users
     List<StockWatch> watches = stockWatchRepository.findBySymbol(symbol);
     if (watches.isEmpty()) {
-      System.err.println("No watches found for symbol: " + symbol);
+      log.warn("[WatchService] No watches found for symbol: {}", symbol);
       return;
     }
     Optional<Double> priceOpt = fetchCurrentPrice(symbol);
     if (priceOpt.isEmpty()) {
-      System.err.println("Could not fetch current price for: " + symbol);
+      log.error("[WatchService] Could not fetch current price for: {}", symbol);
       return;
     }
     double price = priceOpt.get();
@@ -104,10 +106,10 @@ public class StockWatchService {
     String userId = authUtils.getCurrentUserId();
     Optional<StockWatch> watch = stockWatchRepository.findBySymbolAndUserId(symbol, userId);
     if (watch.isEmpty()) {
-      System.err.println("Symbol not found in watchlist: " + symbol);
+      log.warn("[WatchService] Symbol not found in watchlist: {}", symbol);
       return;
     }
     stockWatchRepository.deleteById(watch.get().getId());
-    System.out.println("Deleted " + symbol + " from watchlist.");
+    log.info("[WatchService] Deleted {} from watchlist", symbol);
   }
 }

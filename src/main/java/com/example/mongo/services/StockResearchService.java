@@ -359,8 +359,8 @@ public class StockResearchService {
       indicators.setMacd(macd);
 
     } catch (Exception e) {
-      System.err.println(
-          "Error fetching technical indicators for " + symbol + ": " + e.getMessage());
+      log.error(
+          "[Research] Error fetching technical indicators for {}: {}", symbol, e.getMessage());
     }
 
     return indicators;

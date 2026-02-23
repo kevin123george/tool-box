@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class StockService {
 
@@ -64,9 +66,33 @@ public class StockService {
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setUserId(authUtils.getCurrentUserId());
     StockHolding saved = stockRepository.save(stock);
+
+    // Fetch live price immediately so the holding shows real data right away
+    try {
+      Map<String, Object> priceData = stockPriceService.getStockPrice(saved.getSymbol(), "EUR");
+      double livePrice = (double) priceData.get("price");
+      saved.setCurrentPrice(livePrice);
+      saved = stockRepository.save(saved);
+      log.info("[addStock] Initial price for {}: €{}", saved.getSymbol(), livePrice);
+    } catch (Exception e) {
+      log.warn(
+          "[addStock] Could not fetch initial price for {}: {}", saved.getSymbol(), e.getMessage());
+    }
+
     final StockHolding ref = saved;
     CompletableFuture.runAsync(() -> backfillHistory(ref));
     return saved;
+  }
+
+  public void backfillAllHistory() {
+    String userId = authUtils.getCurrentUserId();
+    List<StockHolding> holdings = stockRepository.findAllByUserId(userId);
+    for (StockHolding h : holdings) {
+      if (!stockHoldingHistoryRepository.existsByStockHoldingId(h.getId())) {
+        final StockHolding ref = h;
+        CompletableFuture.runAsync(() -> backfillHistory(ref));
+      }
+    }
   }
 
   private void backfillHistory(StockHolding holding) {
@@ -93,11 +119,9 @@ public class StockService {
         records.add(h);
       }
       stockHoldingHistoryRepository.saveAll(records);
-      System.out.printf(
-          "Backfilled %d history records for %s%n", records.size(), holding.getSymbol());
+      log.info("[Backfill] {} — saved {} daily records", holding.getSymbol(), records.size());
     } catch (Exception e) {
-      System.err.printf(
-          "Failed to backfill history for %s: %s%n", holding.getSymbol(), e.getMessage());
+      log.error("[Backfill] Failed for {}: {}", holding.getSymbol(), e.getMessage());
     }
   }
 
@@ -164,13 +188,10 @@ public class StockService {
       try {
         Map<String, Object> priceData = stockPriceService.getStockPrice(symbol, "EUR");
         double price = (double) priceData.get("price");
-
-        System.out.println(symbol);
-        System.out.println(price);
+        log.debug("[StockUpdater] {} → €{}", symbol, price);
         tickerPriceMap.put(symbol, price);
       } catch (Exception e) {
-        System.err.println("Failed to fetch data for symbol: " + symbol);
-        e.printStackTrace();
+        log.error("[StockUpdater] Failed to fetch price for {}: {}", symbol, e.getMessage());
       }
     }
 
@@ -187,9 +208,11 @@ public class StockService {
           // Only update if price has changed
           if (Math.abs(newPrice - oldPrice) > 0.01) {
             stockHolding.setCurrentPrice(newPrice);
-            System.out.printf(
-                "Updating %s from %.2f to %.2f EUR%n",
-                stockHolding.getSymbol(), oldPrice, newPrice);
+            log.info(
+                "[StockUpdater] {} price updated: €{} → €{}",
+                stockHolding.getSymbol(),
+                oldPrice,
+                newPrice);
             updateStockHolding(stockHolding);
           }
         });
