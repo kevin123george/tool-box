@@ -100,6 +100,9 @@ public class StockPriceService {
     result.put("currency", jsonNode.get("currency").asText());
     result.put("base_price_usd", jsonNode.get("base_price_usd").asDouble());
     result.put("exchange_rate", jsonNode.get("exchange_rate").asDouble());
+    if (jsonNode.has("previous_close") && !jsonNode.get("previous_close").isNull()) {
+      result.put("previous_close", jsonNode.get("previous_close").asDouble());
+    }
 
     return result;
   }

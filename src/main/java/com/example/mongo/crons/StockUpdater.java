@@ -31,7 +31,7 @@ public class StockUpdater {
     this.priceAlertService = priceAlertService;
   }
 
-  @Scheduled(fixedDelay = 10000)
+  @Scheduled(fixedDelay = 5000)
   public void updateStock() {
     log.info("[StockUpdater] Running stock price update");
     stockService.updateHoldingCurrentPrice();

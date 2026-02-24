@@ -23,4 +23,5 @@ public class StockHolding {
   private String currency = "EUR";
   private Boolean sold = false; // Indicates if the stock has been sold
   private boolean backfilled = false; // True once full price history has been backfilled
+  private double previousClose; // Previous trading day's closing price (in holding currency)
 }

@@ -7,6 +7,27 @@ let editingHoldingId = null;
 let editingWatchlistId = null;
 let stocksRefreshInterval = null;
 let historyRefreshInterval = null;
+let countdownInterval = null;
+let countdownSecs = 5;
+
+function startCountdown() {
+    countdownSecs = 5;
+    const el = document.getElementById('priceCountdown');
+    if (el) el.textContent = `next update in ${countdownSecs}s`;
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        countdownSecs--;
+        const el = document.getElementById('priceCountdown');
+        if (el) el.textContent = countdownSecs > 0 ? `next update in ${countdownSecs}s` : 'updating…';
+        if (countdownSecs <= 0) countdownSecs = 5;
+    }, 1000);
+}
+
+function stopCountdown() {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    const el = document.getElementById('priceCountdown');
+    if (el) el.textContent = '';
+}
 
 // Stock history state
 let historyChart = null;
@@ -64,8 +85,9 @@ function switchInvestmentTab(which) {
         loadCapitalGains();
         loadPortfolioAllocation();
         if (!stocksRefreshInterval) {
-            stocksRefreshInterval = setInterval(loadStocks, 30000);
+            stocksRefreshInterval = setInterval(() => { loadStocks(); startCountdown(); }, 5000);
         }
+        startCountdown();
     } else if (which === 'stockhistory') {
         if (typeof window.onStockHistoryTabShown === 'function') {
             window.onStockHistoryTabShown();
@@ -170,6 +192,7 @@ async function loadHoldings() {
             <div>Qty</div>
             <div>Buy</div>
             <div>Current</div>
+            <div>Day</div>
             <div>P/L</div>
             <div>P/L %</div>
         </div>`;
@@ -185,12 +208,20 @@ async function loadHoldings() {
                     : String(h.buyDate).substring(0, 10))
                 : '';
 
+            const dayChange = h.previousClose > 0 ? h.currentPrice - h.previousClose : null;
+            const dayPct    = dayChange !== null && h.previousClose > 0 ? (dayChange / h.previousClose * 100) : null;
+            const dayClass  = dayChange === null ? '' : dayChange >= 0 ? 'positive' : 'negative';
+            const dayHtml   = dayChange === null
+                ? '<span class="opacity-30">—</span>'
+                : `${dayChange >= 0 ? '+' : ''}${dayChange.toFixed(2)}<br><span class="text-xs opacity-70">${dayPct >= 0 ? '+' : ''}${dayPct.toFixed(2)}%</span>`;
+
             html += `
             <div class="stock-row">
                 <div><strong>${h.symbol}</strong> <span class="badge badge-ghost badge-xs opacity-60">${cur}</span></div>
                 <div>${h.quantity}</div>
                 <div>${h.buyPrice.toFixed(2)}</div>
                 <div>${h.currentPrice.toFixed(2)}</div>
+                <div class="${dayClass}">${dayHtml}</div>
                 <div class="${plClass}">${pl >= 0 ? '+' : ''}${pl.toFixed(2)}</div>
                 <div class="${plClass}">${plPercent >= 0 ? '+' : ''}${plPercent.toFixed(2)}%</div>
             </div>
@@ -1702,6 +1733,7 @@ window.refreshHistoryChart = async function() {
     window.__pageCleanup = function () {
         if (stocksRefreshInterval)  { clearInterval(stocksRefreshInterval);  stocksRefreshInterval  = null; }
         if (historyRefreshInterval) { clearInterval(historyRefreshInterval); historyRefreshInterval = null; }
+        stopCountdown();
         if (typeof window.__advChartCleanup === 'function') window.__advChartCleanup();
         if (allocationChart) { try { allocationChart.destroy(); } catch (_) {} allocationChart = null; }
         if (historyChart)    { try { historyChart.destroy();    } catch (_) {} historyChart    = null; }

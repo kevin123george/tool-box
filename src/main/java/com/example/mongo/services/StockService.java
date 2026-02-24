@@ -75,6 +75,9 @@ public class StockService {
           stockPriceService.getStockPrice(saved.getSymbol(), saved.getCurrency());
       double livePrice = (double) priceData.get("price");
       saved.setCurrentPrice(livePrice);
+      if (priceData.containsKey("previous_close")) {
+        saved.setPreviousClose((double) priceData.get("previous_close"));
+      }
       saved = stockRepository.save(saved);
       log.info(
           "[addStock] Initial price for {} ({}): {}",
@@ -202,6 +205,7 @@ public class StockService {
   public void updateHoldingCurrentPrice() {
     // Key = "SYMBOL|CURRENCY" so each symbol+currency pair is fetched independently
     HashMap<String, Double> tickerPriceMap = new HashMap<>();
+    HashMap<String, Double> prevCloseMap = new HashMap<>();
     Set<String> symbolCurrencyKeys =
         stockRepository.findAll().stream()
             .filter(h -> !h.getSold() && h.getSymbol() != null && !h.getSymbol().isEmpty())
@@ -218,6 +222,9 @@ public class StockService {
         double price = (double) priceData.get("price");
         log.debug("[StockUpdater] {} ({}) → {}", symbol, currency, price);
         tickerPriceMap.put(key, price);
+        if (priceData.containsKey("previous_close")) {
+          prevCloseMap.put(key, (double) priceData.get("previous_close"));
+        }
       } catch (Exception e) {
         log.error(
             "[StockUpdater] Failed to fetch price for {} ({}): {}",
@@ -246,6 +253,9 @@ public class StockService {
           double newPrice = tickerPriceMap.get(key);
           double oldPrice = stockHolding.getCurrentPrice();
 
+          if (prevCloseMap.containsKey(key)) {
+            stockHolding.setPreviousClose(prevCloseMap.get(key));
+          }
           // Only update if price has changed
           if (Math.abs(newPrice - oldPrice) > 0.01) {
             stockHolding.setCurrentPrice(newPrice);
