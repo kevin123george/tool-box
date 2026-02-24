@@ -44,6 +44,18 @@ window.__advChartInit = function () {
     setupRangeButtons();
 };
 
+window.__advChartCleanup = function () {
+    try { if (mainChart)   mainChart.remove();   } catch (_) {}
+    try { if (volumeChart) volumeChart.remove();  } catch (_) {}
+    mainChart        = null;
+    volumeChart      = null;
+    candlestickSeries = null;
+    volumeSeries     = null;
+    smaSeries = emaSeries = bbUpperSeries = bbLowerSeries = bbMiddleSeries = null;
+    chartsInitialized = false;
+    currentOHLCData  = [];
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.__advChartInit);
 } else {
@@ -91,6 +103,10 @@ window.onStockHistoryTabShown = function() {
 
 function initializeCharts() {
     updateDebug('Initializing charts...');
+
+    // Clear any placeholder text (e.g. "Initializing chart...") before mounting
+    const containerPre = document.getElementById('candlestickChart');
+    if (containerPre) containerPre.innerHTML = '';
 
     if (typeof LightweightCharts === 'undefined') {
         updateDebug('ERROR: LightweightCharts library not loaded!');

@@ -1702,6 +1702,9 @@ window.refreshHistoryChart = async function() {
     window.__pageCleanup = function () {
         if (stocksRefreshInterval)  { clearInterval(stocksRefreshInterval);  stocksRefreshInterval  = null; }
         if (historyRefreshInterval) { clearInterval(historyRefreshInterval); historyRefreshInterval = null; }
+        if (typeof window.__advChartCleanup === 'function') window.__advChartCleanup();
+        if (allocationChart) { try { allocationChart.destroy(); } catch (_) {} allocationChart = null; }
+        if (historyChart)    { try { historyChart.destroy();    } catch (_) {} historyChart    = null; }
     };
 };
 
