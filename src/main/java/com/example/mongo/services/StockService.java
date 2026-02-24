@@ -96,7 +96,7 @@ public class StockService {
     List<StockHolding> holdings = stockRepository.findAllByUserId(userId);
     List<StockHolding> needsBackfill =
         holdings.stream()
-            .filter(h -> !stockHoldingHistoryRepository.existsByStockHoldingId(h.getId()))
+            .filter(h -> !h.isBackfilled())
             .toList();
     log.info("[Backfill] {}/{} holdings need backfill", needsBackfill.size(), holdings.size());
     for (StockHolding h : needsBackfill) {
@@ -134,6 +134,8 @@ public class StockService {
         records.add(h);
       }
       stockHoldingHistoryRepository.saveAll(records);
+      holding.setBackfilled(true);
+      stockRepository.save(holding);
       log.info("[Backfill] {} — done, saved {} daily records", symbol, records.size());
     } catch (Exception e) {
       log.error("[Backfill] {} — failed: {}", symbol, e.getMessage());

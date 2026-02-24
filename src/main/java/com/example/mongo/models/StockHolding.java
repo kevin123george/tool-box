@@ -22,5 +22,5 @@ public class StockHolding {
   private double currentPrice;
   private String currency = "EUR";
   private Boolean sold = false; // Indicates if the stock has been sold
-  // Getters, setters, etc.
+  private boolean backfilled = false; // True once full price history has been backfilled
 }
