@@ -98,20 +98,17 @@ fi
 echo "🔨 Building backend..."
 ./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply
 
-### Copy Python script to build directory
-echo "📄 Copying Python stock fetcher..."
-if [ -f "stock_fetcher.py" ]; then
-    # Copy the script
-    cp stock_fetcher.py build/libs/
-
-    # Ensure it has execute permissions
-    chmod +x build/libs/stock_fetcher.py
-
-    echo "Python script copied to build/libs/"
-    echo "✓ Execute permissions set"
-else
-    echo "⚠️  stock_fetcher.py not found"
-fi
+### Copy Python scripts to build directory
+echo "📄 Copying Python scripts..."
+for script in stock_fetcher.py stock_history_fetcher.py fundamentals_fetcher.py; do
+    if [ -f "$script" ]; then
+        cp "$script" build/libs/
+        chmod +x "build/libs/$script"
+        echo "✓ $script copied"
+    else
+        echo "⚠️  $script not found"
+    fi
+done
 
 ### Load environment variables for Java process
 echo "🔐 Loading environment variables for Java process..."

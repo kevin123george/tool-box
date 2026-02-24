@@ -25,11 +25,18 @@ def main():
             print(json.dumps([]))
             sys.exit(0)
 
-        # Fetch historical FX rates for USD → target currency
+        # Detect native currency (e.g. EUR for SAP.DE, GBp for VOD.L)
+        info            = ticker.fast_info
+        native_currency = (getattr(info, 'currency', None) or 'USD').upper()
+        gbp_pence       = native_currency == 'GBP' and getattr(info, 'currency', '') == 'GBp'
+        if native_currency == 'GBP' and getattr(info, 'currency', '') == 'GBp':
+            gbp_pence = True  # prices need /100
+
+        # Fetch historical FX rates: native → target currency
         fx_by_date = {}
-        last_fx = 1.0
-        if currency != "USD":
-            fx_pair = f"USD{currency}=X"
+        last_fx    = 1.0
+        if native_currency != currency:
+            fx_pair = f"{native_currency}{currency}=X"
             fx_data = yf.Ticker(fx_pair)
             fx_hist = fx_data.history(start=start_date, end=end_date, interval="1d")
             for idx, row in fx_hist.iterrows():
@@ -37,16 +44,18 @@ def main():
 
         results = []
         for idx, row in hist.iterrows():
-            day_str   = idx.strftime('%Y-%m-%d')
-            price_usd = float(row['Close'])
+            day_str      = idx.strftime('%Y-%m-%d')
+            native_price = float(row['Close'])
+            if gbp_pence:
+                native_price /= 100.0
 
-            if currency == "USD":
-                price = price_usd
+            if native_currency == currency:
+                price = native_price
             else:
                 # Use same-day rate; fall back to most recent previous rate
                 if day_str in fx_by_date:
                     last_fx = fx_by_date[day_str]
-                price = price_usd * last_fx
+                price = native_price * last_fx
 
             results.append({"date": day_str, "price": round(price, 2)})
 

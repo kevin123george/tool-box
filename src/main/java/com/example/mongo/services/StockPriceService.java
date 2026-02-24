@@ -31,10 +31,32 @@ public class StockPriceService {
     return "python3";
   }
 
+  /**
+   * Resolve a Python script path. Checks the working directory first (dev/bootRun), then the
+   * directory containing the JAR (production, where scripts are copied alongside the JAR).
+   */
+  private String resolveScript(String scriptName) {
+    // 1. Working directory (dev mode / bootRun)
+    java.io.File cwd = new java.io.File(scriptName);
+    if (cwd.exists()) return scriptName;
+
+    // 2. Next to the JAR file (production: build/libs/)
+    try {
+      java.net.URL loc =
+          StockPriceService.class.getProtectionDomain().getCodeSource().getLocation();
+      java.io.File jarDir = new java.io.File(loc.toURI()).getParentFile();
+      java.io.File next = new java.io.File(jarDir, scriptName);
+      if (next.exists()) return next.getAbsolutePath();
+    } catch (Exception ignored) {
+    }
+
+    return scriptName; // fall back — will fail with a clear error message
+  }
+
   public Map<String, Object> getStockPrice(String ticker, String currency)
       throws IOException, InterruptedException {
     // Path to the Python script
-    String pythonScript = "stock_fetcher.py";
+    String pythonScript = resolveScript("stock_fetcher.py");
 
     // Use python3 explicitly from venv or system
     String pythonExecutable = findPythonExecutable();
@@ -84,7 +106,7 @@ public class StockPriceService {
 
   public List<Map<String, Object>> getStockHistory(String ticker, String startDate, String currency)
       throws IOException, InterruptedException {
-    String pythonScript = "stock_history_fetcher.py";
+    String pythonScript = resolveScript("stock_history_fetcher.py");
     String pythonExecutable = findPythonExecutable();
 
     ProcessBuilder processBuilder =
