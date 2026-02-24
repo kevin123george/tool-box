@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 public class StockPriceEntry {
 
-  @Id private Long id;
+  @Id private String id;
 
   @Indexed private String userId;
 
