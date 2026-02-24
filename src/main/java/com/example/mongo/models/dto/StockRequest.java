@@ -18,4 +18,5 @@ public class StockRequest {
 
   private LocalDate buyDate;
   private double currentPrice;
+  private String currency;
 }

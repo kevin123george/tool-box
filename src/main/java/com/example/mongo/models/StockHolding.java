@@ -20,6 +20,7 @@ public class StockHolding {
   private double buyPrice;
   private LocalDate buyDate = LocalDate.now(); // Default to today if not specified
   private double currentPrice;
+  private String currency = "EUR";
   private Boolean sold = false; // Indicates if the stock has been sold
   // Getters, setters, etc.
 }

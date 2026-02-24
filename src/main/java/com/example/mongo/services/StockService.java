@@ -63,17 +63,18 @@ public class StockService {
     stock.setQuantity(req.getQuantity());
     stock.setBuyPrice(req.getBuyPrice());
     stock.setBuyDate(req.getBuyDate());
+    stock.setCurrency(req.getCurrency() != null && !req.getCurrency().isBlank() ? req.getCurrency() : "EUR");
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setUserId(authUtils.getCurrentUserId());
     StockHolding saved = stockRepository.save(stock);
 
     // Fetch live price immediately so the holding shows real data right away
     try {
-      Map<String, Object> priceData = stockPriceService.getStockPrice(saved.getSymbol(), "EUR");
+      Map<String, Object> priceData = stockPriceService.getStockPrice(saved.getSymbol(), saved.getCurrency());
       double livePrice = (double) priceData.get("price");
       saved.setCurrentPrice(livePrice);
       saved = stockRepository.save(saved);
-      log.info("[addStock] Initial price for {}: €{}", saved.getSymbol(), livePrice);
+      log.info("[addStock] Initial price for {} ({}): {}", saved.getSymbol(), saved.getCurrency(), livePrice);
     } catch (Exception e) {
       log.warn(
           "[addStock] Could not fetch initial price for {}: {}", saved.getSymbol(), e.getMessage());
@@ -103,7 +104,7 @@ public class StockService {
               ? holding.getBuyDate().toString()
               : LocalDate.now().minusYears(2).toString();
       List<Map<String, Object>> history =
-          stockPriceService.getStockHistory(holding.getSymbol(), startDate, "EUR");
+          stockPriceService.getStockHistory(holding.getSymbol(), startDate, holding.getCurrency() != null ? holding.getCurrency() : "EUR");
       List<StockHoldingHistory> records = new ArrayList<>();
       for (Map<String, Object> entry : history) {
         StockHoldingHistory h = new StockHoldingHistory();
@@ -133,6 +134,7 @@ public class StockService {
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setQuantity(req.getQuantity());
     stock.setBuyPrice(req.getBuyPrice());
+    if (req.getCurrency() != null && !req.getCurrency().isBlank()) stock.setCurrency(req.getCurrency());
     return stockRepository.save(stock);
   }
 
@@ -170,39 +172,42 @@ public class StockService {
   }
 
   public void updateHoldingCurrentPrice() {
+    // Key = "SYMBOL|CURRENCY" so each symbol+currency pair is fetched independently
     HashMap<String, Double> tickerPriceMap = new HashMap<>();
-    Set<String> symbols =
+    Set<String> symbolCurrencyKeys =
         stockRepository.findAll().stream()
             .filter(
-                stockHolding -> {
-                  // Filter out holdings that are sold or have no symbol
-                  return !stockHolding.getSold()
-                      && stockHolding.getSymbol() != null
-                      && !stockHolding.getSymbol().isEmpty();
-                })
-            .map(StockHolding::getSymbol)
+                h -> !h.getSold() && h.getSymbol() != null && !h.getSymbol().isEmpty())
+            .map(h -> h.getSymbol() + "|" + (h.getCurrency() != null ? h.getCurrency() : "EUR"))
             .collect(Collectors.toSet());
 
     // Use embedded Python service instead of HTTP calls
-    for (String symbol : symbols) {
+    for (String key : symbolCurrencyKeys) {
+      String[] parts = key.split("\\|");
+      String symbol = parts[0];
+      String currency = parts[1];
       try {
-        Map<String, Object> priceData = stockPriceService.getStockPrice(symbol, "EUR");
+        Map<String, Object> priceData = stockPriceService.getStockPrice(symbol, currency);
         double price = (double) priceData.get("price");
-        log.debug("[StockUpdater] {} → €{}", symbol, price);
-        tickerPriceMap.put(symbol, price);
+        log.debug("[StockUpdater] {} ({}) → {}", symbol, currency, price);
+        tickerPriceMap.put(key, price);
       } catch (Exception e) {
-        log.error("[StockUpdater] Failed to fetch price for {}: {}", symbol, e.getMessage());
+        log.error("[StockUpdater] Failed to fetch price for {} ({}): {}", symbol, currency, e.getMessage());
       }
     }
 
     List<StockHolding> allHoldings =
         stockRepository.findAll().stream()
-            .filter(stockHolding -> tickerPriceMap.containsKey(stockHolding.getSymbol()))
+            .filter(h -> {
+              String key = h.getSymbol() + "|" + (h.getCurrency() != null ? h.getCurrency() : "EUR");
+              return tickerPriceMap.containsKey(key);
+            })
             .toList();
 
     allHoldings.forEach(
         stockHolding -> {
-          double newPrice = tickerPriceMap.get(stockHolding.getSymbol());
+          String key = stockHolding.getSymbol() + "|" + (stockHolding.getCurrency() != null ? stockHolding.getCurrency() : "EUR");
+          double newPrice = tickerPriceMap.get(key);
           double oldPrice = stockHolding.getCurrentPrice();
 
           // Only update if price has changed

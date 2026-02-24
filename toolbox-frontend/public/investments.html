@@ -612,8 +612,20 @@
             <input id="stockSymbol" placeholder="Search by name or symbol (e.g. Apple)" maxlength="30" autocomplete="off" data-ticker-search class="input input-bordered w-full">
             <div class="ticker-search-dropdown" style="display:none;"></div>
         </div>
+        <select id="stockCurrency" class="select select-bordered w-full mb-2">
+            <option value="EUR">EUR — Euro (€)</option>
+            <option value="USD">USD — US Dollar ($)</option>
+            <option value="GBP">GBP — British Pound (£)</option>
+            <option value="CHF">CHF — Swiss Franc (Fr)</option>
+            <option value="JPY">JPY — Japanese Yen (¥)</option>
+            <option value="CAD">CAD — Canadian Dollar (C$)</option>
+            <option value="AUD">AUD — Australian Dollar (A$)</option>
+            <option value="SEK">SEK — Swedish Krona (kr)</option>
+            <option value="NOK">NOK — Norwegian Krone (kr)</option>
+            <option value="DKK">DKK — Danish Krone (kr)</option>
+        </select>
         <input id="stockQuantity" placeholder="Quantity" type="number" step="0.0000001" class="input input-bordered w-full mb-2">
-        <input id="stockBuyPrice" placeholder="Buy Price (€)" type="number" step="0.0000001" class="input input-bordered w-full mb-2">
+        <input id="stockBuyPrice" placeholder="Buy Price" type="number" step="0.0000001" class="input input-bordered w-full mb-2">
         <div class="modal-action">
             <button class="btn btn-primary" onclick="saveStockHolding()">SAVE</button>
             <button class="btn" onclick="closeStockHoldingModal()">CANCEL</button>

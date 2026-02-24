@@ -4,7 +4,7 @@ import json
 import yfinance as yf
 from datetime import datetime
 
-def get_current_price_and_time(ticker_symbol):
+def get_current_price_and_native_currency(ticker_symbol):
     ticker = yf.Ticker(ticker_symbol)
     hist = ticker.history(period="1d", interval="1m")
     if hist.empty:
@@ -13,7 +13,16 @@ def get_current_price_and_time(ticker_symbol):
     last_row = hist.iloc[-1]
     price = last_row['Close']
     timestamp = hist.index[-1]
-    return price, timestamp
+
+    # Get the currency this stock actually trades in (e.g. EUR for SAP.DE, GBp for VOD.L)
+    info = ticker.fast_info
+    native_currency = getattr(info, 'currency', None) or 'USD'
+    # yfinance sometimes returns GBp (pence) — normalise to GBP
+    if native_currency == 'GBp':
+        price = price / 100.0
+        native_currency = 'GBP'
+
+    return price, native_currency.upper(), timestamp
 
 def get_exchange_rate(from_currency, to_currency):
     if from_currency == to_currency:
@@ -32,19 +41,19 @@ def main():
         sys.exit(1)
 
     ticker = sys.argv[1].upper()
-    currency = sys.argv[2].upper() if len(sys.argv) > 2 else "USD"
+    target_currency = sys.argv[2].upper() if len(sys.argv) > 2 else "USD"
 
     try:
-        price_usd, timestamp = get_current_price_and_time(ticker)
-        exchange_rate = get_exchange_rate("USD", currency)
-        converted_price = price_usd * exchange_rate
+        native_price, native_currency, timestamp = get_current_price_and_native_currency(ticker)
+        exchange_rate = get_exchange_rate(native_currency, target_currency)
+        converted_price = native_price * exchange_rate
 
         response = {
             "ticker": ticker,
             "timestamp": timestamp.strftime('%Y-%m-%d %H:%M:%S UTC'),
             "price": round(converted_price, 2),
-            "currency": currency,
-            "base_price_usd": round(price_usd, 2),
+            "currency": target_currency,
+            "base_price_usd": round(native_price, 2),
             "exchange_rate": round(exchange_rate, 4)
         }
 

@@ -168,9 +168,9 @@ async function loadHoldings() {
         <div class="stock-row stock-header">
             <div>Symbol</div>
             <div>Qty</div>
-            <div>Buy €</div>
-            <div>Current €</div>
-            <div>P/L €</div>
+            <div>Buy</div>
+            <div>Current</div>
+            <div>P/L</div>
             <div>P/L %</div>
         </div>`;
 
@@ -178,6 +178,7 @@ async function loadHoldings() {
             const pl = (h.currentPrice - h.buyPrice) * h.quantity;
             const plPercent = ((h.currentPrice - h.buyPrice) / h.buyPrice * 100) || 0;
             const plClass = pl >= 0 ? "positive" : "negative";
+            const cur = h.currency || 'EUR';
             const buyDateStr = h.buyDate
                 ? (Array.isArray(h.buyDate)
                     ? `${h.buyDate[0]}-${String(h.buyDate[1]).padStart(2,'0')}-${String(h.buyDate[2]).padStart(2,'0')}`
@@ -186,7 +187,7 @@ async function loadHoldings() {
 
             html += `
             <div class="stock-row">
-                <div><strong>${h.symbol}</strong></div>
+                <div><strong>${h.symbol}</strong> <span class="badge badge-ghost badge-xs opacity-60">${cur}</span></div>
                 <div>${h.quantity}</div>
                 <div>${h.buyPrice.toFixed(2)}</div>
                 <div>${h.currentPrice.toFixed(2)}</div>
@@ -198,7 +199,7 @@ async function loadHoldings() {
                     <div class="profit-bar-fill ${plClass}" style="width:${Math.min(Math.abs(plPercent), 100)}%; background:${pl >= 0 ? '#0f0' : '#f33'};"></div>
                 </div>
                 <div style="text-align:right; margin-top:4px;">
-                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice}, '${buyDateStr}')" aria-label="Edit ${h.symbol}">EDIT</button>
+                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice}, '${buyDateStr}', '${cur}')" aria-label="Edit ${h.symbol}">EDIT</button>
                     <button class="btn" onclick="delHolding('${h.id}', '${h.symbol}')" aria-label="Delete ${h.symbol}">DEL</button>
                 </div>
             </div>`;
@@ -285,15 +286,17 @@ function showAddHolding() {
     editingHoldingId = null;
     document.getElementById('stockHoldingModalTitle').textContent = "Add Holding";
     document.getElementById('stockSymbol').value = "";
+    document.getElementById('stockCurrency').value = "EUR";
     document.getElementById('stockQuantity').value = "";
     document.getElementById('stockBuyPrice').value = "";
     openModal("stockHoldingModal");
 }
 
-function showEditHolding(id, symbol, quantity, buyPrice, buyDate) {
+function showEditHolding(id, symbol, quantity, buyPrice, buyDate, currency) {
     editingHoldingId = id;
     document.getElementById('stockHoldingModalTitle').textContent = "Edit Holding";
     document.getElementById('stockSymbol').value = symbol;
+    document.getElementById('stockCurrency').value = currency || "EUR";
     document.getElementById('stockQuantity').value = quantity;
     document.getElementById('stockBuyPrice').value = buyPrice;
     openModal("stockHoldingModal");
@@ -306,6 +309,7 @@ function closeStockHoldingModal() {
 
 async function saveStockHolding() {
     const symbol   = document.getElementById('stockSymbol').value.toUpperCase().trim();
+    const currency = document.getElementById('stockCurrency').value || 'EUR';
     const quantity = parseFloat(document.getElementById('stockQuantity').value);
     const buyPrice = parseFloat(document.getElementById('stockBuyPrice').value);
 
@@ -313,7 +317,7 @@ async function saveStockHolding() {
     if (!quantity || quantity <= 0) { showToast('Enter a valid quantity', 'warning'); return; }
     if (!buyPrice || buyPrice <= 0) { showToast('Enter a valid buy price', 'warning'); return; }
 
-    const data = { symbol, quantity, buyPrice };
+    const data = { symbol, currency, quantity, buyPrice };
 
     try {
         if (editingHoldingId) {
