@@ -94,9 +94,10 @@ public class StockService {
   public void backfillAllHistory() {
     String userId = authUtils.getCurrentUserId();
     List<StockHolding> holdings = stockRepository.findAllByUserId(userId);
-    List<StockHolding> needsBackfill = holdings.stream()
-        .filter(h -> !stockHoldingHistoryRepository.existsByStockHoldingId(h.getId()))
-        .toList();
+    List<StockHolding> needsBackfill =
+        holdings.stream()
+            .filter(h -> !stockHoldingHistoryRepository.existsByStockHoldingId(h.getId()))
+            .toList();
     log.info("[Backfill] {}/{} holdings need backfill", needsBackfill.size(), holdings.size());
     for (StockHolding h : needsBackfill) {
       log.info("[Backfill] Queuing {} (id={})", h.getSymbol(), h.getId());
@@ -116,7 +117,8 @@ public class StockService {
       log.info("[Backfill] {} — fetching history from {} in {}", symbol, startDate, currency);
       List<Map<String, Object>> history =
           stockPriceService.getStockHistory(symbol, startDate, currency);
-      log.info("[Backfill] {} — {} data points received, building records…", symbol, history.size());
+      log.info(
+          "[Backfill] {} — {} data points received, building records…", symbol, history.size());
       List<StockHoldingHistory> records = new ArrayList<>();
       for (Map<String, Object> entry : history) {
         StockHoldingHistory h = new StockHoldingHistory();
