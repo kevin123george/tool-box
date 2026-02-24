@@ -38,8 +38,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .ql-toolbar,
 .ql-container {
-    background: oklch(var(--b1)) !important;
-    border: 1px solid oklch(var(--b3)) !important;
+    background: var(--color-base-100) !important;
+    border: 1px solid var(--color-base-300) !important;
 }
 
 .ql-toolbar { border-bottom: none !important; }
@@ -47,49 +47,49 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .ql-toolbar button,
 .ql-toolbar .ql-picker-label,
 .ql-snow .ql-picker-label {
-    color: oklch(var(--bc)) !important;
+    color: var(--color-base-content) !important;
 }
 
 .ql-toolbar .ql-stroke,
-.ql-snow .ql-toolbar .ql-stroke { stroke: oklch(var(--bc)) !important; }
+.ql-snow .ql-toolbar .ql-stroke { stroke: var(--color-base-content) !important; }
 .ql-toolbar .ql-fill,
-.ql-snow .ql-toolbar .ql-fill   { fill:   oklch(var(--bc)) !important; }
+.ql-snow .ql-toolbar .ql-fill   { fill:   var(--color-base-content) !important; }
 
 /* Active/hover button state — keep stroke/fill visible */
 .ql-snow .ql-toolbar button:hover .ql-stroke,
-.ql-snow .ql-toolbar button.ql-active .ql-stroke { stroke: oklch(var(--p)) !important; }
+.ql-snow .ql-toolbar button.ql-active .ql-stroke { stroke: var(--color-primary) !important; }
 .ql-snow .ql-toolbar button:hover .ql-fill,
-.ql-snow .ql-toolbar button.ql-active .ql-fill   { fill:   oklch(var(--p)) !important; }
+.ql-snow .ql-toolbar button.ql-active .ql-fill   { fill:   var(--color-primary) !important; }
 
 .ql-editor {
     min-height: 100px;
     padding: 10px !important;
-    color: oklch(var(--bc)) !important;
+    color: var(--color-base-content) !important;
 }
 
 .ql-editor.ql-blank::before {
-    color: oklch(var(--bc) / 0.4) !important;
+    color: color-mix(in oklch, var(--color-base-content) 40%, transparent) !important;
     font-style: italic;
 }
 
 /* Picker dropdown (header, size, etc.) */
 .ql-picker-options,
 .ql-snow .ql-picker-options {
-    background: oklch(var(--b2)) !important;
-    border-color: oklch(var(--b3)) !important;
+    background: var(--color-base-200) !important;
+    border-color: var(--color-base-300) !important;
 }
 
 .ql-picker-item,
 .ql-snow .ql-picker-item {
-    color: oklch(var(--bc)) !important;
+    color: var(--color-base-content) !important;
 }
 
 .ql-picker-item:hover,
 .ql-snow .ql-picker-item:hover,
 .ql-picker-item.ql-selected,
 .ql-snow .ql-picker-item.ql-selected {
-    color: oklch(var(--p)) !important;
-    background: oklch(var(--b3)) !important;
+    color: var(--color-primary) !important;
+    background: var(--color-base-300) !important;
 }
 
 /* =========================
@@ -117,14 +117,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    JS-GENERATED COMPONENTS
    ========================= */
 
-.positive { color: oklch(var(--su)); }
-.negative { color: oklch(var(--er)); }
+.positive { color: var(--color-success); }
+.negative { color: var(--color-error); }
 
 .stock-row {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     padding: 8px;
-    border-bottom: 1px solid oklch(var(--b3));
+    border-bottom: 1px solid var(--color-base-300);
     font-size: 12px;
     align-items: center;
 }
@@ -134,13 +134,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     text-transform: uppercase;
     opacity: 0.8;
     font-size: 11px;
-    background: oklch(var(--b2));
-    border-radius: var(--rounded-btn, 0.5rem) var(--rounded-btn, 0.5rem) 0 0;
+    background: var(--color-base-200);
+    border-radius: var(--radius-selector, 0.5rem) var(--radius-selector, 0.5rem) 0 0;
 }
 
 .profit-bar {
     height: 6px;
-    background: oklch(var(--b3));
+    background: var(--color-base-300);
     border-radius: 3px;
     overflow: hidden;
 }
@@ -168,8 +168,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     flex-direction: column;
     align-items: center;
     padding: 40px 20px;
-    border: 2px dashed oklch(var(--b3));
-    border-radius: var(--rounded-box, 1rem);
+    border: 2px dashed var(--color-base-300);
+    border-radius: var(--radius-box, 1rem);
     text-align: center;
 }
 
@@ -185,11 +185,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .metric-box {
-    background: oklch(var(--b2));
-    border: 1px solid oklch(var(--b3));
+    background: var(--color-base-200);
+    border: 1px solid var(--color-base-300);
     padding: 8px;
     text-align: center;
-    border-radius: var(--rounded-btn, 0.5rem);
+    border-radius: var(--radius-selector, 0.5rem);
 }
 
 .metric-sublabel {
@@ -203,7 +203,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    ========================= */
 
 .stock-analysis-card {
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     padding: 12px;
     margin-bottom: 16px;
 }
@@ -218,7 +218,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .stock-symbol-bar {
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     padding: 10px 12px;
     margin-bottom: 12px;
     font-size: 18px;
@@ -231,7 +231,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    ========================= */
 
 .recommendation-box {
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     padding: 12px;
     margin-bottom: 16px;
 }
@@ -254,7 +254,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    ========================= */
 
 .news-section {
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     padding: 12px;
     margin-top: 16px;
 }
@@ -262,7 +262,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .news-header {
     font-size: 12px;
     text-transform: uppercase;
-    border-bottom: 1px solid oklch(var(--b3));
+    border-bottom: 1px solid var(--color-base-300);
     padding-bottom: 6px;
     margin-bottom: 10px;
 }
@@ -274,7 +274,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .news-item {
     padding: 8px 0;
-    border-bottom: 1px solid oklch(var(--b3));
+    border-bottom: 1px solid var(--color-base-300);
 }
 
 .news-item:last-child {
@@ -306,7 +306,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .show-more-news {
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     padding: 6px;
     text-align: center;
     font-size: 11px;
@@ -316,8 +316,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .show-more-news:hover {
-    background: oklch(var(--bc));
-    color: oklch(var(--b1));
+    background: var(--color-base-content);
+    color: var(--color-base-100);
 }
 
 /* =========================
@@ -332,10 +332,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     z-index: 1000;
     max-height: 260px;
     overflow-y: auto;
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     border-top: none;
     border-radius: 0 0 6px 6px;
-    background: oklch(var(--b2));
+    background: var(--color-base-200);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
@@ -345,14 +345,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid oklch(var(--b3));
+    border-bottom: 1px solid var(--color-base-300);
     font-size: 12px;
-    color: oklch(var(--bc));
+    color: var(--color-base-content);
 }
 
 .ticker-item:hover,
 .ticker-item.active {
-    background: oklch(var(--b3));
+    background: var(--color-base-300);
 }
 
 .ticker-item:last-child {
@@ -380,20 +380,20 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     cursor: pointer;
     font-size: 12px;
-    border-radius: var(--rounded-btn, 0.5rem);
+    border-radius: var(--radius-selector, 0.5rem);
     transition: all 0.2s;
 }
 
 .indicator-toggle:hover {
-    background: oklch(var(--b2));
+    background: var(--color-base-200);
 }
 
 .indicator-toggle:has(input:checked) {
-    background: oklch(var(--p));
-    color: oklch(var(--pc));
+    background: var(--color-primary);
+    color: var(--color-primary-content);
 }
 
 .indicator-toggle input {
@@ -408,8 +408,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .chart-container {
     position: relative;
-    background: oklch(var(--b2));
-    border-radius: var(--rounded-box, 1rem);
+    background: var(--color-base-200);
+    border-radius: var(--radius-box, 1rem);
 }
 
 .crosshair-info {
@@ -421,10 +421,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     gap: 16px;
     font-size: 12px;
     font-family: 'Courier New', monospace;
-    background: oklch(var(--b1) / 0.9);
+    background: color-mix(in oklch, var(--color-base-100) 90%, transparent);
     padding: 8px 12px;
-    border: 1px solid oklch(var(--b3));
-    border-radius: var(--rounded-btn, 0.5rem);
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-selector, 0.5rem);
 }
 
 .crosshair-info span {
@@ -437,7 +437,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-bottom: 10px solid oklch(var(--su));
+    border-bottom: 10px solid var(--color-success);
     transform: translateX(-50%);
     cursor: pointer;
     z-index: 50;
@@ -449,7 +449,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     bottom: 14px;
     left: 50%;
     transform: translateX(-50%);
-    background: oklch(var(--b1) / 0.9);
+    background: color-mix(in oklch, var(--color-base-100) 90%, transparent);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 10px;
@@ -464,7 +464,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     right: 0;
     bottom: 0;
     z-index: 9999;
-    background: oklch(var(--b1));
+    background: var(--color-base-100);
     padding: 20px;
     margin: 0;
     border: none;
@@ -483,7 +483,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     inset: 0;
     z-index: 9999;
     padding: 16px;
-    background: oklch(var(--b1));
+    background: var(--color-base-100);
     display: flex;
     flex-direction: column;
 }
@@ -506,7 +506,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     gap: 16px;
     padding: 8px 12px;
     font-size: 11px;
-    border-bottom: 1px solid oklch(var(--b3));
+    border-bottom: 1px solid var(--color-base-300);
 }
 
 .legend-item {
@@ -520,8 +520,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     height: 3px;
 }
 
-.rsi-overbought { color: oklch(var(--er)); }
-.rsi-oversold { color: oklch(var(--su)); }
+.rsi-overbought { color: var(--color-error); }
+.rsi-oversold { color: var(--color-success); }
 
 .chart-loading {
     display: flex;
@@ -541,16 +541,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    ========================= */
 
 .calendar-grid {
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    border-radius: var(--rounded-box, 1rem);
+    border-radius: var(--radius-box, 1rem);
 }
 
 .calendar-header {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    background: oklch(var(--b3));
+    background: var(--color-base-300);
     font-size: 11px;
     text-transform: uppercase;
     min-width: 500px;
@@ -559,7 +559,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .calendar-header > div {
     padding: 8px;
     text-align: center;
-    border-right: 1px solid oklch(var(--b1));
+    border-right: 1px solid var(--color-base-100);
 }
 
 .calendar-header > div:last-child {
@@ -574,7 +574,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .calendar-day {
     min-height: 80px;
-    border: 1px solid oklch(var(--b3));
+    border: 1px solid var(--color-base-300);
     border-top: none;
     border-left: none;
     padding: 4px;
@@ -586,11 +586,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .calendar-day.empty {
-    background: oklch(var(--b2) / 0.5);
+    background: color-mix(in oklch, var(--color-base-200) 50%, transparent);
 }
 
 .calendar-day.today {
-    background: oklch(var(--su) / 0.1);
+    background: color-mix(in oklch, var(--color-success) 10%, transparent);
 }
 
 .calendar-day-number {
@@ -641,7 +641,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    ========================= */
 
 .day-card {
-    border: 2px solid oklch(var(--b3));
+    border: 2px solid var(--color-base-300);
     padding: 10px 8px;
     text-align: center;
     min-height: 100px;
@@ -649,13 +649,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     flex-direction: column;
     transition: all 0.2s;
     cursor: pointer;
-    background: oklch(var(--b1));
+    background: var(--color-base-100);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    border-radius: var(--rounded-box, 1rem);
+    border-radius: var(--radius-box, 1rem);
 }
 
 .day-card:hover {
-    background: oklch(var(--b2));
+    background: var(--color-base-200);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -687,16 +687,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .day-card .day-status.completed {
-    color: oklch(var(--su));
+    color: var(--color-success);
 }
 
 .day-card .day-status.pending {
-    color: oklch(var(--wa));
+    color: var(--color-warning);
 }
 
 /* Day Details Panel */
 #dayDetailsPanel {
-    background: oklch(var(--b1));
+    background: var(--color-base-100);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -710,23 +710,23 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 #dayDetailsPanel th {
-    background: oklch(var(--b2));
+    background: var(--color-base-200);
     font-weight: bold;
     text-align: left;
     padding: 10px 8px;
-    border-bottom: 2px solid oklch(var(--b3));
+    border-bottom: 2px solid var(--color-base-300);
     font-size: 11px;
     text-transform: uppercase;
 }
 
 #dayDetailsPanel td {
     padding: 12px 8px;
-    border-bottom: 1px solid oklch(var(--b3) / 0.5);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-base-300) 50%, transparent);
     font-size: 13px;
 }
 
 #dayDetailsPanel tr:hover td {
-    background: oklch(var(--b2) / 0.5);
+    background: color-mix(in oklch, var(--color-base-200) 50%, transparent);
 }
 
 /* Exercise Table */
@@ -737,8 +737,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .exercise-table thead tr {
-    background: oklch(var(--p) / 0.15);
-    border-bottom: 2px solid oklch(var(--p));
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+    border-bottom: 2px solid var(--color-primary);
 }
 
 .exercise-table th {
@@ -752,11 +752,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .exercise-table td {
     padding: 14px 8px;
-    border-bottom: 1px solid oklch(var(--b3) / 0.5);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-base-300) 50%, transparent);
 }
 
 .exercise-table tbody tr:hover {
-    background: oklch(var(--p) / 0.1);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
 }
 
 .exercise-table .row-num {
@@ -767,21 +767,21 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .exercise-table .exercise-name {
     font-weight: bold;
-    color: oklch(var(--p));
+    color: var(--color-primary);
 }
 
 /* Exercise Tips */
 .exercise-tips {
     margin-top: 16px;
     padding: 16px;
-    background: oklch(var(--su) / 0.08);
-    border: 1px solid oklch(var(--su) / 0.3);
-    border-radius: var(--rounded-box, 1rem);
+    background: color-mix(in oklch, var(--color-success) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-success) 30%, transparent);
+    border-radius: var(--radius-box, 1rem);
     font-size: 12px;
 }
 
 .exercise-tips strong {
-    color: oklch(var(--su));
+    color: var(--color-success);
     font-size: 13px;
 }
 
@@ -805,12 +805,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 /* Exercise Checklist */
 .exercise-checklist-item {
     transition: background 0.2s;
-    background: oklch(var(--b1));
-    border-color: oklch(var(--b3)) !important;
+    background: var(--color-base-100);
+    border-color: var(--color-base-300) !important;
 }
 
 .exercise-checklist-item:hover {
-    background: oklch(var(--b2));
+    background: var(--color-base-200);
 }
 
 .exercise-checklist-item input[type="checkbox"]:checked + div {
@@ -823,14 +823,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
    ========================= */
 
 .anomaly-card {
-    border: 1px solid oklch(var(--wa));
+    border: 1px solid var(--color-warning);
     padding: 10px;
     margin-bottom: 8px;
-    border-radius: var(--rounded-box, 1rem);
+    border-radius: var(--radius-box, 1rem);
 }
 
 .anomaly-card strong {
-    color: oklch(var(--wa));
+    color: var(--color-warning);
 }
 
 /* =========================
@@ -859,8 +859,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     position: absolute;
     top: -40px;
     left: 0;
-    background: oklch(var(--b1));
-    border: 2px solid oklch(var(--b3));
+    background: var(--color-base-100);
+    border: 2px solid var(--color-base-300);
     padding: 8px 16px;
     z-index: 10000;
     transition: top 0.3s;
@@ -889,7 +889,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 #screenerTable tr:hover {
-    background: oklch(var(--p) / 0.1);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
 }
 
 /* Neutral state */
@@ -1136,14 +1136,14 @@ body:has(#drawerRoot) {
     min-height: 96px;
     padding: 6px;
     border-radius: 8px;
-    background: oklch(var(--b2));
+    background: var(--color-base-200);
     cursor: pointer;
     transition: background 0.15s;
     position: relative;
 }
-.cal-day:hover { background: oklch(var(--b3)); }
+.cal-day:hover { background: var(--color-base-300); }
 .cal-day.empty { background: transparent; cursor: default; pointer-events: none; }
-.cal-day.today { outline: 2px solid oklch(var(--p)); outline-offset: -2px; }
+.cal-day.today { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 .cal-day-num {
     font-size: 0.8rem;
     font-weight: 600;
@@ -1152,7 +1152,7 @@ body:has(#drawerRoot) {
     line-height: 1;
 }
 .cal-day.today .cal-day-num {
-    color: oklch(var(--p));
+    color: var(--color-primary);
     opacity: 1;
 }
 /* ─── Event chips ──────────────────────────────────── */
