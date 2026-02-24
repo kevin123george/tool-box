@@ -94,7 +94,14 @@ public class StockService {
   public void backfillAllHistory() {
     String userId = authUtils.getCurrentUserId();
     List<StockHolding> holdings = stockRepository.findAllByUserId(userId);
-    List<StockHolding> needsBackfill = holdings.stream().filter(h -> !h.isBackfilled()).toList();
+    // Re-backfill if never done OR if history is too sparse (< 30 records — e.g. bought "today")
+    List<StockHolding> needsBackfill =
+        holdings.stream()
+            .filter(
+                h ->
+                    !h.isBackfilled()
+                        || stockHoldingHistoryRepository.countByStockHoldingId(h.getId()) < 30)
+            .toList();
     log.info("[Backfill] {}/{} holdings need backfill", needsBackfill.size(), holdings.size());
     for (StockHolding h : needsBackfill) {
       log.info("[Backfill] Queuing {} (id={})", h.getSymbol(), h.getId());
@@ -107,10 +114,17 @@ public class StockService {
     String symbol = holding.getSymbol();
     String currency = holding.getCurrency() != null ? holding.getCurrency() : "EUR";
     try {
-      String startDate =
-          holding.getBuyDate() != null
-              ? holding.getBuyDate().toString()
-              : LocalDate.now().minusYears(2).toString();
+      LocalDate threeMonthsAgo = LocalDate.now().minusMonths(3);
+      LocalDate startLocal;
+      if (holding.getBuyDate() != null) {
+        // Use buy date, but always go back at least 3 months (handles "bought today" case)
+        startLocal =
+            holding.getBuyDate().isBefore(threeMonthsAgo) ? holding.getBuyDate() : threeMonthsAgo;
+      } else {
+        // No buy date recorded — fall back to 2 years of history
+        startLocal = LocalDate.now().minusYears(2);
+      }
+      String startDate = startLocal.toString();
       log.info("[Backfill] {} — fetching history from {} in {}", symbol, startDate, currency);
       List<Map<String, Object>> history =
           stockPriceService.getStockHistory(symbol, startDate, currency);
