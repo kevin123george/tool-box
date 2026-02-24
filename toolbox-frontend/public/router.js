@@ -131,12 +131,15 @@
             // Update document title
             document.title = doc.title;
 
-            // Load page-specific scripts sequentially (preserves dependency order)
-            const scriptSrcs = Array.from(doc.querySelectorAll('script[src]'))
-                .map(s => s.src)
-                .filter(src => !SHARED.has(basename(src)));
+            // Load page-specific scripts sequentially (head first for CDN libs, then body scripts)
+            // Use getAttribute('src') + explicit URL resolution — s.src is unreliable on
+            // DOMParser documents (resolves relative to about:blank, not the fetched page)
+            const headScripts = Array.from(doc.querySelectorAll('head script[src]'))
+                .map(s => new URL(s.getAttribute('src'), url.href).href);
+            const bodyScripts = Array.from(doc.querySelectorAll('body script[src]'))
+                .map(s => new URL(s.getAttribute('src'), url.href).href);
 
-            for (const src of scriptSrcs) {
+            for (const src of [...headScripts, ...bodyScripts].filter(src => !SHARED.has(basename(src)))) {
                 await loadScript(src);
             }
 
