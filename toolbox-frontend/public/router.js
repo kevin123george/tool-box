@@ -93,6 +93,23 @@
                 if (activeKey === 'investments') localStorage.setItem('investments_active_tab', tabParam);
             }
 
+            // Inject any page-specific stylesheets not already in <head>
+            // (fire-and-forget — starts loading early so CSS is ready when page init runs)
+            {
+                const existingHrefs = new Set(
+                    Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.href)
+                );
+                doc.querySelectorAll('head link[rel="stylesheet"][href]').forEach(link => {
+                    const href = new URL(link.getAttribute('href'), url.href).href;
+                    if (!existingHrefs.has(href)) {
+                        const el = document.createElement('link');
+                        el.rel = 'stylesheet';
+                        el.href = href;
+                        document.head.appendChild(el);
+                    }
+                });
+            }
+
             // Extract body content — skip scripts, toast, overlay
             const frag = document.createDocumentFragment();
             doc.body.childNodes.forEach(n => {

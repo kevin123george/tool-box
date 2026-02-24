@@ -45,12 +45,21 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .ql-toolbar { border-bottom: none !important; }
 
 .ql-toolbar button,
-.ql-toolbar .ql-picker-label {
+.ql-toolbar .ql-picker-label,
+.ql-snow .ql-picker-label {
     color: oklch(var(--bc)) !important;
 }
 
-.ql-toolbar .ql-stroke { stroke: oklch(var(--bc)) !important; }
-.ql-toolbar .ql-fill { fill: oklch(var(--bc)) !important; }
+.ql-toolbar .ql-stroke,
+.ql-snow .ql-toolbar .ql-stroke { stroke: oklch(var(--bc)) !important; }
+.ql-toolbar .ql-fill,
+.ql-snow .ql-toolbar .ql-fill   { fill:   oklch(var(--bc)) !important; }
+
+/* Active/hover button state — keep stroke/fill visible */
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button.ql-active .ql-stroke { stroke: oklch(var(--p)) !important; }
+.ql-snow .ql-toolbar button:hover .ql-fill,
+.ql-snow .ql-toolbar button.ql-active .ql-fill   { fill:   oklch(var(--p)) !important; }
 
 .ql-editor {
     min-height: 100px;
@@ -63,13 +72,24 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     font-style: italic;
 }
 
-.ql-picker-options {
-    background: oklch(var(--b1)) !important;
+/* Picker dropdown (header, size, etc.) */
+.ql-picker-options,
+.ql-snow .ql-picker-options {
+    background: oklch(var(--b2)) !important;
     border-color: oklch(var(--b3)) !important;
 }
 
-.ql-picker-item {
+.ql-picker-item,
+.ql-snow .ql-picker-item {
     color: oklch(var(--bc)) !important;
+}
+
+.ql-picker-item:hover,
+.ql-snow .ql-picker-item:hover,
+.ql-picker-item.ql-selected,
+.ql-snow .ql-picker-item.ql-selected {
+    color: oklch(var(--p)) !important;
+    background: oklch(var(--b3)) !important;
 }
 
 /* =========================
@@ -327,6 +347,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     align-items: center;
     border-bottom: 1px solid oklch(var(--b3));
     font-size: 12px;
+    color: oklch(var(--bc));
 }
 
 .ticker-item:hover,
