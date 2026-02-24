@@ -63,18 +63,24 @@ public class StockService {
     stock.setQuantity(req.getQuantity());
     stock.setBuyPrice(req.getBuyPrice());
     stock.setBuyDate(req.getBuyDate());
-    stock.setCurrency(req.getCurrency() != null && !req.getCurrency().isBlank() ? req.getCurrency() : "EUR");
+    stock.setCurrency(
+        req.getCurrency() != null && !req.getCurrency().isBlank() ? req.getCurrency() : "EUR");
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setUserId(authUtils.getCurrentUserId());
     StockHolding saved = stockRepository.save(stock);
 
     // Fetch live price immediately so the holding shows real data right away
     try {
-      Map<String, Object> priceData = stockPriceService.getStockPrice(saved.getSymbol(), saved.getCurrency());
+      Map<String, Object> priceData =
+          stockPriceService.getStockPrice(saved.getSymbol(), saved.getCurrency());
       double livePrice = (double) priceData.get("price");
       saved.setCurrentPrice(livePrice);
       saved = stockRepository.save(saved);
-      log.info("[addStock] Initial price for {} ({}): {}", saved.getSymbol(), saved.getCurrency(), livePrice);
+      log.info(
+          "[addStock] Initial price for {} ({}): {}",
+          saved.getSymbol(),
+          saved.getCurrency(),
+          livePrice);
     } catch (Exception e) {
       log.warn(
           "[addStock] Could not fetch initial price for {}: {}", saved.getSymbol(), e.getMessage());
@@ -88,29 +94,35 @@ public class StockService {
   public void backfillAllHistory() {
     String userId = authUtils.getCurrentUserId();
     List<StockHolding> holdings = stockRepository.findAllByUserId(userId);
-    for (StockHolding h : holdings) {
-      if (!stockHoldingHistoryRepository.existsByStockHoldingId(h.getId())) {
-        final StockHolding ref = h;
-        CompletableFuture.runAsync(() -> backfillHistory(ref));
-      }
+    List<StockHolding> needsBackfill = holdings.stream()
+        .filter(h -> !stockHoldingHistoryRepository.existsByStockHoldingId(h.getId()))
+        .toList();
+    log.info("[Backfill] {}/{} holdings need backfill", needsBackfill.size(), holdings.size());
+    for (StockHolding h : needsBackfill) {
+      log.info("[Backfill] Queuing {} (id={})", h.getSymbol(), h.getId());
+      final StockHolding ref = h;
+      CompletableFuture.runAsync(() -> backfillHistory(ref));
     }
   }
 
   private void backfillHistory(StockHolding holding) {
+    String symbol = holding.getSymbol();
+    String currency = holding.getCurrency() != null ? holding.getCurrency() : "EUR";
     try {
-      // Use buyDate if available, otherwise fall back to 2 years ago
       String startDate =
           holding.getBuyDate() != null
               ? holding.getBuyDate().toString()
               : LocalDate.now().minusYears(2).toString();
+      log.info("[Backfill] {} — fetching history from {} in {}", symbol, startDate, currency);
       List<Map<String, Object>> history =
-          stockPriceService.getStockHistory(holding.getSymbol(), startDate, holding.getCurrency() != null ? holding.getCurrency() : "EUR");
+          stockPriceService.getStockHistory(symbol, startDate, currency);
+      log.info("[Backfill] {} — {} data points received, building records…", symbol, history.size());
       List<StockHoldingHistory> records = new ArrayList<>();
       for (Map<String, Object> entry : history) {
         StockHoldingHistory h = new StockHoldingHistory();
         h.setStockHoldingId(holding.getId());
         h.setUserId(holding.getUserId());
-        h.setSymbol(holding.getSymbol());
+        h.setSymbol(symbol);
         h.setQuantity(holding.getQuantity());
         h.setBuyPrice(holding.getBuyPrice());
         h.setBuyDate(holding.getBuyDate());
@@ -120,9 +132,9 @@ public class StockService {
         records.add(h);
       }
       stockHoldingHistoryRepository.saveAll(records);
-      log.info("[Backfill] {} — saved {} daily records", holding.getSymbol(), records.size());
+      log.info("[Backfill] {} — done, saved {} daily records", symbol, records.size());
     } catch (Exception e) {
-      log.error("[Backfill] Failed for {}: {}", holding.getSymbol(), e.getMessage());
+      log.error("[Backfill] {} — failed: {}", symbol, e.getMessage());
     }
   }
 
@@ -134,7 +146,8 @@ public class StockService {
     stock.setCurrentPrice(req.getCurrentPrice());
     stock.setQuantity(req.getQuantity());
     stock.setBuyPrice(req.getBuyPrice());
-    if (req.getCurrency() != null && !req.getCurrency().isBlank()) stock.setCurrency(req.getCurrency());
+    if (req.getCurrency() != null && !req.getCurrency().isBlank())
+      stock.setCurrency(req.getCurrency());
     return stockRepository.save(stock);
   }
 
@@ -176,8 +189,7 @@ public class StockService {
     HashMap<String, Double> tickerPriceMap = new HashMap<>();
     Set<String> symbolCurrencyKeys =
         stockRepository.findAll().stream()
-            .filter(
-                h -> !h.getSold() && h.getSymbol() != null && !h.getSymbol().isEmpty())
+            .filter(h -> !h.getSold() && h.getSymbol() != null && !h.getSymbol().isEmpty())
             .map(h -> h.getSymbol() + "|" + (h.getCurrency() != null ? h.getCurrency() : "EUR"))
             .collect(Collectors.toSet());
 
@@ -192,21 +204,30 @@ public class StockService {
         log.debug("[StockUpdater] {} ({}) → {}", symbol, currency, price);
         tickerPriceMap.put(key, price);
       } catch (Exception e) {
-        log.error("[StockUpdater] Failed to fetch price for {} ({}): {}", symbol, currency, e.getMessage());
+        log.error(
+            "[StockUpdater] Failed to fetch price for {} ({}): {}",
+            symbol,
+            currency,
+            e.getMessage());
       }
     }
 
     List<StockHolding> allHoldings =
         stockRepository.findAll().stream()
-            .filter(h -> {
-              String key = h.getSymbol() + "|" + (h.getCurrency() != null ? h.getCurrency() : "EUR");
-              return tickerPriceMap.containsKey(key);
-            })
+            .filter(
+                h -> {
+                  String key =
+                      h.getSymbol() + "|" + (h.getCurrency() != null ? h.getCurrency() : "EUR");
+                  return tickerPriceMap.containsKey(key);
+                })
             .toList();
 
     allHoldings.forEach(
         stockHolding -> {
-          String key = stockHolding.getSymbol() + "|" + (stockHolding.getCurrency() != null ? stockHolding.getCurrency() : "EUR");
+          String key =
+              stockHolding.getSymbol()
+                  + "|"
+                  + (stockHolding.getCurrency() != null ? stockHolding.getCurrency() : "EUR");
           double newPrice = tickerPriceMap.get(key);
           double oldPrice = stockHolding.getCurrentPrice();
 
