@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +38,9 @@ public class StockService {
   private final StockHoldingHistoryRepository stockHoldingHistoryRepository;
   private final StockPriceService stockPriceService;
   private final PortfolioTargetRepository portfolioTargetRepository;
+
+  // Dedicated executor for parallel price fetches (sized to match the daemon pool)
+  private final ExecutorService priceExecutor = Executors.newFixedThreadPool(4);
 
   @Autowired private AuthUtils authUtils;
 
@@ -204,35 +210,49 @@ public class StockService {
 
   public void updateHoldingCurrentPrice() {
     // Key = "SYMBOL|CURRENCY" so each symbol+currency pair is fetched independently
-    HashMap<String, Double> tickerPriceMap = new HashMap<>();
-    HashMap<String, Double> prevCloseMap = new HashMap<>();
     Set<String> symbolCurrencyKeys =
         stockRepository.findAll().stream()
             .filter(h -> !h.getSold() && h.getSymbol() != null && !h.getSymbol().isEmpty())
             .map(h -> h.getSymbol() + "|" + (h.getCurrency() != null ? h.getCurrency() : "EUR"))
             .collect(Collectors.toSet());
 
-    // Use embedded Python service instead of HTTP calls
+    // Fetch all prices in parallel via the daemon pool
+    Map<String, CompletableFuture<Map<String, Object>>> futures = new ConcurrentHashMap<>();
     for (String key : symbolCurrencyKeys) {
       String[] parts = key.split("\\|");
       String symbol = parts[0];
       String currency = parts[1];
-      try {
-        Map<String, Object> priceData = stockPriceService.getStockPrice(symbol, currency);
-        double price = (double) priceData.get("price");
-        log.debug("[StockUpdater] {} ({}) → {}", symbol, currency, price);
-        tickerPriceMap.put(key, price);
-        if (priceData.containsKey("previous_close")) {
-          prevCloseMap.put(key, (double) priceData.get("previous_close"));
-        }
-      } catch (Exception e) {
-        log.error(
-            "[StockUpdater] Failed to fetch price for {} ({}): {}",
-            symbol,
-            currency,
-            e.getMessage());
-      }
+      futures.put(
+          key,
+          CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  Map<String, Object> data = stockPriceService.getStockPrice(symbol, currency);
+                  log.debug("[StockUpdater] {} ({}) → {}", symbol, currency, data.get("price"));
+                  return data;
+                } catch (Exception e) {
+                  log.error("[StockUpdater] Failed {} ({}): {}", symbol, currency, e.getMessage());
+                  return null;
+                }
+              },
+              priceExecutor));
     }
+
+    // Wait for all fetches to complete
+    CompletableFuture.allOf(futures.values().toArray(new CompletableFuture[0])).join();
+
+    HashMap<String, Double> tickerPriceMap = new HashMap<>();
+    HashMap<String, Double> prevCloseMap = new HashMap<>();
+    futures.forEach(
+        (key, future) -> {
+          Map<String, Object> data = future.getNow(null);
+          if (data != null) {
+            tickerPriceMap.put(key, (double) data.get("price"));
+            if (data.containsKey("previous_close")) {
+              prevCloseMap.put(key, (double) data.get("previous_close"));
+            }
+          }
+        });
 
     List<StockHolding> allHoldings =
         stockRepository.findAll().stream()

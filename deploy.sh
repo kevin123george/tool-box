@@ -100,7 +100,7 @@ echo "🔨 Building backend..."
 
 ### Copy Python scripts to build directory
 echo "📄 Copying Python scripts..."
-for script in stock_fetcher.py stock_history_fetcher.py fundamentals_fetcher.py; do
+for script in stock_fetcher.py stock_history_fetcher.py stock_daemon.py fundamentals_fetcher.py; do
     if [ -f "$script" ]; then
         cp "$script" build/libs/
         chmod +x "build/libs/$script"

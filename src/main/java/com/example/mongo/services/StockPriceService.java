@@ -9,38 +9,36 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StockPriceService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final PythonPricePool pricePool;
 
-  /**
-   * Find the best available Python executable Priority: venv python3 > system python3 > system
-   * python
-   */
+  @Autowired
+  public StockPriceService(PythonPricePool pricePool) {
+    this.pricePool = pricePool;
+  }
+
+  /** Delegate live price fetch to the persistent daemon pool (no Python startup overhead). */
+  public Map<String, Object> getStockPrice(String ticker, String currency) throws Exception {
+    return pricePool.getPrice(ticker, currency != null ? currency : "USD");
+  }
+
+  // ── helpers used by getStockHistory() below ──────────────────────────────
+
   private String findPythonExecutable() {
-    // Try venv first (relative to where JAR is running)
     String venvPython = "../venv/bin/python3";
-    if (new java.io.File(venvPython).exists()) {
-      return venvPython;
-    }
-
-    // Fall back to system python3
+    if (new java.io.File(venvPython).exists()) return venvPython;
     return "python3";
   }
 
-  /**
-   * Resolve a Python script path. Checks the working directory first (dev/bootRun), then the
-   * directory containing the JAR (production, where scripts are copied alongside the JAR).
-   */
   private String resolveScript(String scriptName) {
-    // 1. Working directory (dev mode / bootRun)
     java.io.File cwd = new java.io.File(scriptName);
     if (cwd.exists()) return scriptName;
-
-    // 2. Next to the JAR file (production: build/libs/)
     try {
       java.net.URL loc =
           StockPriceService.class.getProtectionDomain().getCodeSource().getLocation();
@@ -49,62 +47,7 @@ public class StockPriceService {
       if (next.exists()) return next.getAbsolutePath();
     } catch (Exception ignored) {
     }
-
-    return scriptName; // fall back — will fail with a clear error message
-  }
-
-  public Map<String, Object> getStockPrice(String ticker, String currency)
-      throws IOException, InterruptedException {
-    // Path to the Python script
-    String pythonScript = resolveScript("stock_fetcher.py");
-
-    // Use python3 explicitly from venv or system
-    String pythonExecutable = findPythonExecutable();
-
-    // Build the command
-    ProcessBuilder processBuilder =
-        new ProcessBuilder(
-            pythonExecutable, pythonScript, ticker, currency != null ? currency : "USD");
-
-    // Redirect error stream to output stream
-    processBuilder.redirectErrorStream(true);
-
-    // Start the process
-    Process process = processBuilder.start();
-
-    // Read the output
-    StringBuilder output = new StringBuilder();
-    try (BufferedReader reader =
-        new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        output.append(line);
-      }
-    }
-
-    // Wait for the process to complete
-    int exitCode = process.waitFor();
-
-    if (exitCode != 0) {
-      throw new RuntimeException(
-          "Python script failed with exit code: " + exitCode + ", output: " + output);
-    }
-
-    // Parse JSON response from Python
-    JsonNode jsonNode = objectMapper.readTree(output.toString());
-
-    Map<String, Object> result = new HashMap<>();
-    result.put("ticker", jsonNode.get("ticker").asText());
-    result.put("timestamp", jsonNode.get("timestamp").asText());
-    result.put("price", jsonNode.get("price").asDouble());
-    result.put("currency", jsonNode.get("currency").asText());
-    result.put("base_price_usd", jsonNode.get("base_price_usd").asDouble());
-    result.put("exchange_rate", jsonNode.get("exchange_rate").asDouble());
-    if (jsonNode.has("previous_close") && !jsonNode.get("previous_close").isNull()) {
-      result.put("previous_close", jsonNode.get("previous_close").asDouble());
-    }
-
-    return result;
+    return scriptName;
   }
 
   public List<Map<String, Object>> getStockHistory(String ticker, String startDate, String currency)
