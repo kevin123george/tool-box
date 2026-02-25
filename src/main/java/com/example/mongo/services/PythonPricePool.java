@@ -37,6 +37,7 @@ public class PythonPricePool {
   public void init() {
     pythonExec = findPythonExecutable();
     daemonScript = resolveScript("stock_daemon.py");
+    log.info("[PricePool] python={} script={}", pythonExec, daemonScript);
     for (int i = 0; i < POOL_SIZE; i++) {
       try {
         pool.put(spawn());
@@ -48,18 +49,20 @@ public class PythonPricePool {
   }
 
   private DaemonHandle spawn() throws IOException {
-    ProcessBuilder pb = new ProcessBuilder(pythonExec, daemonScript);
+    // -u = unbuffered I/O: ensures stdout/stderr are flushed immediately, even on crash
+    ProcessBuilder pb = new ProcessBuilder(pythonExec, "-u", daemonScript);
     Process proc = pb.start();
 
-    // Drain stderr in background so the daemon never blocks on a full stderr pipe
+    // Drain stderr at WARN so Python tracebacks appear in the log
+    Process procRef = proc;
     Thread drainer =
         new Thread(
             () -> {
               try (BufferedReader r =
-                  new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+                  new BufferedReader(new InputStreamReader(procRef.getErrorStream()))) {
                 String line;
                 while ((line = r.readLine()) != null) {
-                  log.debug("[PricePool daemon stderr] {}", line);
+                  log.warn("[PricePool daemon stderr pid={}] {}", procRef.pid(), line);
                 }
               } catch (IOException ignored) {
               }
@@ -70,7 +73,7 @@ public class PythonPricePool {
 
     BufferedWriter stdin = new BufferedWriter(new OutputStreamWriter(proc.getOutputStream()));
     BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-    log.debug("[PricePool] Spawned daemon pid={}", proc.pid());
+    log.info("[PricePool] Spawned daemon pid={}", proc.pid());
     return new DaemonHandle(proc, stdin, stdout);
   }
 

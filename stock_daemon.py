@@ -59,6 +59,9 @@ def fetch_price(ticker_symbol, target_currency):
 
 
 def main():
+    # Line-buffer stdout so responses reach Java immediately even without explicit flush
+    sys.stdout.reconfigure(line_buffering=True)
+
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -69,8 +72,10 @@ def main():
             currency = req.get('currency', 'USD').upper()
             result = fetch_price(ticker, currency)
             print(json.dumps(result), flush=True)
-        except Exception as e:
-            print(json.dumps({"error": str(e)}), flush=True)
+        except BaseException as e:
+            # Catch BaseException so SystemExit / KeyboardInterrupt are also reported
+            # rather than killing the daemon silently
+            print(json.dumps({"error": type(e).__name__ + ": " + str(e)}), flush=True)
 
 
 if __name__ == '__main__':
