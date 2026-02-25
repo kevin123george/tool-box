@@ -22,9 +22,12 @@ def get_exchange_rate(from_currency, to_currency):
 
 def fetch_price(ticker_symbol, target_currency):
     ticker = yf.Ticker(ticker_symbol)
+    # Try intraday first; fall back to daily (last 5 trading days) when market is closed
     hist = ticker.history(period="1d", interval="1m")
     if hist.empty:
-        raise ValueError("No data found. Market may be closed.")
+        hist = ticker.history(period="5d", interval="1d")
+    if hist.empty:
+        raise ValueError("No data found for ticker (possibly delisted or invalid symbol).")
 
     last_row = hist.iloc[-1]
     price = last_row['Close']

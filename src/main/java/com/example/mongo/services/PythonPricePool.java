@@ -80,9 +80,14 @@ public class PythonPricePool {
   /**
    * Fetch a live price via the daemon pool. Blocks until a daemon is available (pool size controls
    * max concurrency).
+   *
+   * <p>Only kills and replaces the daemon on I/O failures (stdout closed, parse error). Logical
+   * errors from Python (market closed, delisted ticker, etc.) are propagated without touching the
+   * daemon — it stays healthy in the pool.
    */
   public Map<String, Object> getPrice(String ticker, String currency) throws Exception {
     DaemonHandle daemon = pool.take(); // blocks until one is free
+    boolean returnedToPool = false;
     try {
       if (!daemon.process().isAlive()) {
         log.warn("[PricePool] Daemon was dead — replacing before use");
@@ -98,11 +103,18 @@ public class PythonPricePool {
 
       String responseLine = daemon.stdout().readLine();
       if (responseLine == null) {
-        throw new RuntimeException("Daemon stdout closed unexpectedly");
+        // I/O failure — daemon exited unexpectedly; caller's catch will replace it
+        throw new IOException("Daemon stdout closed unexpectedly");
       }
 
       JsonNode node = objectMapper.readTree(responseLine);
+
+      // Daemon is alive and responded — return it to the pool regardless of logical outcome
+      pool.put(daemon);
+      returnedToPool = true;
+
       if (node.has("error")) {
+        // Logical failure (market closed, bad symbol, etc.) — daemon is healthy
         throw new RuntimeException("Daemon reported: " + node.get("error").asText());
       }
 
@@ -116,20 +128,20 @@ public class PythonPricePool {
       if (node.has("previous_close") && !node.get("previous_close").isNull()) {
         result.put("previous_close", node.get("previous_close").asDouble());
       }
-
-      pool.put(daemon); // return healthy daemon to pool
       return result;
 
     } catch (Exception e) {
-      // Daemon may be in an inconsistent state — kill it and spawn a replacement
-      try {
-        daemon.process().destroyForcibly();
-      } catch (Exception ignored) {
-      }
-      try {
-        pool.put(spawn());
-      } catch (Exception ex) {
-        log.error("[PricePool] Failed to spawn replacement daemon: {}", ex.getMessage());
+      if (!returnedToPool) {
+        // I/O or infrastructure failure — daemon may be corrupted; kill and replace
+        try {
+          daemon.process().destroyForcibly();
+        } catch (Exception ignored) {
+        }
+        try {
+          pool.put(spawn());
+        } catch (Exception ex) {
+          log.error("[PricePool] Failed to spawn replacement daemon: {}", ex.getMessage());
+        }
       }
       throw e;
     }
