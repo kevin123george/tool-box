@@ -145,6 +145,7 @@ async function exportPortfolioCsv() {
 async function loadStocks() {
     await loadStockStats();
     await loadHoldings();
+    await loadSoldHoldings();
     await loadWatchlist();
     loadPortfolioValueChart();
 }
@@ -243,6 +244,81 @@ async function loadHoldings() {
     } catch (e) {
         console.error("Failed to load holdings:", e);
         showToast("Failed to load holdings", "error");
+    }
+}
+
+async function loadSoldHoldings() {
+    try {
+        const res = await authFetch(`${API}/api/stocks/sold`);
+        const holdings = await res.json();
+        const list = document.getElementById('soldHoldingsList');
+        const countEl = document.getElementById('soldHoldingsCount');
+        if (!list) return;
+
+        if (!holdings || holdings.length === 0) {
+            if (countEl) countEl.textContent = '0';
+            list.innerHTML = `<div class="text-center text-sm opacity-40 py-4">No sold holdings recorded.</div>`;
+            return;
+        }
+
+        if (countEl) countEl.textContent = holdings.length;
+
+        let totalRealised = 0;
+        let html = `
+        <div class="stock-row stock-header">
+            <div>Symbol</div>
+            <div>Qty</div>
+            <div>Buy</div>
+            <div>Sell</div>
+            <div>Realised P/L</div>
+            <div>Return %</div>
+        </div>`;
+
+        holdings.forEach(h => {
+            const pl = (h.currentPrice - h.buyPrice) * h.quantity;
+            const plPct = h.buyPrice > 0 ? ((h.currentPrice - h.buyPrice) / h.buyPrice * 100) : 0;
+            const plClass = pl >= 0 ? 'positive' : 'negative';
+            const cur = h.currency || 'EUR';
+            const buyDateStr = h.buyDate
+                ? (Array.isArray(h.buyDate)
+                    ? `${h.buyDate[0]}-${String(h.buyDate[1]).padStart(2,'0')}-${String(h.buyDate[2]).padStart(2,'0')}`
+                    : String(h.buyDate).substring(0, 10))
+                : '';
+            totalRealised += pl;
+
+            html += `
+            <div class="stock-row" style="opacity:0.75;">
+                <div><strong>${h.symbol}</strong> <span class="badge badge-ghost badge-xs opacity-60">${cur}</span></div>
+                <div>${h.quantity}</div>
+                <div>${h.buyPrice.toFixed(2)}</div>
+                <div>${h.currentPrice.toFixed(2)}</div>
+                <div class="${plClass}">${pl >= 0 ? '+' : ''}${pl.toFixed(2)}</div>
+                <div class="${plClass}">${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%</div>
+            </div>
+            <div style="padding:0 8px 8px 8px;">
+                <div class="profit-bar">
+                    <div class="profit-bar-fill ${plClass}" style="width:${Math.min(Math.abs(plPct), 100)}%; background:${pl >= 0 ? '#0f0' : '#f33'};"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                    <span class="text-xs opacity-40">${buyDateStr ? 'Bought ' + buyDateStr : ''}</span>
+                    <div>
+                        <button class="btn btn-sm" onclick="showEditHolding('${h.id}','${h.symbol}',${h.quantity},${h.buyPrice},'${buyDateStr}','${cur}')" aria-label="Edit ${h.symbol}">EDIT</button>
+                        <button class="btn btn-sm" onclick="delHolding('${h.id}','${h.symbol}')" aria-label="Delete ${h.symbol}">DEL</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        // summary footer
+        const totalClass = totalRealised >= 0 ? 'positive' : 'negative';
+        html += `
+        <div class="flex justify-end px-2 pt-2 pb-1 text-sm font-semibold">
+            Total Realised: <span class="${totalClass} ml-2 tabular-nums">${totalRealised >= 0 ? '+' : ''}€${totalRealised.toFixed(2)}</span>
+        </div>`;
+
+        list.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load sold holdings:', e);
     }
 }
 

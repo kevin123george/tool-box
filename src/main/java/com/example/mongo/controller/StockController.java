@@ -36,6 +36,12 @@ public class StockController {
         service.getAllStocks().stream().filter(i -> i.getSold() == false).toList());
   }
 
+  @GetMapping("/sold")
+  public ResponseEntity<List<StockHolding>> getSoldStocks() {
+    return ResponseEntity.ok(
+        service.getAllStocks().stream().filter(i -> Boolean.TRUE.equals(i.getSold())).toList());
+  }
+
   @GetMapping("/export")
   public ResponseEntity<String> exportCsv() {
     List<StockHolding> holdings =
