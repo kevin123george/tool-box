@@ -8,6 +8,8 @@ let editingFinanceId = null;
 let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
 let finPortfolioValueChart = null;
 let finPvRange = '3M';
+let bankBalanceChart = null;
+let bankBalanceRange = '3M';
 
 /* ===========================================================
    SUB-TAB SWITCHING
@@ -24,7 +26,7 @@ function switchFinanceTab(tab) {
         el.classList.toggle('tab-active', el.textContent.toLowerCase() === tab);
     });
     // Load data for the active sub-tab
-    if (tab === 'accounts') { loadFinance(); loadNetWorthHistory(); loadSavingsRateHistory(); loadFinPortfolioValueChart(); }
+    if (tab === 'accounts') { loadFinance(); loadNetWorthHistory(); loadSavingsRateHistory(); loadFinPortfolioValueChart(); autoSilentSnapshot(); }
     else if (tab === 'budget') { goToCurrentMonth(); loadRecurringTransactions(); }
     else if (tab === 'subscriptions') { loadSubscriptions(); }
     else if (tab === 'analytics') { loadAnalytics(); }
@@ -79,6 +81,7 @@ function renderFinPortfolioValueChart(data) {
     const labels = data.map(d => d.date);
     const values = data.map(d => d.value);
     const invested = data.map(d => d.invested);
+    const profits = data.map(d => d.value - d.invested);
 
     const textColor = getComputedStyle(document.body).getPropertyValue('--color-base-content').trim() || '#ccc';
     const gridColor = 'rgba(128,128,128,0.08)';
@@ -108,6 +111,16 @@ function renderFinPortfolioValueChart(data) {
                     pointRadius: 0,
                     borderWidth: 1.5,
                     borderDash: [5, 4],
+                },
+                {
+                    label: 'Profit',
+                    data: profits,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.06)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5,
                 }
             ]
         },
@@ -135,6 +148,104 @@ function renderFinPortfolioValueChart(data) {
                         color: textColor,
                         callback: v => `€${v.toLocaleString('de-DE', { maximumFractionDigits: 0 })}`
                     },
+                    grid: { color: gridColor }
+                }
+            }
+        }
+    });
+}
+
+/* ===========================================================
+   BANK BALANCE OVER TIME CHART
+   ============================================================ */
+
+async function autoSilentSnapshot() {
+    try {
+        await authFetch(`${API}/api/networth/snapshot`, { method: 'POST' });
+        loadBankBalanceChart();
+    } catch (_) {
+        loadBankBalanceChart(); // still load chart even if snapshot fails
+    }
+}
+
+function setBankBalanceRange(r) {
+    bankBalanceRange = r;
+    document.querySelectorAll('.bnk-pvr-btn').forEach(b => {
+        b.classList.toggle('btn-primary', b.textContent.trim() === r);
+        b.classList.toggle('btn-ghost',   b.textContent.trim() !== r);
+    });
+    loadBankBalanceChart();
+}
+
+async function loadBankBalanceChart() {
+    try {
+        const res = await authFetch(`${API}/api/networth/history`);
+        if (!res.ok) return;
+        let data = await res.json();
+
+        // client-side range filter
+        if (bankBalanceRange !== 'ALL') {
+            const months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12 }[bankBalanceRange] || 3;
+            const cutoff = new Date();
+            cutoff.setMonth(cutoff.getMonth() - months);
+            data = data.filter(d => new Date(d.date) >= cutoff);
+        }
+
+        renderBankBalanceChart(data);
+    } catch (e) {
+        console.error('Bank balance chart error', e);
+    }
+}
+
+function renderBankBalanceChart(data) {
+    const canvas = document.getElementById('bankBalanceChart');
+    const noData = document.getElementById('bnkNoData');
+    if (!canvas) return;
+
+    if (!data || data.length === 0) {
+        canvas.style.display = 'none';
+        if (noData) noData.classList.remove('hidden');
+        return;
+    }
+    canvas.style.display = '';
+    if (noData) noData.classList.add('hidden');
+
+    if (bankBalanceChart) bankBalanceChart.destroy();
+
+    const textColor = getComputedStyle(document.body).getPropertyValue('--color-base-content').trim() || '#ccc';
+    const gridColor = 'rgba(128,128,128,0.08)';
+
+    bankBalanceChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.date),
+            datasets: [{
+                label: 'Bank Balance',
+                data: data.map(d => d.totalCash),
+                borderColor: '#06b6d4',
+                backgroundColor: 'rgba(6,182,212,0.08)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: data.length < 30 ? 3 : 0,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { labels: { color: textColor, usePointStyle: true, pointStyleWidth: 10, boxHeight: 2 } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `Bank Balance: €${ctx.raw.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0 }, grid: { color: gridColor } },
+                y: {
+                    ticks: { color: textColor, callback: v => `€${v.toLocaleString('de-DE', { maximumFractionDigits: 0 })}` },
                     grid: { color: gridColor }
                 }
             }
@@ -1792,6 +1903,7 @@ function renderCategoryBreakdownChart(monthly) {
 
 window.__pageCleanup = function () {
     if (finPortfolioValueChart) { try { finPortfolioValueChart.destroy(); } catch (_) {} finPortfolioValueChart = null; }
+    if (bankBalanceChart)       { try { bankBalanceChart.destroy();       } catch (_) {} bankBalanceChart       = null; }
     if (netWorthChart)          { try { netWorthChart.destroy();          } catch (_) {} netWorthChart          = null; }
     if (savingsRateChart)       { try { savingsRateChart.destroy();       } catch (_) {} savingsRateChart       = null; }
 };

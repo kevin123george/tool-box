@@ -895,6 +895,7 @@ function renderPortfolioValueChart(data) {
     const labels = data.map(d => d.date);
     const values = data.map(d => d.value);
     const invested = data.map(d => d.invested);
+    const profits = data.map(d => d.value - d.invested);
 
     const textColor = getComputedStyle(document.body).getPropertyValue('--color-base-content').trim() || '#ccc';
     const gridColor = 'rgba(128,128,128,0.08)';
@@ -924,6 +925,16 @@ function renderPortfolioValueChart(data) {
                     pointRadius: 0,
                     borderWidth: 1.5,
                     borderDash: [5, 4],
+                },
+                {
+                    label: 'Profit',
+                    data: profits,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.06)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5,
                 }
             ]
         },
