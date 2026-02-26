@@ -38,6 +38,8 @@ let isFullscreen = false;
 let dividends = [];
 let priceAlerts = [];
 let allocationChart = null;
+let portfolioValueChart = null;
+let pvRange = '3M';
 
 /* ===========================================================
    SUB-TAB SWITCHING
@@ -144,6 +146,7 @@ async function loadStocks() {
     await loadStockStats();
     await loadHoldings();
     await loadWatchlist();
+    loadPortfolioValueChart();
 }
 
 async function loadStockStats() {
@@ -842,6 +845,117 @@ async function saveTargetAllocation() {
     } catch (e) {
         showToast('Invalid JSON: ' + e.message, 'error');
     }
+}
+
+/* ===========================================================
+   PORTFOLIO VALUE OVER TIME CHART
+=============================================================*/
+
+function setPvRange(r) {
+    pvRange = r;
+    document.querySelectorAll('.pvr-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-ghost');
+    });
+    document.querySelectorAll('.pvr-btn').forEach(b => {
+        if (b.textContent.trim() === r) {
+            b.classList.remove('btn-ghost');
+            b.classList.add('btn-primary');
+        }
+    });
+    loadPortfolioValueChart();
+}
+
+async function loadPortfolioValueChart() {
+    try {
+        const res = await authFetch(`${API}/api/hist/portfolio-value?range=${pvRange}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderPortfolioValueChart(data);
+    } catch (e) {
+        console.error('Portfolio value chart error', e);
+    }
+}
+
+function renderPortfolioValueChart(data) {
+    const canvas = document.getElementById('portfolioValueChart');
+    const noData = document.getElementById('pvNoData');
+    if (!canvas) return;
+
+    if (!data || data.length === 0) {
+        canvas.style.display = 'none';
+        if (noData) noData.classList.remove('hidden');
+        return;
+    }
+    canvas.style.display = '';
+    if (noData) noData.classList.add('hidden');
+
+    if (portfolioValueChart) portfolioValueChart.destroy();
+
+    const labels = data.map(d => d.date);
+    const values = data.map(d => d.value);
+    const invested = data.map(d => d.invested);
+
+    const textColor = getComputedStyle(document.body).getPropertyValue('--color-base-content').trim() || '#ccc';
+    const gridColor = 'rgba(128,128,128,0.08)';
+
+    portfolioValueChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Portfolio Value',
+                    data: values,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'Invested',
+                    data: invested,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5,
+                    borderDash: [5, 4],
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    labels: { color: textColor, usePointStyle: true, pointStyleWidth: 10, boxHeight: 2 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: €${ctx.raw.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0 },
+                    grid: { color: gridColor }
+                },
+                y: {
+                    ticks: {
+                        color: textColor,
+                        callback: v => `€${v.toLocaleString('de-DE', { maximumFractionDigits: 0 })}`
+                    },
+                    grid: { color: gridColor }
+                }
+            }
+        }
+    });
 }
 
 /* ===========================================================
@@ -1735,8 +1849,9 @@ window.refreshHistoryChart = async function() {
         if (historyRefreshInterval) { clearInterval(historyRefreshInterval); historyRefreshInterval = null; }
         stopCountdown();
         if (typeof window.__advChartCleanup === 'function') window.__advChartCleanup();
-        if (allocationChart) { try { allocationChart.destroy(); } catch (_) {} allocationChart = null; }
-        if (historyChart)    { try { historyChart.destroy();    } catch (_) {} historyChart    = null; }
+        if (allocationChart)      { try { allocationChart.destroy();      } catch (_) {} allocationChart      = null; }
+        if (historyChart)         { try { historyChart.destroy();         } catch (_) {} historyChart         = null; }
+        if (portfolioValueChart)  { try { portfolioValueChart.destroy();  } catch (_) {} portfolioValueChart  = null; }
     };
 };
 

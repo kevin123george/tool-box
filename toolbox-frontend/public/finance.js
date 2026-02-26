@@ -6,6 +6,8 @@
 let currentGoalId = null;
 let editingFinanceId = null;
 let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
+let finPortfolioValueChart = null;
+let finPvRange = '3M';
 
 /* ===========================================================
    SUB-TAB SWITCHING
@@ -13,7 +15,7 @@ let financePage = { current: 0, total: 1, size: 10, totalElements: 0 };
 
 function switchFinanceTab(tab) {
     localStorage.setItem('finance_active_tab', tab);
-    const tabs = ['accounts', 'budget', 'subscriptions', 'analytics'];
+    const tabs = ['accounts', 'budget', 'subscriptions', 'analytics', 'goals'];
     tabs.forEach(t => {
         const el = document.getElementById('finance' + t.charAt(0).toUpperCase() + t.slice(1) + 'Content');
         if (el) el.classList.toggle('hidden', t !== tab);
@@ -22,10 +24,122 @@ function switchFinanceTab(tab) {
         el.classList.toggle('tab-active', el.textContent.toLowerCase() === tab);
     });
     // Load data for the active sub-tab
-    if (tab === 'accounts') { loadFinance(); loadGoalList(); loadSavingsGoals(); loadNetWorthHistory(); loadSavingsRateHistory(); }
+    if (tab === 'accounts') { loadFinance(); loadNetWorthHistory(); loadSavingsRateHistory(); loadFinPortfolioValueChart(); }
     else if (tab === 'budget') { goToCurrentMonth(); loadRecurringTransactions(); }
     else if (tab === 'subscriptions') { loadSubscriptions(); }
     else if (tab === 'analytics') { loadAnalytics(); }
+    else if (tab === 'goals') { loadGoalList(); loadSavingsGoals(); }
+}
+
+/* ===========================================================
+   PORTFOLIO VALUE CHART (Finance / Accounts tab)
+   ============================================================ */
+
+function setFinPvRange(r) {
+    finPvRange = r;
+    document.querySelectorAll('.fin-pvr-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-ghost');
+    });
+    document.querySelectorAll('.fin-pvr-btn').forEach(b => {
+        if (b.textContent.trim() === r) {
+            b.classList.remove('btn-ghost');
+            b.classList.add('btn-primary');
+        }
+    });
+    loadFinPortfolioValueChart();
+}
+
+async function loadFinPortfolioValueChart() {
+    try {
+        const res = await authFetch(`${API}/api/hist/portfolio-value?range=${finPvRange}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderFinPortfolioValueChart(data);
+    } catch (e) {
+        console.error('Finance portfolio chart error', e);
+    }
+}
+
+function renderFinPortfolioValueChart(data) {
+    const canvas = document.getElementById('finPortfolioValueChart');
+    const noData = document.getElementById('finPvNoData');
+    if (!canvas) return;
+
+    if (!data || data.length === 0) {
+        canvas.style.display = 'none';
+        if (noData) noData.classList.remove('hidden');
+        return;
+    }
+    canvas.style.display = '';
+    if (noData) noData.classList.add('hidden');
+
+    if (finPortfolioValueChart) finPortfolioValueChart.destroy();
+
+    const labels = data.map(d => d.date);
+    const values = data.map(d => d.value);
+    const invested = data.map(d => d.invested);
+
+    const textColor = getComputedStyle(document.body).getPropertyValue('--color-base-content').trim() || '#ccc';
+    const gridColor = 'rgba(128,128,128,0.08)';
+
+    finPortfolioValueChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Portfolio Value',
+                    data: values,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'Invested',
+                    data: invested,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 1.5,
+                    borderDash: [5, 4],
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    labels: { color: textColor, usePointStyle: true, pointStyleWidth: 10, boxHeight: 2 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: €${ctx.raw.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0 },
+                    grid: { color: gridColor }
+                },
+                y: {
+                    ticks: {
+                        color: textColor,
+                        callback: v => `€${v.toLocaleString('de-DE', { maximumFractionDigits: 0 })}`
+                    },
+                    grid: { color: gridColor }
+                }
+            }
+        }
+    });
 }
 
 /* ===========================================================
@@ -1671,7 +1785,13 @@ function renderCategoryBreakdownChart(monthly) {
 (window.__pageInits = window.__pageInits || {}).finance = function () {
     requireAuth();
     if (typeof initPrivacy === 'function') initPrivacy();
-    const validTabs = ['accounts', 'budget', 'subscriptions', 'analytics'];
+    const validTabs = ['accounts', 'budget', 'subscriptions', 'analytics', 'goals'];
     const saved = localStorage.getItem('finance_active_tab') || 'accounts';
     switchFinanceTab(validTabs.includes(saved) ? saved : 'accounts');
+};
+
+window.__pageCleanup = function () {
+    if (finPortfolioValueChart) { try { finPortfolioValueChart.destroy(); } catch (_) {} finPortfolioValueChart = null; }
+    if (netWorthChart)          { try { netWorthChart.destroy();          } catch (_) {} netWorthChart          = null; }
+    if (savingsRateChart)       { try { savingsRateChart.destroy();       } catch (_) {} savingsRateChart       = null; }
 };

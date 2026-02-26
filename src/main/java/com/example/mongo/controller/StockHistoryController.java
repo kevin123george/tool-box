@@ -6,6 +6,7 @@ import com.example.mongo.models.dto.OHLCData;
 import com.example.mongo.models.dto.PerformanceMetrics;
 import com.example.mongo.repos.StockHoldingHistoryRepository;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -444,6 +445,68 @@ public class StockHistoryController {
     }
 
     return new ArrayList<>(buyPoints.values());
+  }
+
+  /** Combined portfolio value over time (all holdings summed by date) */
+  @GetMapping("/portfolio-value")
+  public List<Map<String, Object>> getPortfolioValueOverTime(
+      @RequestParam(required = false, defaultValue = "3M") String range) {
+
+    String userId = authUtils.getCurrentUserId();
+    List<StockHoldingHistory> histories = repository.findAllByUserIdOrderByUpdatedAtAsc(userId);
+
+    // Apply range filter
+    LocalDateTime from =
+        switch (range) {
+          case "1W" -> LocalDateTime.now().minusWeeks(1);
+          case "1M" -> LocalDateTime.now().minusMonths(1);
+          case "3M" -> LocalDateTime.now().minusMonths(3);
+          case "6M" -> LocalDateTime.now().minusMonths(6);
+          case "1Y" -> LocalDateTime.now().minusYears(1);
+          default -> null; // ALL
+        };
+
+    if (from != null) {
+      final LocalDateTime fromFinal = from;
+      histories =
+          histories.stream()
+              .filter(h -> h.getUpdatedAt().isAfter(fromFinal))
+              .collect(Collectors.toList());
+    }
+
+    // Group by (holdingId, date) — keep latest entry per pair
+    Map<String, Map<LocalDate, StockHoldingHistory>> byHoldingDate = new HashMap<>();
+    for (StockHoldingHistory h : histories) {
+      LocalDate date = h.getUpdatedAt().toLocalDate();
+      byHoldingDate
+          .computeIfAbsent(h.getStockHoldingId(), k -> new HashMap<>())
+          .merge(
+              date,
+              h,
+              (existing, newer) ->
+                  newer.getUpdatedAt().isAfter(existing.getUpdatedAt()) ? newer : existing);
+    }
+
+    // For each date sum quantity * currentPrice (value) and quantity * buyPrice (invested)
+    Map<LocalDate, double[]> byDate = new TreeMap<>();
+    for (Map<LocalDate, StockHoldingHistory> dateMap : byHoldingDate.values()) {
+      for (Map.Entry<LocalDate, StockHoldingHistory> entry : dateMap.entrySet()) {
+        StockHoldingHistory h = entry.getValue();
+        double[] sums = byDate.computeIfAbsent(entry.getKey(), k -> new double[] {0.0, 0.0});
+        sums[0] += h.getQuantity() * h.getCurrentPrice();
+        sums[1] += h.getQuantity() * h.getBuyPrice();
+      }
+    }
+
+    List<Map<String, Object>> result = new ArrayList<>();
+    for (Map.Entry<LocalDate, double[]> entry : byDate.entrySet()) {
+      Map<String, Object> point = new HashMap<>();
+      point.put("date", entry.getKey().toString());
+      point.put("value", entry.getValue()[0]);
+      point.put("invested", entry.getValue()[1]);
+      result.add(point);
+    }
+    return result;
   }
 
   // Helper methods

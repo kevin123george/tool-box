@@ -103,7 +103,8 @@
                         { label: 'Accounts',      href: '/finance.html?tab=accounts' },
                         { label: 'Budget',        href: '/finance.html?tab=budget' },
                         { label: 'Subscriptions', href: '/finance.html?tab=subscriptions' },
-                        { label: 'Analytics',     href: '/finance.html?tab=analytics' }
+                        { label: 'Analytics',     href: '/finance.html?tab=analytics' },
+                        { label: 'Goals',         href: '/finance.html?tab=goals' }
                     ]
                 },
                 {

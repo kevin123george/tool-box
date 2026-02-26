@@ -35,11 +35,12 @@
     </div>
 
     <!-- Sub-Tab Navigation -->
-    <div class="tabs tabs-box mb-6" role="tablist">
+    <div class="tabs tabs-box mb-6 flex-wrap" role="tablist">
         <button class="tab tab-active" onclick="switchFinanceTab('accounts')">Accounts</button>
         <button class="tab" onclick="switchFinanceTab('budget')">Budget</button>
         <button class="tab" onclick="switchFinanceTab('subscriptions')">Subscriptions</button>
         <button class="tab" onclick="switchFinanceTab('analytics')">Analytics</button>
+        <button class="tab" onclick="switchFinanceTab('goals')">Goals</button>
     </div>
 
     <!-- =================== ACCOUNTS SUB-TAB =================== -->
@@ -111,53 +112,23 @@
 
         <div id="financeList"></div>
 
-        <br />
-        <!-- RETIREMENT GOALS GRID -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-            <div class="card bg-base-200 shadow p-4">
-                <h3 class="font-bold mb-2">Goal Editor</h3>
-                <label class="text-xs opacity-70">Select Goal:</label>
-                <select id="goalSelect" class="select select-bordered w-full mb-2" onchange="onGoalSelectChange()">
-                    <option value="">(Select a goal)</option>
-                </select>
-                <input id="goalTargetIncomeInput" type="number" step="0.01" placeholder="Target net yearly income (&#8364;)" class="input input-bordered w-full mb-2">
-                <input id="goalTaxRateInput" type="number" step="0.001" placeholder="Tax rate (e.g. 0.208)" class="input input-bordered w-full mb-2">
-                <input id="goalReturnRateInput" type="number" step="0.001" placeholder="Expected return (e.g. 0.065)" class="input input-bordered w-full mb-2">
-                <input id="goalContributionInput" type="number" step="0.01" placeholder="Yearly contribution (&#8364;)" class="input input-bordered w-full mb-2">
-                <input id="goalAgeInput" type="number" step="1" placeholder="Current age" class="input input-bordered w-full mb-2">
-                <div class="flex gap-2 flex-wrap mt-1">
-                    <button class="btn btn-sm" onclick="newGoalForm()">NEW</button>
-                    <button class="btn btn-primary btn-sm" onclick="saveGoalForm()">SAVE</button>
-                    <button class="btn btn-error btn-sm" onclick="deleteGoal()">DELETE</button>
-                </div>
-                <div id="goalStatus" class="mt-2 text-xs opacity-70"></div>
-            </div>
-
-            <div class="card bg-base-200 shadow p-4">
-                <h3 class="font-bold mb-2">Retirement Goal</h3>
-                <div class="text-xs"><b>Target Yearly Income:</b> <span class="tabular-nums" id="goalTargetIncome"></span></div>
-                <div class="text-xs"><b>Required Corpus:</b> <span class="tabular-nums" id="goalRequiredCorpus"></span></div>
-                <div class="text-xs"><b>Current Corpus:</b> <span class="tabular-nums" id="goalCurrentCorpus"></span></div>
-                <div class="text-xs"><b>Goal Achieved:</b> <span id="goalAchieved"></span></div>
-                <div class="text-xs"><b>FIRE Age:</b> <span class="tabular-nums" id="goalFireAge"></span></div>
-                <div class="text-xs"><b>Progress:</b> <span class="tabular-nums" id="goalProgress"></span></div>
-                <div class="text-xs"><b>Years to Goal:</b> <span class="tabular-nums" id="goalYearsToGoal"></span></div>
-                <div class="text-xs"><b>Goal Age:</b> <span class="tabular-nums" id="goalAge"></span></div>
-                <div class="text-xs"><b>Remaining Corpus:</b> <span class="tabular-nums" id="goalRemainingCorpus"></span></div>
-                <div class="mt-3">
-                    <progress id="goalProgressBar" class="progress progress-success w-full" value="0" max="100"></progress>
-                </div>
-                <canvas id="goalChart" width="300" height="120" class="mt-3 w-full"></canvas>
-            </div>
-        </div>
-
-        <!-- Savings Goals Section -->
+        <!-- Portfolio Value Over Time Chart -->
         <div class="card bg-base-200 shadow p-4 mt-5">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold">Savings Goals</h3>
-                <button class="btn btn-primary btn-sm" onclick="showAddSavingsGoalModal()">ADD GOAL</button>
+            <div class="flex justify-between items-center flex-wrap gap-2 mb-3">
+                <h3 class="font-bold">Portfolio Value Over Time</h3>
+                <div class="flex gap-1">
+                    <button class="btn btn-xs btn-ghost fin-pvr-btn" onclick="setFinPvRange('1W')">1W</button>
+                    <button class="btn btn-xs btn-ghost fin-pvr-btn" onclick="setFinPvRange('1M')">1M</button>
+                    <button class="btn btn-xs btn-primary fin-pvr-btn" onclick="setFinPvRange('3M')">3M</button>
+                    <button class="btn btn-xs btn-ghost fin-pvr-btn" onclick="setFinPvRange('6M')">6M</button>
+                    <button class="btn btn-xs btn-ghost fin-pvr-btn" onclick="setFinPvRange('1Y')">1Y</button>
+                    <button class="btn btn-xs btn-ghost fin-pvr-btn" onclick="setFinPvRange('ALL')">ALL</button>
+                </div>
             </div>
-            <div id="savingsGoalsList"></div>
+            <div style="position:relative;height:220px;">
+                <canvas id="finPortfolioValueChart"></canvas>
+            </div>
+            <p id="finPvNoData" class="text-center text-sm opacity-40 mt-4 hidden">No investment history data yet. Add holdings in the Investments page first.</p>
         </div>
 
         <!-- Net Worth History Chart -->
@@ -345,6 +316,59 @@
         <div class="card bg-base-200 shadow p-4">
             <h3 class="font-bold mb-2">Category Trends (6 Months)</h3>
             <div style="height:300px;"><canvas id="categoryTrendsChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- =================== GOALS SUB-TAB =================== -->
+    <div id="financeGoalsContent" class="hidden">
+        <div class="divider divider-start font-semibold text-sm uppercase opacity-60 tracking-widest mt-2 mb-5">Financial Goals</div>
+
+        <!-- RETIREMENT GOALS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Goal Editor</h3>
+                <label class="text-xs opacity-70">Select Goal:</label>
+                <select id="goalSelect" class="select select-bordered w-full mb-2" onchange="onGoalSelectChange()">
+                    <option value="">(Select a goal)</option>
+                </select>
+                <input id="goalTargetIncomeInput" type="number" step="0.01" placeholder="Target net yearly income (&#8364;)" class="input input-bordered w-full mb-2">
+                <input id="goalTaxRateInput" type="number" step="0.001" placeholder="Tax rate (e.g. 0.208)" class="input input-bordered w-full mb-2">
+                <input id="goalReturnRateInput" type="number" step="0.001" placeholder="Expected return (e.g. 0.065)" class="input input-bordered w-full mb-2">
+                <input id="goalContributionInput" type="number" step="0.01" placeholder="Yearly contribution (&#8364;)" class="input input-bordered w-full mb-2">
+                <input id="goalAgeInput" type="number" step="1" placeholder="Current age" class="input input-bordered w-full mb-2">
+                <div class="flex gap-2 flex-wrap mt-1">
+                    <button class="btn btn-sm" onclick="newGoalForm()">NEW</button>
+                    <button class="btn btn-primary btn-sm" onclick="saveGoalForm()">SAVE</button>
+                    <button class="btn btn-error btn-sm" onclick="deleteGoal()">DELETE</button>
+                </div>
+                <div id="goalStatus" class="mt-2 text-xs opacity-70"></div>
+            </div>
+
+            <div class="card bg-base-200 shadow p-4">
+                <h3 class="font-bold mb-2">Retirement Goal</h3>
+                <div class="text-xs"><b>Target Yearly Income:</b> <span class="tabular-nums" id="goalTargetIncome"></span></div>
+                <div class="text-xs"><b>Required Corpus:</b> <span class="tabular-nums" id="goalRequiredCorpus"></span></div>
+                <div class="text-xs"><b>Current Corpus:</b> <span class="tabular-nums" id="goalCurrentCorpus"></span></div>
+                <div class="text-xs"><b>Goal Achieved:</b> <span id="goalAchieved"></span></div>
+                <div class="text-xs"><b>FIRE Age:</b> <span class="tabular-nums" id="goalFireAge"></span></div>
+                <div class="text-xs"><b>Progress:</b> <span class="tabular-nums" id="goalProgress"></span></div>
+                <div class="text-xs"><b>Years to Goal:</b> <span class="tabular-nums" id="goalYearsToGoal"></span></div>
+                <div class="text-xs"><b>Goal Age:</b> <span class="tabular-nums" id="goalAge"></span></div>
+                <div class="text-xs"><b>Remaining Corpus:</b> <span class="tabular-nums" id="goalRemainingCorpus"></span></div>
+                <div class="mt-3">
+                    <progress id="goalProgressBar" class="progress progress-success w-full" value="0" max="100"></progress>
+                </div>
+                <canvas id="goalChart" width="300" height="120" class="mt-3 w-full"></canvas>
+            </div>
+        </div>
+
+        <!-- Savings Goals Section -->
+        <div class="card bg-base-200 shadow p-4 mt-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold">Savings Goals</h3>
+                <button class="btn btn-primary btn-sm" onclick="showAddSavingsGoalModal()">ADD GOAL</button>
+            </div>
+            <div id="savingsGoalsList"></div>
         </div>
     </div>
 
