@@ -31,9 +31,9 @@ echo "=============================="
 echo "🚀 Deploying Toolbox"
 echo "=============================="
 
-### Stop backend
+### Stop backend (handle both current and legacy jar names)
 echo "🔴 Stopping existing backend..."
-PID=$(pgrep -f "java.*$JAR_NAME" || true)
+PID=$(pgrep -f "java.*toolbox-0.0.1-SNAPSHOT.jar" || pgrep -f "java.*mongo-0.0.1-SNAPSHOT.jar" || true)
 if [ -n "$PID" ]; then
     kill $PID; sleep 5
     ps -p $PID > /dev/null 2>&1 && kill -9 $PID
