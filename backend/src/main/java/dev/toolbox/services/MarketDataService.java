@@ -38,9 +38,14 @@ public class MarketDataService {
   }
 
   private String findPythonExecutable(File projectRoot) {
-    File venvPython = new File(projectRoot, "venv/bin/python3");
-    if (venvPython.exists()) {
-      return venvPython.getAbsolutePath();
+    // projectRoot may be jar dir (backend/build/libs/) or actual project root
+    String[] candidates = {
+      "../../../scripts/venv/bin/python3",         // relative to CWD (jar dir)
+      projectRoot.getPath() + "/scripts/venv/bin/python3", // dev bootRun
+      projectRoot.getPath() + "/venv/bin/python3", // legacy
+    };
+    for (String path : candidates) {
+      if (new File(path).exists()) return path;
     }
     return "python3";
   }

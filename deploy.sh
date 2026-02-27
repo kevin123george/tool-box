@@ -54,7 +54,7 @@ echo "✓ Python dependencies installed"
 ### Build backend
 echo "🔨 Building backend..."
 cd backend
-./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply
+./gradlew bootJar -x spotlessCheck
 cd ..
 
 ### Copy Python scripts next to jar

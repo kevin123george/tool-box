@@ -47,9 +47,13 @@ public class AlphaVantageService {
   }
 
   private String findPythonExecutable(java.io.File projectRoot) {
-    java.io.File venvPython = new java.io.File(projectRoot, "venv/bin/python3");
-    if (venvPython.exists()) {
-      return venvPython.getAbsolutePath();
+    String[] candidates = {
+      "../../../scripts/venv/bin/python3",
+      projectRoot.getPath() + "/scripts/venv/bin/python3",
+      projectRoot.getPath() + "/venv/bin/python3",
+    };
+    for (String path : candidates) {
+      if (new java.io.File(path).exists()) return path;
     }
     return "python3";
   }

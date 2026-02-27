@@ -31,8 +31,14 @@ public class StockPriceService {
   // ── helpers used by getStockHistory() below ──────────────────────────────
 
   private String findPythonExecutable() {
-    String venvPython = "../venv/bin/python3";
-    if (new java.io.File(venvPython).exists()) return venvPython;
+    String[] candidates = {
+      "../../../scripts/venv/bin/python3",
+      "scripts/venv/bin/python3",
+      "../venv/bin/python3",
+    };
+    for (String path : candidates) {
+      if (new java.io.File(path).exists()) return path;
+    }
     return "python3";
   }
 
