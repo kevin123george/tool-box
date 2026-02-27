@@ -1,6 +1,8 @@
 package com.example.mongo.services;
 
 import com.example.mongo.models.MonthlyBudget;
+import com.example.mongo.models.UsersEntity;
+import com.example.mongo.repos.UserRepo;
 import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,13 +16,16 @@ public class BudgetAlertService {
 
   private final MonthlyBudgetService budgetService;
   private final EmailService emailService;
+  private final UserRepo userRepo;
 
-  // Track last alert level sent to avoid spam
-  private Map<YearMonth, Integer> lastAlertLevelByMonth = new HashMap<>();
+  // Track last alert level sent per (userId, month) to avoid spam
+  private Map<String, Integer> lastAlertLevel = new HashMap<>();
 
-  public BudgetAlertService(MonthlyBudgetService budgetService, EmailService emailService) {
+  public BudgetAlertService(
+      MonthlyBudgetService budgetService, EmailService emailService, UserRepo userRepo) {
     this.budgetService = budgetService;
     this.emailService = emailService;
+    this.userRepo = userRepo;
   }
 
   // Run daily at 8 PM (20:00)
@@ -28,35 +33,38 @@ public class BudgetAlertService {
   public void checkBudgetThresholds() {
     log.info("[BudgetAlert] Running daily budget threshold check");
     YearMonth currentMonth = YearMonth.now();
-    checkAndAlert(currentMonth);
+    for (UsersEntity user : userRepo.findAll()) {
+      if (!user.isEmailNotificationsEnabled()) continue;
+      checkAndAlert(currentMonth, user.getId(), user.getEmail());
+    }
   }
 
-  public void checkAndAlert(YearMonth month) {
+  public void checkAndAlert(YearMonth month, String userId, String userEmail) {
     try {
-      MonthlyBudget budget = budgetService.getOrCreateBudget(month);
+      MonthlyBudget budget = budgetService.getOrCreateBudget(month, userId);
       double adherence = budget.getBudgetAdherence();
 
       int alertLevel = getAlertLevel(adherence);
-      int lastLevel = lastAlertLevelByMonth.getOrDefault(month, 0);
+      String key = userId + ":" + month;
+      int lastLevel = lastAlertLevel.getOrDefault(key, 0);
 
-      // Only send alert if we crossed a new threshold
       if (alertLevel > lastLevel) {
-        sendBudgetAlert(adherence, alertLevel);
-        lastAlertLevelByMonth.put(month, alertLevel);
+        sendBudgetAlert(userEmail, adherence, alertLevel);
+        lastAlertLevel.put(key, alertLevel);
       }
     } catch (Exception e) {
-      log.error("[BudgetAlert] Error checking thresholds: {}", e.getMessage());
+      log.error("[BudgetAlert] Error checking thresholds for user {}: {}", userId, e.getMessage());
     }
   }
 
   private int getAlertLevel(double adherence) {
-    if (adherence >= 100) return 3; // Over budget
-    if (adherence >= 90) return 2; // 90% threshold
-    if (adherence >= 80) return 1; // 80% threshold
-    return 0; // Under 80%
+    if (adherence >= 100) return 3;
+    if (adherence >= 90) return 2;
+    if (adherence >= 80) return 1;
+    return 0;
   }
 
-  private void sendBudgetAlert(double adherence, int level) {
+  private void sendBudgetAlert(String userEmail, double adherence, int level) {
     String title;
     String body;
 
@@ -85,20 +93,29 @@ public class BudgetAlertService {
     }
 
     try {
-      emailService.sendBudgetAlert(title, body);
-      log.info("[BudgetAlert] Sent: {}", title);
+      emailService.send(
+          userEmail,
+          title,
+          "<h2>"
+              + title
+              + "</h2><p>"
+              + body
+              + "</p>"
+              + "<p><a href='/finance.html?tab=budget'>View Budget</a></p>");
+      log.info("[BudgetAlert] Sent '{}' to {}", title, userEmail);
     } catch (Exception e) {
       log.error("[BudgetAlert] Failed to send alert: {}", e.getMessage());
     }
   }
 
-  // Manual trigger for testing
   public void triggerManualCheck() {
-    checkAndAlert(YearMonth.now());
+    YearMonth month = YearMonth.now();
+    for (UsersEntity user : userRepo.findAll()) {
+      checkAndAlert(month, user.getId(), user.getEmail());
+    }
   }
 
-  // Reset alert tracking for a new month (called at month start)
-  public void resetAlertTracking(YearMonth month) {
-    lastAlertLevelByMonth.remove(month);
+  public void resetAlertTracking(String userId, YearMonth month) {
+    lastAlertLevel.remove(userId + ":" + month);
   }
 }

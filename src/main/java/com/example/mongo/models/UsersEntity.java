@@ -26,5 +26,7 @@ public class UsersEntity {
   private String resetToken;
   private Instant resetTokenExpiry;
 
+  private boolean emailNotificationsEnabled = true;
+
   @CreatedDate private Instant createdAt;
 }

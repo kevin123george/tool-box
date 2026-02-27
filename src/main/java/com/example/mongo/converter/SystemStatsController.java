@@ -42,7 +42,8 @@ public class SystemStatsController {
                         u.getRole(),
                         u.getCreatedAt(),
                         u.getLastLoginAt(),
-                        u.getLastSeenAt()))
+                        u.getLastSeenAt(),
+                        u.isEmailNotificationsEnabled()))
             .toList();
     return ResponseEntity.ok(users);
   }
@@ -123,7 +124,8 @@ public class SystemStatsController {
                       user.getRole(),
                       user.getCreatedAt(),
                       user.getLastLoginAt(),
-                      user.getLastSeenAt()));
+                      user.getLastSeenAt(),
+                      user.isEmailNotificationsEnabled()));
             })
         .orElse(ResponseEntity.notFound().build());
   }
@@ -148,6 +150,21 @@ public class SystemStatsController {
                           : "");
               String resetUrl = baseUrl + "/reset-password.html?token=" + token;
               return ResponseEntity.ok(Map.of("resetUrl", resetUrl, "expiresIn", "24 hours"));
+            })
+        .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PatchMapping("/users/{id}/email-notifications")
+  public ResponseEntity<?> setEmailNotifications(
+      @PathVariable String id, @RequestBody Map<String, Boolean> body) {
+    return userRepo
+        .findById(id)
+        .map(
+            user -> {
+              user.setEmailNotificationsEnabled(body.getOrDefault("enabled", true));
+              userRepo.save(user);
+              return ResponseEntity.ok(
+                  Map.of("emailNotificationsEnabled", user.isEmailNotificationsEnabled()));
             })
         .orElse(ResponseEntity.notFound().build());
   }

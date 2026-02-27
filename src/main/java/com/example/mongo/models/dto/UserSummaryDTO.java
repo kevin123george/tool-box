@@ -14,4 +14,5 @@ public class UserSummaryDTO {
   private Instant createdAt;
   private Instant lastLoginAt;
   private Instant lastSeenAt;
+  private boolean emailNotificationsEnabled;
 }

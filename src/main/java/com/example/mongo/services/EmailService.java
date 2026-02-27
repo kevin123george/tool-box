@@ -1,9 +1,11 @@
 package com.example.mongo.services;
 
+import com.example.mongo.repos.UserRepo;
 import com.mailersend.sdk.MailerSend;
 import com.mailersend.sdk.emails.Email;
 import com.mailersend.sdk.exceptions.MailerSendException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +22,7 @@ public class EmailService {
   @Value("${app.notification.from.name:ToolBox}")
   private String fromName;
 
-  @Value("${app.notification.to.email:}")
-  private String adminEmail;
+  @Autowired private UserRepo userRepo;
 
   public void send(String to, String subject, String htmlBody) {
     if (apiKey == null || apiKey.isBlank()) {
@@ -48,9 +49,9 @@ public class EmailService {
     }
   }
 
-  /** Send to the configured admin/notification address. */
-  public void sendToAdmin(String subject, String htmlBody) {
-    send(adminEmail, subject, htmlBody);
+  /** Send to all users with the ADMIN role. */
+  public void sendToAdmins(String subject, String htmlBody) {
+    userRepo.findByRole("ADMIN").forEach(admin -> send(admin.getEmail(), subject, htmlBody));
   }
 
   public void sendPriceAlert(
@@ -65,20 +66,9 @@ public class EmailService {
     send(to, subject, html);
   }
 
-  public void sendBudgetAlert(String subject, String message) {
-    String html =
-        "<h2>"
-            + subject
-            + "</h2><p>"
-            + message
-            + "</p>"
-            + "<p><a href='/finance.html?tab=budget'>View Budget</a></p>";
-    sendToAdmin(subject, html);
-  }
-
   public void sendSystemAlert(String subject, String message) {
     String html = "<h2>System Alert</h2><p>" + message + "</p>";
-    sendToAdmin(subject, html);
+    sendToAdmins(subject, html);
   }
 
   public void sendSubscriptionReminder(

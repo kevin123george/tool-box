@@ -2,8 +2,10 @@ package com.example.mongo.services;
 
 import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.Subscription;
+import com.example.mongo.models.UsersEntity;
 import com.example.mongo.models.dto.SubscriptionSummaryDTO;
 import com.example.mongo.repos.SubscriptionRepository;
+import com.example.mongo.repos.UserRepo;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,8 @@ public class SubscriptionService {
   @Autowired private SubscriptionRepository subscriptionRepository;
 
   @Autowired private EmailService emailService;
+
+  @Autowired private UserRepo userRepo;
 
   @Autowired private AuthUtils authUtils;
 
@@ -92,6 +96,9 @@ public class SubscriptionService {
   }
 
   public void checkRenewalReminders(String userId) {
+    UsersEntity user = userRepo.findById(userId).orElse(null);
+    if (user == null || !user.isEmailNotificationsEnabled()) return;
+
     LocalDate today = LocalDate.now();
     LocalDate threeDaysFromNow = today.plusDays(3);
 
@@ -102,12 +109,12 @@ public class SubscriptionService {
     for (Subscription sub : upcomingRenewals) {
       try {
         emailService.sendSubscriptionReminder(
-            null,
+            user.getEmail(),
             sub.getName(),
             sub.getProvider(),
             sub.getNextBillingDate().toString(),
             sub.getAmount());
-        log.info("Sent subscription reminder for {}", sub.getName());
+        log.info("Sent subscription reminder for {} to {}", sub.getName(), user.getEmail());
       } catch (Exception e) {
         log.error("Failed to send subscription reminder: {}", e.getMessage());
       }

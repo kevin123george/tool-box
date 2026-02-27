@@ -4,7 +4,6 @@ import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.AlertDirection;
 import com.example.mongo.models.PriceAlert;
 import com.example.mongo.models.StockHolding;
-import com.example.mongo.models.UsersEntity;
 import com.example.mongo.repos.PriceAlertRepository;
 import com.example.mongo.repos.StockRepository;
 import com.example.mongo.repos.UserRepo;
@@ -109,11 +108,23 @@ public class PriceAlertService {
         // Send email notification
         String direction = alert.getDirection() == AlertDirection.ABOVE ? "above" : "below";
         try {
-          String userEmail =
-              userRepo.findById(alert.getUserId()).map(UsersEntity::getEmail).orElse(null);
-          emailService.sendPriceAlert(
-              userEmail, alert.getSymbol(), direction, alert.getTargetPrice(), currentPrice);
-          log.info("Sent price alert email for {}", alert.getSymbol());
+          userRepo
+              .findById(alert.getUserId())
+              .ifPresent(
+                  user -> {
+                    if (user.isEmailNotificationsEnabled()) {
+                      emailService.sendPriceAlert(
+                          user.getEmail(),
+                          alert.getSymbol(),
+                          direction,
+                          alert.getTargetPrice(),
+                          currentPrice);
+                      log.info(
+                          "Sent price alert email to {} for {}",
+                          user.getEmail(),
+                          alert.getSymbol());
+                    }
+                  });
         } catch (Exception e) {
           log.error("Failed to send price alert email: {}", e.getMessage());
         }

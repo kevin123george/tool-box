@@ -123,6 +123,13 @@ function renderUsers(users) {
                 Delete
             </button>`;
 
+        const emailNotifBtn = `
+            <button class="btn btn-ghost btn-xs ${u.emailNotificationsEnabled ? 'text-success' : 'opacity-30'}"
+                    title="${u.emailNotificationsEnabled ? 'Emails on — click to disable' : 'Emails off — click to enable'}"
+                    onclick="toggleEmailNotifications('${u.id}', ${u.emailNotificationsEnabled})">
+                ${u.emailNotificationsEnabled ? '✉️' : '🔕'}
+            </button>`;
+
         return `
         <tr class="${online ? 'bg-success/5' : ''}">
             <td>
@@ -168,6 +175,7 @@ function renderUsers(users) {
                     ${editBtn}
                     ${resetBtn}
                     ${toggleBtn}
+                    ${emailNotifBtn}
                     ${deleteBtn}
                 </div>
             </td>
@@ -284,6 +292,24 @@ async function toggleRole(userId, currentRole) {
             throw new Error(err.error || 'Failed to update role');
         }
         showToast(`Role updated to ${newRole}`, 'success');
+        loadUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+/* -------------------------------------------------------
+   Email notifications toggle
+------------------------------------------------------- */
+async function toggleEmailNotifications(userId, currentlyEnabled) {
+    try {
+        const res = await authFetch(`${API}/api/system/users/${userId}/email-notifications`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: !currentlyEnabled })
+        });
+        if (!res.ok) throw new Error('Failed to update');
+        showToast(`Email notifications ${!currentlyEnabled ? 'enabled' : 'disabled'}`, 'success');
         loadUsers();
     } catch (e) {
         showToast(e.message, 'error');
