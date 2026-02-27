@@ -34,6 +34,7 @@ public class EmailService {
       log.warn("No recipient address — skipping email: {}", subject);
       return;
     }
+    log.info("Sending email from='{} <{}>' to='{}' subject='{}'", fromName, fromEmail, to, subject);
     try {
       Email email = new Email();
       email.setFrom(fromName, fromEmail);
