@@ -11,7 +11,7 @@ if [ "$1" != "--updated" ]; then
     git reset --hard
     git pull
     echo "✓ Source code updated — restarting deploy with latest script..."
-    exec "$0" --updated
+    exec "$SCRIPT_DIR/deploy.sh" --updated
 fi
 # ──────────────────────────────────────────────────────────────────────────────
 
