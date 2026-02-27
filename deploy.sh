@@ -2,10 +2,21 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# ── Self-update ────────────────────────────────────────────────────────────────
+# Pull latest code first, then re-exec THIS script so bash runs the fresh version.
+if [ "$1" != "--updated" ]; then
+    echo "🔄 Updating source code..."
+    git reset --hard
+    git pull
+    echo "✓ Source code updated — restarting deploy with latest script..."
+    exec "$0" --updated
+fi
+# ──────────────────────────────────────────────────────────────────────────────
+
 if [ -f "$SCRIPT_DIR/.env" ]; then
-    set -a
-    source "$SCRIPT_DIR/.env"
-    set +a
+    set -a; source "$SCRIPT_DIR/.env"; set +a
     echo "✓ Loaded environment from .env"
 else
     echo "⚠️  No .env file found — secrets must already be in environment"
@@ -19,11 +30,6 @@ VENV_DIR="scripts/venv"
 echo "=============================="
 echo "🚀 Deploying Toolbox"
 echo "=============================="
-
-echo "🔄 Updating source code..."
-git reset --hard
-git pull
-echo "✓ Source code updated"
 
 ### Stop backend
 echo "🔴 Stopping existing backend..."
@@ -49,7 +55,6 @@ fi
 ### Python environment
 echo "🐍 Setting up Python environment..."
 if [ ! -d "$VENV_DIR" ]; then
-    echo "Creating virtual environment..."
     python3 -m venv $VENV_DIR
 fi
 source $VENV_DIR/bin/activate
@@ -62,7 +67,7 @@ cd backend
 ./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply
 cd ..
 
-### Copy Python scripts next to jar (so Java can find them at runtime)
+### Copy Python scripts next to jar
 echo "📄 Copying Python scripts..."
 for script in stock_fetcher.py stock_history_fetcher.py stock_daemon.py fundamentals_fetcher.py market_data_fetcher.py stock_api.py; do
     if [ -f "scripts/$script" ]; then
