@@ -1,0 +1,26 @@
+package dev.toolbox.repos;
+
+import dev.toolbox.models.StockResearchReport;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+public interface StockResearchReportRepository
+    extends MongoRepository<StockResearchReport, String> {
+
+  // Find reports by date range
+  List<StockResearchReport> findByGeneratedAtBetween(LocalDateTime start, LocalDateTime end);
+
+  // Find latest report (global — unused after auth)
+  StockResearchReport findFirstByOrderByGeneratedAtDesc();
+
+  // Find reports by sentiment
+  List<StockResearchReport> findByOverallSentiment(String sentiment);
+
+  // User-scoped queries
+  List<StockResearchReport> findAllByUserId(String userId);
+
+  StockResearchReport findFirstByUserIdOrderByGeneratedAtDesc(String userId);
+
+  StockResearchReport findByIdAndUserId(String id, String userId);
+}

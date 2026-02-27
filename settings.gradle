@@ -1,1 +1,2 @@
-rootProject.name = 'mongo'
+rootProject.name = 'toolbox'
+include 'backend'

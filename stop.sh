@@ -7,7 +7,7 @@ echo ""
 
 ### Stop Backend
 echo "🔴 Stopping backend..."
-BACKEND_PID=$(pgrep -f "java.*mongo-0.0.1-SNAPSHOT.jar" || true)
+BACKEND_PID=$(pgrep -f "java.*toolbox-0.0.1-SNAPSHOT.jar" || true)
 if [ -n "$BACKEND_PID" ]; then
     echo "Found backend PID: $BACKEND_PID"
     kill $BACKEND_PID

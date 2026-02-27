@@ -7,10 +7,10 @@ echo ""
 
 # Check Backend
 echo "🔧 Backend (Java):"
-BACKEND_PID=$(pgrep -f "java.*mongo-0.0.1-SNAPSHOT.jar" || true)
+BACKEND_PID=$(pgrep -f "java.*toolbox-0.0.1-SNAPSHOT.jar" || true)
 if [ -n "$BACKEND_PID" ]; then
     echo "   ✅ Running (PID: $BACKEND_PID)"
-    echo "   📍 http://localhost:8080"
+    echo "   📍 http://localhost:9099"
 else
     echo "   ❌ Not running"
 fi
