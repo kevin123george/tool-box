@@ -4,16 +4,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# ── Self-update ────────────────────────────────────────────────────────────────
-# Pull latest code first, then re-exec THIS script so bash runs the fresh version.
-if [ "$1" != "--updated" ]; then
-    echo "🔄 Updating source code..."
-    git reset --hard
-    git pull
-    echo "✓ Source code updated — restarting deploy with latest script..."
-    exec "$SCRIPT_DIR/deploy.sh" --updated
-fi
-# ──────────────────────────────────────────────────────────────────────────────
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
     set -a; source "$SCRIPT_DIR/.env"; set +a
