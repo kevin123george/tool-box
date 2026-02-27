@@ -1,0 +1,84 @@
+package com.example.mongo.services;
+
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+@Slf4j
+public class EmailService {
+
+  @Value("${sendgrid.api.key:}")
+  private String apiKey;
+
+  @Value("${app.notification.from.email:noreply@toolbox.local}")
+  private String fromEmail;
+
+  @Value("${app.notification.to.email:}")
+  private String adminEmail;
+
+  public void send(String to, String subject, String htmlBody) {
+    if (apiKey == null || apiKey.isBlank()) {
+      log.warn("SendGrid API key not configured — skipping email: {}", subject);
+      return;
+    }
+    if (to == null || to.isBlank()) {
+      log.warn("No recipient address — skipping email: {}", subject);
+      return;
+    }
+    try {
+      Mail mail = new Mail(new Email(fromEmail), subject, new Email(to), new Content("text/html", htmlBody));
+      Request request = new Request();
+      request.setMethod(Method.POST);
+      request.setEndpoint("mail/send");
+      request.setBody(mail.build());
+      Response response = new SendGrid(apiKey).api(request);
+      log.info("Email sent to {} [{}] status={}", to, subject, response.getStatusCode());
+    } catch (Exception e) {
+      log.error("Failed to send email to {} [{}]: {}", to, subject, e.getMessage());
+    }
+  }
+
+  /** Send to the configured admin/notification address. */
+  public void sendToAdmin(String subject, String htmlBody) {
+    send(adminEmail, subject, htmlBody);
+  }
+
+  public void sendPriceAlert(String to, String symbol, String direction, double targetPrice, double currentPrice) {
+    String subject = String.format("Price Alert: %s %s €%.2f", symbol, direction, targetPrice);
+    String html = String.format(
+        "<h2>Price Alert Triggered</h2>"
+            + "<p><strong>%s</strong> is now <strong>€%.2f</strong>.</p>"
+            + "<p>Your alert was set for %s €%.2f.</p>",
+        symbol, currentPrice, direction, targetPrice);
+    send(to, subject, html);
+  }
+
+  public void sendBudgetAlert(String subject, String message) {
+    String html = "<h2>" + subject + "</h2><p>" + message + "</p>"
+        + "<p><a href='/finance.html?tab=budget'>View Budget</a></p>";
+    sendToAdmin(subject, html);
+  }
+
+  public void sendSystemAlert(String subject, String message) {
+    String html = "<h2>⚠️ System Alert</h2><p>" + message + "</p>";
+    sendToAdmin(subject, html);
+  }
+
+  public void sendSubscriptionReminder(String to, String name, String provider, String renewalDate, double amount) {
+    String subject = String.format("Reminder: %s renews on %s", name, renewalDate);
+    String html = String.format(
+        "<h2>Subscription Renewal Reminder</h2>"
+            + "<p><strong>%s</strong> (%s) renews on <strong>%s</strong> — €%.2f</p>"
+            + "<p><a href='/finance.html?tab=subscriptions'>View Subscriptions</a></p>",
+        name, provider, renewalDate, amount);
+    send(to, subject, html);
+  }
+}

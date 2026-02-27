@@ -13,14 +13,14 @@ import org.springframework.stereotype.Service;
 public class BudgetAlertService {
 
   private final MonthlyBudgetService budgetService;
-  private final WebPushService webPushService;
+  private final EmailService emailService;
 
   // Track last alert level sent to avoid spam
   private Map<YearMonth, Integer> lastAlertLevelByMonth = new HashMap<>();
 
-  public BudgetAlertService(MonthlyBudgetService budgetService, WebPushService webPushService) {
+  public BudgetAlertService(MonthlyBudgetService budgetService, EmailService emailService) {
     this.budgetService = budgetService;
-    this.webPushService = webPushService;
+    this.emailService = emailService;
   }
 
   // Run daily at 8 PM (20:00)
@@ -59,42 +59,26 @@ public class BudgetAlertService {
   private void sendBudgetAlert(double adherence, int level) {
     String title;
     String body;
-    String type;
 
     switch (level) {
       case 1:
         title = "Budget Alert: 80% Reached";
-        body =
-            String.format(
-                "You've spent %.1f%% of your monthly budget. Consider slowing down!", adherence);
-        type = "warning";
+        body = String.format("You've spent %.1f%% of your monthly budget. Consider slowing down!", adherence);
         break;
       case 2:
         title = "Budget Warning: 90% Reached";
-        body =
-            String.format(
-                "You've spent %.1f%% of your monthly budget. Almost at the limit!", adherence);
-        type = "warning";
+        body = String.format("You've spent %.1f%% of your monthly budget. Almost at the limit!", adherence);
         break;
       case 3:
         title = "Budget Exceeded!";
-        body =
-            String.format(
-                "You've exceeded your monthly budget at %.1f%%. Time to review your expenses.",
-                adherence);
-        type = "error";
+        body = String.format("You've exceeded your monthly budget at %.1f%%. Time to review your expenses.", adherence);
         break;
       default:
         return;
     }
 
-    Map<String, String> data = new HashMap<>();
-    data.put("adherence", String.valueOf(adherence));
-    data.put("level", String.valueOf(level));
-    data.put("url", "/budget");
-
     try {
-      webPushService.sendNotificationToAll(title, body, type);
+      emailService.sendBudgetAlert(title, body);
       log.info("[BudgetAlert] Sent: {}", title);
     } catch (Exception e) {
       log.error("[BudgetAlert] Failed to send alert: {}", e.getMessage());

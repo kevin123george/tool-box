@@ -38,25 +38,11 @@
 
 <div class="card bg-base-200 shadow-sm mt-5">
     <div class="card-body">
-    <h3 class="card-title text-sm uppercase tracking-wide">🔔 Push Notifications</h3>
-    <p class="text-xs opacity-70 mb-3">
-        Get alerts when CPU, Memory, or Disk usage exceeds 90%<br>
-        <small class="opacity-60">Cooldown: 5 minutes between alerts</small>
-    </p>
-
-    <div class="flex gap-2 flex-wrap mb-3">
-        <button id="subscribeBtn" class="btn btn-primary btn-sm" onclick="subscribeToPush()">
-            Enable Notifications
-        </button>
-        <button id="unsubscribeBtn" class="btn btn-error btn-sm hidden" onclick="unsubscribeFromPush()">
-            Disable Notifications
-        </button>
-        <button id="testNotificationBtn" class="btn btn-ghost btn-sm hidden" onclick="testNotification()">
-            Test Notification
-        </button>
-    </div>
-
-    <div id="notificationStatus" class="text-xs opacity-60"></div>
+        <h3 class="card-title text-sm uppercase tracking-wide">📧 Email Notifications</h3>
+        <p class="text-xs opacity-70">
+            Alerts are sent via email (SendGrid) for: price targets, budget thresholds (80 / 90 / 100%), subscription renewals, and high resource usage (&gt;90%).<br>
+            <span class="opacity-50 mt-1 block">Configure <code>SENDGRID_API_KEY</code> and <code>NOTIFICATION_TO_EMAIL</code> in your <code>.env</code> to enable.</span>
+        </p>
     </div>
 </div>
 

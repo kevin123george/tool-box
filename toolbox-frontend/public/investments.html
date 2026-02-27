@@ -635,6 +635,22 @@
 
 <!-- =================== MODALS =================== -->
 
+<!-- Sell Holding Modal -->
+<dialog id="sellHoldingModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-1">Sell <span id="sellModalSymbol"></span></h3>
+        <p class="text-xs opacity-50 mb-4">Enter the price at which you sold this position.</p>
+        <input type="hidden" id="sellHoldingId">
+        <label class="text-xs opacity-70">Sell Price</label>
+        <input id="sellPrice" type="number" step="0.01" placeholder="Sell price per share" class="input input-bordered w-full mt-1 mb-4">
+        <div class="modal-action">
+            <button class="btn btn-error" onclick="confirmSell()">CONFIRM SELL</button>
+            <button class="btn" onclick="closeModal('sellHoldingModal')">CANCEL</button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
 <!-- Stock Holding Modal -->
 <dialog id="stockHoldingModal" class="modal">
     <div class="modal-box">

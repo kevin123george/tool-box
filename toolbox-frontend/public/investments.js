@@ -234,8 +234,9 @@ async function loadHoldings() {
                     <div class="profit-bar-fill ${plClass}" style="width:${Math.min(Math.abs(plPercent), 100)}%; background:${pl >= 0 ? '#0f0' : '#f33'};"></div>
                 </div>
                 <div style="text-align:right; margin-top:4px;">
-                    <button class="btn" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice}, '${buyDateStr}', '${cur}')" aria-label="Edit ${h.symbol}">EDIT</button>
-                    <button class="btn" onclick="delHolding('${h.id}', '${h.symbol}')" aria-label="Delete ${h.symbol}">DEL</button>
+                    <button class="btn btn-sm btn-error" onclick="showSellHolding('${h.id}', '${h.symbol}', ${h.currentPrice})" aria-label="Sell ${h.symbol}">SELL</button>
+                    <button class="btn btn-sm" onclick="showEditHolding('${h.id}', '${h.symbol}', ${h.quantity}, ${h.buyPrice}, '${buyDateStr}', '${cur}')" aria-label="Edit ${h.symbol}">EDIT</button>
+                    <button class="btn btn-sm" onclick="delHolding('${h.id}', '${h.symbol}')" aria-label="Delete ${h.symbol}">DEL</button>
                 </div>
             </div>`;
         });
@@ -468,6 +469,32 @@ async function delHolding(id, symbol) {
         showToast(`${symbol || 'Holding'} removed from portfolio`, 'success');
     } catch (e) {
         showToast(`Could not remove ${symbol || 'holding'}`, 'error');
+    }
+}
+
+function showSellHolding(id, symbol, currentPrice) {
+    document.getElementById('sellHoldingId').value = id;
+    document.getElementById('sellModalSymbol').textContent = symbol;
+    document.getElementById('sellPrice').value = currentPrice > 0 ? currentPrice.toFixed(2) : '';
+    openModal('sellHoldingModal');
+}
+
+async function confirmSell() {
+    const id = document.getElementById('sellHoldingId').value;
+    const sellPrice = parseFloat(document.getElementById('sellPrice').value);
+    if (!sellPrice || sellPrice <= 0) { showToast('Enter a valid sell price', 'warning'); return; }
+
+    try {
+        await authFetch(`${API}/api/stocks/${id}/sell`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sellPrice })
+        });
+        closeModal('sellHoldingModal');
+        loadStocks();
+        showToast('Position marked as sold', 'success');
+    } catch (e) {
+        showToast('Could not mark as sold: ' + e.message, 'error');
     }
 }
 

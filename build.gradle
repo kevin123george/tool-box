@@ -33,9 +33,8 @@ dependencies {
 
 
 
-    // Web Push dependencies
-    implementation 'nl.martijndwars:web-push:5.1.1'
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+    // SendGrid email
+    implementation 'com.sendgrid:sendgrid-java:4.10.2'
 
     // Jackson (usually already included with Spring Boot, but add if missing)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
@@ -57,7 +56,3 @@ tasks.named('test') {
 }
 
 
-task generateVapidKeys(type: JavaExec) {
-    mainClass = 'com.example.mongo.utils.VapidKeyGenerator'
-    classpath = sourceSets.main.runtimeClasspath
-}

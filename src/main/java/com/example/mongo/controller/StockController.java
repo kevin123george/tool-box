@@ -72,6 +72,12 @@ public class StockController {
     return ResponseEntity.ok(service.updatePrice(id, stockRequest));
   }
 
+  @PostMapping("/{id}/sell")
+  public ResponseEntity<StockHolding> sellStock(
+      @PathVariable String id, @RequestBody java.util.Map<String, Double> body) {
+    return ResponseEntity.ok(service.sellStock(id, body.getOrDefault("sellPrice", 0.0)));
+  }
+
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteStock(@PathVariable String id) {
     service.deleteStock(id);

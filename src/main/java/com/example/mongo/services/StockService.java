@@ -175,6 +175,16 @@ public class StockService {
     return stockRepository.save(stock);
   }
 
+  public StockHolding sellStock(String id, double sellPrice) {
+    String userId = authUtils.getCurrentUserId();
+    StockHolding stock =
+        stockRepository.findById(id).orElseThrow(() -> new RuntimeException("Stock not found"));
+    if (!userId.equals(stock.getUserId())) throw new RuntimeException("Access denied");
+    stock.setSold(true);
+    stock.setCurrentPrice(sellPrice);
+    return stockRepository.save(stock);
+  }
+
   public void deleteStock(String id) {
     String userId = authUtils.getCurrentUserId();
     stockRepository

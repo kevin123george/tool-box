@@ -255,167 +255,10 @@ function cleanupSystemStats() {
 }
 
 /* ===========================================================
-   PUSH NOTIFICATIONS
+   EMAIL NOTIFICATIONS
 =============================================================*/
-
-let publicVapidKey = null;
-let pushSubscription = null;
-
-async function initPushNotifications() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push notifications not supported');
-        updateNotificationUI(false);
-        return;
-    }
-
-    try {
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker registered:', registration);
-
-        const response = await authFetch('/api/push/public-key');
-        const data = await response.json();
-        publicVapidKey = data.publicKey;
-
-        pushSubscription = await registration.pushManager.getSubscription();
-        updateNotificationUI(pushSubscription !== null);
-    } catch (error) {
-        console.error('Error initializing push notifications:', error);
-        updateNotificationUI(false);
-    }
-}
-
-async function subscribeToPush() {
-    try {
-        const permission = await Notification.requestPermission();
-
-        if (permission !== 'granted') {
-            showToast('Please enable notifications in your browser settings', 'warning');
-            return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-
-        const convertedKey = urlBase64ToUint8Array(publicVapidKey);
-
-        pushSubscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: convertedKey
-        });
-
-        const response = await authFetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                endpoint: pushSubscription.endpoint,
-                keys: {
-                    p256dh: arrayBufferToBase64(pushSubscription.getKey('p256dh')),
-                    auth: arrayBufferToBase64(pushSubscription.getKey('auth'))
-                },
-                deviceName: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop',
-                userAgent: navigator.userAgent
-            })
-        });
-
-        if (response.ok) {
-            showToast('Push notifications enabled!', 'success');
-            updateNotificationUI(true);
-        } else {
-            throw new Error('Failed to subscribe on server');
-        }
-    } catch (error) {
-        console.error('Error subscribing to push:', error);
-        showToast('Failed to enable notifications: ' + error.message, 'error');
-    }
-}
-
-async function unsubscribeFromPush() {
-    try {
-        if (pushSubscription) {
-            await pushSubscription.unsubscribe();
-
-            await authFetch('/api/push/unsubscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    endpoint: pushSubscription.endpoint
-                })
-            });
-
-            pushSubscription = null;
-            showToast('Push notifications disabled', 'info');
-            updateNotificationUI(false);
-        }
-    } catch (error) {
-        console.error('Error unsubscribing:', error);
-        showToast('Error: ' + error.message, 'error');
-    }
-}
-
-async function testNotification() {
-    try {
-        const response = await authFetch('/api/push/test', { method: 'POST' });
-        const result = await response.json();
-
-        if (result.success) {
-            showToast(result.message + ' Check your device for the notification!', 'success');
-        } else {
-            showToast(result.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error sending test notification:', error);
-        showToast('Error: ' + error.message, 'error');
-    }
-}
-
-function updateNotificationUI(isSubscribed) {
-    const statusDiv = document.getElementById('notificationStatus');
-    const subscribeBtn = document.getElementById('subscribeBtn');
-    const unsubscribeBtn = document.getElementById('unsubscribeBtn');
-    const testBtn = document.getElementById('testNotificationBtn');
-
-    if (!statusDiv) return;
-
-    if (isSubscribed) {
-        statusDiv.textContent = 'Notifications enabled';
-        statusDiv.style.color = '#0f0';
-        if (subscribeBtn) subscribeBtn.style.display = 'none';
-        if (unsubscribeBtn) unsubscribeBtn.style.display = 'inline-block';
-        if (testBtn) testBtn.style.display = 'inline-block';
-    } else {
-        statusDiv.textContent = 'Notifications disabled';
-        statusDiv.style.color = '#999';
-        if (subscribeBtn) subscribeBtn.style.display = 'inline-block';
-        if (unsubscribeBtn) unsubscribeBtn.style.display = 'none';
-        if (testBtn) testBtn.style.display = 'none';
-    }
-}
-
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-function arrayBufferToBase64(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-}
+// Notifications are now handled server-side via SendGrid email.
+// Configure SENDGRID_API_KEY and NOTIFICATION_TO_EMAIL in .env
 
 /* ===========================================================
    INITIALIZE
@@ -424,7 +267,6 @@ function arrayBufferToBase64(buffer) {
 (window.__pageInits = window.__pageInits || {}).system = function () {
     requireAuth();
     initSystemStatsTab();
-    initPushNotifications();
     // Register cleanup for SPA navigation away from this page
     window.__pageCleanup = cleanupSystemStats;
 };

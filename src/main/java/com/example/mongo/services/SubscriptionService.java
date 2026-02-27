@@ -18,7 +18,7 @@ public class SubscriptionService {
 
   @Autowired private SubscriptionRepository subscriptionRepository;
 
-  @Autowired private WebPushService webPushService;
+  @Autowired private EmailService emailService;
 
   @Autowired private AuthUtils authUtils;
 
@@ -100,18 +100,9 @@ public class SubscriptionService {
             today, threeDaysFromNow, userId);
 
     for (Subscription sub : upcomingRenewals) {
-      String title = "Subscription Renewal Reminder";
-      String body =
-          String.format(
-              "%s (%s) renews on %s - €%.2f",
-              sub.getName(), sub.getProvider(), sub.getNextBillingDate(), sub.getAmount());
-
-      java.util.Map<String, String> data = new java.util.HashMap<>();
-      data.put("subscriptionId", sub.getId());
-      data.put("name", sub.getName());
-
       try {
-        webPushService.sendSystemAlert(title, body, "subscription_reminder", data);
+        emailService.sendSubscriptionReminder(null, sub.getName(), sub.getProvider(),
+            sub.getNextBillingDate().toString(), sub.getAmount());
         log.info("Sent subscription reminder for {}", sub.getName());
       } catch (Exception e) {
         log.error("Failed to send subscription reminder: {}", e.getMessage());

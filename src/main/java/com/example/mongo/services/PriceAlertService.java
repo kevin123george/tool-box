@@ -4,8 +4,10 @@ import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.AlertDirection;
 import com.example.mongo.models.PriceAlert;
 import com.example.mongo.models.StockHolding;
+import com.example.mongo.models.UsersEntity;
 import com.example.mongo.repos.PriceAlertRepository;
 import com.example.mongo.repos.StockRepository;
+import com.example.mongo.repos.UserRepo;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +24,9 @@ public class PriceAlertService {
 
   @Autowired private StockRepository stockRepository;
 
-  @Autowired private WebPushService webPushService;
+  @Autowired private EmailService emailService;
+
+  @Autowired private UserRepo userRepo;
 
   @Autowired private AuthUtils authUtils;
 
@@ -102,26 +106,16 @@ public class PriceAlertService {
         alert.setTriggeredAt(Instant.now());
         alertRepository.save(alert);
 
-        // Send push notification
-        String title = "Price Alert Triggered";
-        String body =
-            String.format(
-                "%s is now €%.2f (%s €%.2f)",
-                alert.getSymbol(),
-                currentPrice,
-                alert.getDirection() == AlertDirection.ABOVE ? "above" : "below",
-                alert.getTargetPrice());
-
-        Map<String, String> data = new HashMap<>();
-        data.put("symbol", alert.getSymbol());
-        data.put("currentPrice", String.valueOf(currentPrice));
-        data.put("targetPrice", String.valueOf(alert.getTargetPrice()));
-
+        // Send email notification
+        String direction = alert.getDirection() == AlertDirection.ABOVE ? "above" : "below";
         try {
-          webPushService.sendSystemAlert(title, body, "price_alert", data);
-          log.info("Sent price alert notification for {}", alert.getSymbol());
+          String userEmail = userRepo.findById(alert.getUserId())
+              .map(UsersEntity::getEmail).orElse(null);
+          emailService.sendPriceAlert(userEmail, alert.getSymbol(), direction,
+              alert.getTargetPrice(), currentPrice);
+          log.info("Sent price alert email for {}", alert.getSymbol());
         } catch (Exception e) {
-          log.error("Failed to send price alert notification: {}", e.getMessage());
+          log.error("Failed to send price alert email: {}", e.getMessage());
         }
       }
     }

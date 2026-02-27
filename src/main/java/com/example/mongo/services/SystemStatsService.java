@@ -24,7 +24,7 @@ public class SystemStatsService {
   private final RuntimeMXBean runtimeBean;
   private final ThreadMXBean threadBean;
 
-  @Autowired private WebPushService webPushService;
+  @Autowired private EmailService emailService;
 
   private long lastCpuAlert = 0;
   private long lastMemoryAlert = 0;
@@ -276,42 +276,24 @@ public class SystemStatsService {
 
     // CPU Alert
     if (stats.getSystemCpuLoad() > 90 && (now - lastCpuAlert) > ALERT_COOLDOWN) {
-      Map<String, String> data = new HashMap<>();
-      data.put("cpu", String.format("%.1f", stats.getSystemCpuLoad()));
-
-      webPushService.sendSystemAlert(
-          "⚠️ High CPU Usage",
-          String.format("CPU usage is at %.1f%%", stats.getSystemCpuLoad()),
-          "cpu_alert",
-          data);
+      emailService.sendSystemAlert("⚠️ High CPU Usage",
+          String.format("CPU usage is at %.1f%%", stats.getSystemCpuLoad()));
       lastCpuAlert = now;
       log.warn("CPU alert sent: {}%", stats.getSystemCpuLoad());
     }
 
     // Memory Alert
     if (stats.getSystemMemoryUsagePercent() > 90 && (now - lastMemoryAlert) > ALERT_COOLDOWN) {
-      Map<String, String> data = new HashMap<>();
-      data.put("memory", String.format("%.1f", stats.getSystemMemoryUsagePercent()));
-
-      webPushService.sendSystemAlert(
-          "⚠️ High Memory Usage",
-          String.format("Memory usage is at %.1f%%", stats.getSystemMemoryUsagePercent()),
-          "memory_alert",
-          data);
+      emailService.sendSystemAlert("⚠️ High Memory Usage",
+          String.format("Memory usage is at %.1f%%", stats.getSystemMemoryUsagePercent()));
       lastMemoryAlert = now;
       log.warn("Memory alert sent: {}%", stats.getSystemMemoryUsagePercent());
     }
 
     // Disk Alert
     if (stats.getDiskUsagePercent() > 90 && (now - lastDiskAlert) > ALERT_COOLDOWN) {
-      Map<String, String> data = new HashMap<>();
-      data.put("disk", String.format("%.1f", stats.getDiskUsagePercent()));
-
-      webPushService.sendSystemAlert(
-          "⚠️ High Disk Usage",
-          String.format("Disk usage is at %.1f%%", stats.getDiskUsagePercent()),
-          "disk_alert",
-          data);
+      emailService.sendSystemAlert("⚠️ High Disk Usage",
+          String.format("Disk usage is at %.1f%%", stats.getDiskUsagePercent()));
       lastDiskAlert = now;
       log.warn("Disk alert sent: {}%", stats.getDiskUsagePercent());
     }
