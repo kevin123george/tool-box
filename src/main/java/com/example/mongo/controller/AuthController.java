@@ -7,9 +7,12 @@ import com.example.mongo.models.dto.AuthRequest;
 import com.example.mongo.models.dto.AuthResponse;
 import com.example.mongo.models.dto.RegisterRequest;
 import com.example.mongo.repos.UserRepo;
+import com.example.mongo.services.EmailService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -23,6 +26,7 @@ public class AuthController {
   @Autowired private JwtUtil jwtUtil;
   @Autowired private BCryptPasswordEncoder passwordEncoder;
   @Autowired private AuthUtils authUtils;
+  @Autowired private EmailService emailService;
 
   @PostMapping("/login")
   public ResponseEntity<?> login(@Valid @RequestBody AuthRequest req) {
@@ -53,6 +57,35 @@ public class AuthController {
     String token = jwtUtil.generateToken(user);
     return ResponseEntity.ok(
         new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole()));
+  }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<?> forgotPassword(
+      @RequestBody Map<String, String> body, HttpServletRequest request) {
+    String email = body.get("email");
+    if (email == null || email.isBlank()) {
+      return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+    }
+    // Always return success to avoid user enumeration
+    userRepo
+        .findByEmail(email.trim().toLowerCase())
+        .ifPresent(
+            user -> {
+              String token = UUID.randomUUID().toString();
+              user.setResetToken(token);
+              user.setResetTokenExpiry(Instant.now().plusSeconds(86400));
+              userRepo.save(user);
+              String baseUrl =
+                  request.getScheme()
+                      + "://"
+                      + request.getServerName()
+                      + (request.getServerPort() != 80 && request.getServerPort() != 443
+                          ? ":" + request.getServerPort()
+                          : "");
+              String resetUrl = baseUrl + "/reset-password.html?token=" + token;
+              emailService.sendPasswordReset(user.getEmail(), user.getName(), resetUrl);
+            });
+    return ResponseEntity.ok(Map.of("message", "If that email exists, a reset link has been sent"));
   }
 
   @GetMapping("/reset-password/validate")

@@ -4,6 +4,7 @@ import com.example.mongo.config.AuthUtils;
 import com.example.mongo.models.dto.SystemStatsDTO;
 import com.example.mongo.models.dto.UserSummaryDTO;
 import com.example.mongo.repos.UserRepo;
+import com.example.mongo.services.EmailService;
 import com.example.mongo.services.SystemStatsService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -23,6 +24,7 @@ public class SystemStatsController {
   @Autowired private UserRepo userRepo;
   @Autowired private AuthUtils authUtils;
   @Autowired private BCryptPasswordEncoder passwordEncoder;
+  @Autowired private EmailService emailService;
 
   @GetMapping("/stats")
   public ResponseEntity<SystemStatsDTO> getStats() {
@@ -149,6 +151,7 @@ public class SystemStatsController {
                           ? ":" + request.getServerPort()
                           : "");
               String resetUrl = baseUrl + "/reset-password.html?token=" + token;
+              emailService.sendPasswordReset(user.getEmail(), user.getName(), resetUrl);
               return ResponseEntity.ok(Map.of("resetUrl", resetUrl, "expiresIn", "24 hours"));
             })
         .orElse(ResponseEntity.notFound().build());

@@ -66,6 +66,19 @@ public class EmailService {
     send(to, subject, html);
   }
 
+  public void sendPasswordReset(String to, String name, String resetUrl) {
+    String subject = "Reset your ToolBox password";
+    String html =
+        String.format(
+            "<h2>Password Reset Request</h2>"
+                + "<p>Hi <strong>%s</strong>,</p>"
+                + "<p>Click the link below to reset your password. It expires in 24 hours.</p>"
+                + "<p><a href='%s' style='font-size:16px;'>Reset Password</a></p>"
+                + "<p style='opacity:0.5;font-size:12px;'>If you didn't request this, you can ignore this email.</p>",
+            name, resetUrl);
+    send(to, subject, html);
+  }
+
   public void sendSystemAlert(String subject, String message) {
     String html = "<h2>System Alert</h2><p>" + message + "</p>";
     sendToAdmins(subject, html);
