@@ -29,25 +29,26 @@ A self-hosted, full-stack personal management platform built for one purpose: ke
    - [SPA Router](#spa-router)
    - [Sidebar Navigation](#sidebar-navigation)
    - [Pages](#pages)
-8. [Python Price Engine](#python-price-engine)
+9. [Python Price Engine](#python-price-engine)
    - [stock_daemon.py — Persistent Daemon](#stock_daemonpy--persistent-daemon)
    - [stock_fetcher.py](#stock_fetcherpy)
    - [stock_history_fetcher.py](#stock_history_fetcherpy)
    - [fundamentals_fetcher.py](#fundamentals_fetcherpy)
    - [market_data_fetcher.py](#market_data_fetcherpy)
-9. [Real-Time Price Updates](#real-time-price-updates)
-   - [PythonPricePool — Daemon Process Pool](#pythonpricepool--daemon-process-pool)
-   - [Parallel Fetching](#parallel-fetching)
-   - [How a Price Update Cycle Works](#how-a-price-update-cycle-works)
-10. [Data Models](#data-models)
-11. [API Reference](#api-reference)
-12. [Configuration](#configuration)
-13. [Deployment](#deployment)
+10. [Real-Time Price Updates](#real-time-price-updates)
+    - [PythonPricePool — Daemon Process Pool](#pythonpricepool--daemon-process-pool)
+    - [Parallel Fetching](#parallel-fetching)
+    - [How a Price Update Cycle Works](#how-a-price-update-cycle-works)
+11. [Email Notifications](#email-notifications)
+12. [Data Models](#data-models)
+13. [API Reference](#api-reference)
+14. [Configuration](#configuration)
+15. [Deployment](#deployment)
     - [Prerequisites](#prerequisites)
     - [Environment Variables](#environment-variables)
     - [Running deploy.sh](#running-deploysh)
     - [Build Commands](#build-commands)
-14. [Design Decisions & Engineering Notes](#design-decisions--engineering-notes)
+16. [Design Decisions & Engineering Notes](#design-decisions--engineering-notes)
 
 ---
 
@@ -112,6 +113,12 @@ KEVIN_PASSWORD=your-secure-password
 # Optional — needed for Stock Research (news & technicals)
 # Free key at https://www.alphavantage.co/support/#api-key
 ALPHA_VANTAGE_API_KEY=your-key-here
+
+# Optional — email notifications via MailerSend (price alerts, subscription reminders, password reset)
+# Free account at https://www.mailersend.com — use the trial domain they provide
+MAILERSEND_API_KEY=your-mailersend-api-key
+NOTIFICATION_FROM_EMAIL=noreply@your-verified-domain.mlsender.net
+NOTIFICATION_FROM_NAME=ToolBox
 ```
 
 ---
@@ -119,37 +126,17 @@ ALPHA_VANTAGE_API_KEY=your-key-here
 ### 4. Set up the Python environment
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate          # macOS/Linux
-# or: venv\Scripts\activate       # Windows
+python3 -m venv scripts/venv
+source scripts/venv/bin/activate    # macOS/Linux
 
-pip install -r requirements.txt
+pip install -r scripts/requirements.txt
 ```
 
 This installs `yfinance` and `pandas` — the only Python dependencies. They handle all stock price and fundamentals fetching.
 
 ---
 
-### 5. (Optional) Generate VAPID keys for push notifications
-
-Push notifications (price alerts, subscription reminders) require a one-time key generation:
-
-```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew generateVapidKeys
-```
-
-Copy the printed public and private keys into `src/main/resources/application.properties`:
-
-```properties
-vapid.public.key=<paste public key here>
-vapid.private.key=<paste private key here>
-```
-
-Skip this step if you don't need push notifications.
-
----
-
-### 6. Build & run
+### 5. Build & run
 
 **Option A — one command (recommended)**
 
@@ -157,7 +144,7 @@ Skip this step if you don't need push notifications.
 ./deploy.sh
 ```
 
-This does everything: loads `.env`, sets up Python, builds the JAR, copies Python scripts, and starts both services in the background.
+This does everything: loads `.env`, sets up the Python venv, builds the JAR, copies Python scripts, and starts both services in the background.
 
 | Service | URL | Logs |
 |---------|-----|------|
@@ -166,25 +153,23 @@ This does everything: loads `.env`, sets up Python, builds the JAR, copies Pytho
 
 ---
 
-**Option B — manual (4 terminals)**
+**Option B — manual (3 terminals)**
 
 ```bash
-# Terminal 1 — MongoDB
-mongod --dbpath ./data/db
-
-# Terminal 2 — Python venv (keep active so the JVM can find it)
-source venv/bin/activate
-
-# Terminal 3 — Spring Boot backend
+# Terminal 1 — Spring Boot backend (from project root)
+cd backend
 JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew bootRun
 
-# Terminal 4 — Bun frontend
-cd toolbox-frontend && bun run dev
+# Terminal 2 — Bun frontend
+cd frontend
+bun run dev
 ```
+
+MongoDB must already be running (`brew services start mongodb-community` on macOS).
 
 ---
 
-### 7. First login
+### 6. First login
 
 1. Open **http://localhost:3000**
 2. You'll be redirected to the login page
@@ -197,19 +182,20 @@ cd toolbox-frontend && bun run dev
 
 | Problem | Fix |
 |---------|-----|
-| `JWT_SECRET not set` on startup | Make sure `.env` exists and `deploy.sh` sources it before starting Java |
-| Stock prices fail immediately | Python venv not active, or yfinance missing. Run: `source venv/bin/activate && pip install yfinance` |
-| `Daemon stdout closed unexpectedly` | `stock_daemon.py` not in `build/libs/`. Run `cp stock_daemon.py build/libs/` or re-run `./deploy.sh` |
+| `JWT_SECRET not set` on startup | Make sure `.env` exists in the project root and `deploy.sh` sources it before starting Java |
+| Stock prices fail immediately | Python venv not set up. Run: `source scripts/venv/bin/activate && pip install yfinance` |
+| `Daemon stdout closed unexpectedly` | `stock_daemon.py` not in `backend/build/libs/`. Re-run `./deploy.sh` |
 | `Unsupported class file major version 68` | Wrong Java version for Gradle. Prefix: `JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew ...` |
 | MongoDB connection refused | MongoDB not running. `brew services start mongodb-community` (macOS) or `sudo systemctl start mongod` (Linux) |
-| Port 9099 already in use | Kill old process: `./stop.sh` or `pkill -f mongo-0.0.1` |
-| Push notifications not working | VAPID keys not configured — see Step 5 above |
+| Port 9099 already in use | Kill old process: `./stop.sh` or `pkill -f toolbox` |
+| Emails not sending | Check `backend.log` for `Sending email from=...` — the from address must match a verified domain in your MailerSend account |
 
 ---
 
 ### Useful commands
 
 ```bash
+./update.sh          # Pull latest code from git, then redeploy
 ./deploy.sh          # Full build + restart everything
 ./stop.sh            # Stop backend and frontend
 ./status.sh          # Check what's running
@@ -218,7 +204,7 @@ tail -f backend.log  # Live backend logs
 tail -f frontend.log # Live frontend logs
 
 # Quick compile check (no tests, fast)
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew compileJava -x test -x spotlessCheck
+cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew compileJava -x test -x spotlessCheck
 ```
 
 ---
@@ -240,18 +226,18 @@ JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew compileJava -x test -x spotl
 │  Spring Boot Backend (port 9099)                                  │
 │  Java 21 · Spring Security · JWT auth · REST controllers          │
 │                                                                   │
-│   ┌─────────────────┐    ┌─────────────────┐                    │
-│   │  PythonPricePool│    │  Scheduled Crons │                    │
-│   │  (4 daemons)    │    │  StockUpdater 5s │                    │
-│   └────────┬────────┘    └────────┬─────────┘                    │
-│            │ stdin/stdout          │                               │
-└────────────┼───────────────────────┼──────────────────────────────┘
-             │                       │
-┌────────────▼───────┐   ┌──────────▼───────────────────────────┐
-│  stock_daemon.py   │   │  MongoDB (localhost:27017/tool-box)   │
-│  (×4 persistent   │   │  Collections: users, stock_holdings,  │
-│   Python processes)│   │  expense_records, workout_logs, ...   │
-└────────────────────┘   └───────────────────────────────────────┘
+│   ┌─────────────────┐    ┌─────────────────┐   ┌─────────────┐  │
+│   │  PythonPricePool│    │  Scheduled Crons │   │ EmailService│  │
+│   │  (4 daemons)    │    │  StockUpdater 5s │   │ MailerSend  │  │
+│   └────────┬────────┘    └────────┬─────────┘   └──────┬──────┘  │
+│            │ stdin/stdout          │                     │         │
+└────────────┼───────────────────────┼─────────────────────┼────────┘
+             │                       │                     │
+┌────────────▼───────┐   ┌──────────▼──────────────────┐  │
+│  stock_daemon.py   │   │  MongoDB (localhost:27017)    │  │
+│  (×4 persistent   │   │  Collections: users,          │  │
+│   Python processes)│   │  stock_holdings, expenses...  │  └── MailerSend API
+└────────────────────┘   └───────────────────────────────┘
         │
         └── yfinance (Yahoo Finance API)
             Exchange rates · OHLC · Fundamentals
@@ -270,7 +256,7 @@ The Bun server is a thin static file server with a one-liner `/api/*` proxy. All
 | Database | MongoDB | local |
 | Auth | JWT (jjwt) | 0.12.6 |
 | Security | Spring Security | (Boot managed) |
-| Web Push | nl.martijndwars/web-push | 5.1.1 |
+| Email | MailerSend Java SDK | 1.4.1 |
 | Code style | Spotless / Google Java Format | 6.25.0 |
 | Build tool | Gradle | 8.x |
 | Frontend server | Bun | latest |
@@ -289,39 +275,44 @@ The Bun server is a thin static file server with a one-liner `/api/*` proxy. All
 ```
 tool-box/
 │
-├── src/main/java/com/example/mongo/
-│   ├── MongoApplication.java          # Entry point
-│   ├── config/                        # Security, JWT, scheduling, auditing
-│   ├── controller/                    # REST endpoints (~28 controllers)
-│   ├── models/                        # MongoDB documents + DTOs
-│   ├── repos/                         # MongoRepository interfaces
-│   ├── services/                      # Business logic
-│   ├── crons/                         # @Scheduled background jobs
-│   ├── exception/                     # Global exception handler
-│   └── converter/                     # YearMonth ↔ String converters
+├── backend/                           # Spring Boot application
+│   ├── build.gradle
+│   ├── gradlew
+│   ├── settings.gradle
+│   └── src/main/java/dev/toolbox/
+│       ├── MongoApplication.java      # Entry point
+│       ├── config/                    # Security, JWT, scheduling, auditing
+│       ├── controller/                # REST endpoints (~28 controllers)
+│       ├── converter/                 # YearMonth ↔ String converters
+│       ├── crons/                     # @Scheduled background jobs
+│       ├── exception/                 # Global exception handler
+│       ├── models/                    # MongoDB documents + DTOs
+│       ├── repos/                     # MongoRepository interfaces
+│       └── services/                  # Business logic
 │
-├── src/main/resources/
-│   └── application.properties
-│
-├── toolbox-frontend/
-│   ├── src/server.ts                  # Bun HTTP server
+├── frontend/                          # Bun frontend server
+│   ├── src/server.ts                  # Bun HTTP server + /api/* proxy
 │   └── public/
 │       ├── *.html                     # 13 pages
 │       ├── *.js                       # Page scripts + router + nav
-│       ├── styles.css
-│       └── sw.js                      # Service Worker (PWA)
+│       └── styles.css
 │
-├── stock_daemon.py                    # Persistent price daemon (stdin/stdout)
-├── stock_fetcher.py                   # Single price lookup
-├── stock_history_fetcher.py           # Historical OHLC data
-├── fundamentals_fetcher.py            # Company fundamentals via yfinance
-├── market_data_fetcher.py             # Market OHLC candles
-├── requirements.txt                   # yfinance, pandas
+├── scripts/                           # Python price engine
+│   ├── stock_daemon.py                # Persistent price daemon (stdin/stdout)
+│   ├── stock_fetcher.py               # Single price lookup
+│   ├── stock_history_fetcher.py       # Historical OHLC data
+│   ├── fundamentals_fetcher.py        # Company fundamentals via yfinance
+│   ├── market_data_fetcher.py         # Market OHLC candles
+│   ├── requirements.txt               # yfinance, pandas
+│   └── venv/                          # Python virtual environment (git-ignored)
 │
+├── settings.gradle                    # Root Gradle settings (includes backend/)
+├── gradlew                            # Root wrapper — delegates to backend/gradlew
 ├── deploy.sh                          # Full production deploy
-├── start_all.sh                       # Quick dev startup
-├── stop.sh / status.sh                # Process management
-└── build.gradle
+├── update.sh                          # git pull + deploy (safe self-update)
+├── stop.sh                            # Stop all services
+├── status.sh                          # Check running services
+└── .env                               # Secrets (git-ignored)
 ```
 
 ---
@@ -370,7 +361,7 @@ Separate from holdings — a list of symbols to track without owning. Prices upd
 Log dividend payments per holding. The calendar automatically marks upcoming dividend dates. Annual dividend yield is calculated and shown per position.
 
 **Price Alerts**
-Set a price threshold (above or below) for any symbol. A 1-minute cron checks all active alerts and fires a Web Push notification when the price crosses the threshold. Alerts auto-deactivate after triggering.
+Set a price threshold (above or below) for any symbol. A 1-minute cron checks all active alerts and sends an email notification when the price crosses the threshold. Alerts auto-deactivate after triggering.
 
 **Advanced Charting**
 TradingView's LightweightCharts library powers a full candlestick chart with volume bars and optional overlays: 20-day SMA, 50-day EMA, Bollinger Bands. OHLC data comes from `market_data_fetcher.py`.
@@ -392,7 +383,7 @@ Log expenses with amount, category, date, and notes. The analytics view shows mo
 Define transactions that repeat on a schedule (daily / weekly / monthly / yearly). A cron job automatically creates the actual expense or income records on the due date.
 
 **Subscription Tracker**
-Track recurring subscriptions (Netflix, Spotify, etc.) with name, amount, billing cycle, and renewal date. The dashboard shows total monthly subscription cost. The calendar marks upcoming renewal dates. A reminder cron sends push notifications before renewals.
+Track recurring subscriptions (Netflix, Spotify, etc.) with name, amount, billing cycle, and renewal date. The dashboard shows total monthly subscription cost. The calendar marks upcoming renewal dates. A reminder email is sent before renewals.
 
 **Net Worth**
 The net worth page aggregates bank account balances + portfolio value − known liabilities. A `NetWorthSnapshotCron` saves a monthly snapshot so you can chart wealth growth over time.
@@ -404,7 +395,7 @@ Set savings goals with a name, target amount, deadline, and linked bank account.
 
 ### Calendar
 
-The calendar is a standalone page (extracted from Finance in a later refactor) that combines two event sources:
+The calendar is a standalone page that combines two event sources:
 
 1. **Financial events** — auto-generated from your data:
    - Subscription renewal dates
@@ -466,11 +457,12 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 
 **System Stats** (accessible to all users)
 - Server uptime, JVM memory usage, MongoDB connection status
-- Enable Web Push notifications (subscribes the current browser via the Web Push API)
 
 **Admin Panel** (ADMIN role only)
-- List all users
+- List all users with role badges
 - Change user roles (USER / ADMIN)
+- Toggle per-user email notifications (✉️ enabled / 🔕 disabled)
+- Send password reset link to any user via email
 - Deactivate / delete accounts
 - MongoDB export (mongodump) triggered via the UI
 
@@ -482,7 +474,7 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 
 | Controller | Base Path | Key Endpoints |
 |-----------|-----------|---------------|
-| `AuthController` | `/api/auth` | `POST /login`, `POST /register`, `POST /reset-password` |
+| `AuthController` | `/api/auth` | `POST /login`, `POST /register`, `POST /forgot-password`, `POST /reset-password` |
 | `StockController` | `/api/stocks` | `GET /`, `POST /`, `DELETE /{id}`, `GET /stats`, `GET /capital-gains`, `GET /allocation`, `POST /backfill` |
 | `StockWatchController` | `/api/watchlist` | `GET /`, `POST /`, `DELETE /{id}`, `GET /history/{symbol}` |
 | `StockResearchController` | `/api/research` | `GET /report/{symbol}`, `POST /generate/{symbol}` |
@@ -505,8 +497,7 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 | `MemoController` | `/api/memos` | Full CRUD |
 | `PdfController` | `/api/pdfs` | Upload, download, annotate |
 | `DashboardController` | `/api/dashboard` | `GET /summary` |
-| `SystemStatsController` | `/api/system` | Stats, push subscription |
-| `PushSubscriptionController` | `/api/push` | `POST /subscribe`, `POST /unsubscribe` |
+| `SystemStatsController` | `/api/system` | Stats, user management, email notification toggle, password reset |
 | `MongoDumpController` | `/api/admin/dump` | `POST /export` |
 
 ---
@@ -520,7 +511,7 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 | `PythonPricePool` | Manages pool of 4 persistent Python daemon processes |
 | `StockWatchService` | Watchlist price recording |
 | `StockResearchService` | Fetches news + technicals via Alpha Vantage |
-| `PriceAlertService` | Checks all active alerts, fires push notifications on breach |
+| `PriceAlertService` | Checks all active alerts, sends email on breach |
 | `FundamentalDataService` | Stores and retrieves company fundamentals |
 | `DCFService` | Discounted cash flow calculation |
 | `ScreenerService` | Runs screener queries |
@@ -529,16 +520,18 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 | `ExpenseAnalyticsService` | Expense trend analysis, category breakdown |
 | `MonthlyBudgetService` | Budget vs actual calculations |
 | `RecurringTransactionService` | Recurring transaction processing |
-| `SubscriptionService` | Subscription management |
+| `SubscriptionService` | Subscription management, renewal reminders |
 | `NetWorthSnapshotService` | Monthly wealth snapshots |
 | `FinancialCalendarService` | Aggregates all financial event sources for the calendar |
 | `CalendarEventService` | Personal event CRUD |
 | `FitnessService` | Workout and weight analytics |
 | `MemoService` | Memo CRUD |
 | `PdfService` | PDF upload/download/annotation |
-| `WebPushService` | Sends Web Push notifications |
+| `EmailService` | Sends transactional emails via MailerSend |
+| `BudgetAlertService` | Checks monthly budget thresholds, emails user on breach |
 | `DataMigrationService` | Seeds initial user on first boot |
-| `AlphaVantageService` | Alpha Vantage API client |
+| `AlphaVantageService` | Alpha Vantage API client (fundamentals) |
+| `MarketDataService` | OHLC data for TradingView charts |
 
 ---
 
@@ -546,14 +539,15 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 
 ```
 StockUpdater
-  ├── updateStock()        fixedDelay=5000ms    Live price update for all holdings
-  ├── updatedWatcher()     fixedDelay=240000ms  Watchlist price recording
-  └── checkPriceAlerts()   fixedDelay=60000ms   Evaluate all active price alerts
+  ├── updateStock()           fixedDelay=5000ms    Live price update for all holdings
+  ├── updatedWatcher()        fixedDelay=240000ms  Watchlist price recording
+  └── checkPriceAlerts()      fixedDelay=60000ms   Evaluate all active price alerts → email
 
-FundamentalDataRefresher                        Refresh company fundamentals
-NetWorthSnapshotCron                            Monthly net worth snapshot
-RecurringTransactionCron                        Create due recurring transactions
-SubscriptionReminderCron                        Push reminders before renewals
+FundamentalDataRefresher                           Refresh company fundamentals
+NetWorthSnapshotCron                               Monthly net worth snapshot
+RecurringTransactionCron                           Create due recurring transactions
+SubscriptionReminderCron                           Email reminders before renewals
+BudgetAlertCron                                    Email user when monthly budget thresholds are exceeded
 ```
 
 **`fixedDelay` vs `fixedRate`:** All crons use `fixedDelay`, meaning the timer starts after the previous execution completes. With price fetches taking ~0.5–1s per cycle (daemon pool + parallel fetches), the effective cadence is roughly every 5–6 seconds.
@@ -589,7 +583,7 @@ public interface ModelRepository extends MongoRepository<ModelName, String> {
 
 | Collection | Model | Purpose |
 |-----------|-------|---------|
-| `users` | `UsersEntity` | Accounts, roles, hashed passwords |
+| `users` | `UsersEntity` | Accounts, roles, hashed passwords, email notification flag |
 | `stock_holdings` | `StockHolding` | Portfolio positions |
 | `stock_holding_history` | `StockHoldingHistory` | Price history per position |
 | `stock_watch` | `StockWatch` | Watchlist entries |
@@ -612,7 +606,6 @@ public interface ModelRepository extends MongoRepository<ModelName, String> {
 | `memos` | `Memo` | Notes |
 | `pdf_documents` | `PdfDocument` | Uploaded PDFs |
 | `pdf_annotations` | `PdfAnnotation` | PDF annotations |
-| `push_subscriptions` | `PushSubscription` | Web Push endpoints |
 
 ---
 
@@ -620,7 +613,7 @@ public interface ModelRepository extends MongoRepository<ModelName, String> {
 
 **JWT Authentication**
 
-All API endpoints except `/api/auth/*` and `/public/*` require a `Bearer` token in the `Authorization` header. Tokens are signed with a secret from the `JWT_SECRET` environment variable and expire after 7 days (604,800,000 ms).
+All API endpoints except `/api/auth/*` require a `Bearer` token in the `Authorization` header. Tokens are signed with a secret from the `JWT_SECRET` environment variable and expire after 7 days (604,800,000 ms).
 
 ```
 Client                     JwtAuthFilter              SecurityConfig
@@ -637,7 +630,7 @@ Client                     JwtAuthFilter              SecurityConfig
 
 **Role-Based Access Control**
 
-Two roles: `USER` and `ADMIN`. The admin panel (`/api/admin/**`) is restricted to `ADMIN` role. Regular users can only access their own data — all service methods filter by `authUtils.getCurrentUserId()`.
+Two roles: `USER` and `ADMIN`. The admin panel (`/api/system/**`) is restricted to `ADMIN` role. Regular users can only access their own data — all service methods filter by `authUtils.getCurrentUserId()`.
 
 **Multi-Tenancy**
 
@@ -645,7 +638,15 @@ Every document has a `userId` field. All repository queries are scoped to the cu
 
 **Password Storage**
 
-Passwords are hashed with BCrypt before storage. Reset tokens are single-use and time-limited.
+Passwords are hashed with BCrypt before storage. Password reset flow:
+1. User visits `/reset-info.html` and submits their email
+2. Backend checks if the email exists (returns 400 if not)
+3. A UUID reset token is stored in the user record with a 24-hour expiry
+4. A reset link is emailed via MailerSend
+5. User clicks the link → `/reset-password.html?token=...`
+6. Backend validates the token and updates the password
+
+Admins can also trigger a password reset email for any user from the admin panel.
 
 ---
 
@@ -682,9 +683,10 @@ No framework. No build step. No `node_modules` of 200MB. Every page is plain HTM
 | **Fitness** | `fitness.html` / `fitness.js` | Log workouts, track weight, view analytics. Template library. |
 | **Memos** | `memos.html` / `memos.js` | Searchable note list with inline create/delete. |
 | **PDFs** | `pdfs.html` / `pdfs.js` | File picker upload, PDF viewer, annotation overlay. |
-| **System** | `system.html` / `system.js` | JVM stats, Web Push subscription, database management. |
-| **Admin** | `admin.html` / `admin.js` | User list, role management. ADMIN only. |
+| **System** | `system.html` / `system.js` | JVM stats, database management. |
+| **Admin** | `admin.html` / `admin.js` | User list, role management, email notification toggle, password reset. ADMIN only. |
 | **Login** | `login.html` / `login.js` | Login + register forms. Stores JWT in localStorage. |
+| **Forgot Password** | `reset-info.html` | Email form — calls `POST /api/auth/forgot-password`, shows server error/success. |
 
 **Shared utilities (`shared.js`)**
 
@@ -710,6 +712,8 @@ All scripts handle:
 - **GBp normalization** — London-listed stocks trade in pence (GBp). Scripts detect `fast_info.currency == 'GBp'` and divide by 100 to get GBP.
 - **Currency conversion** — fetches the FX rate (e.g. `EURUSD=X`) and applies it to convert native currency to the target currency.
 - **Market-closed fallback** — when intraday data (`period=1d, interval=1m`) is empty (market closed), scripts fall back to `period=5d, interval=1d` and take the last close.
+
+All scripts live in `scripts/` and are copied to `backend/build/libs/` alongside the JAR by `deploy.sh`. The Java services find them either next to the JAR (production) or via `scripts/` relative to the project root (development).
 
 ### stock_daemon.py — Persistent Daemon
 
@@ -794,6 +798,12 @@ Each daemon's stderr is drained by a dedicated background thread at `WARN` log l
 **Python `-u` flag:**
 Daemons are started with `python3 -u stock_daemon.py`. The `-u` flag disables Python's internal I/O buffering, ensuring that both stdout and stderr are written immediately even if the process crashes mid-fetch.
 
+**Python executable resolution:**
+The pool checks for the venv Python in this order:
+1. `../../../scripts/venv/bin/python3` — relative to `backend/build/libs/` (production)
+2. `scripts/venv/bin/python3` — relative to project root (development / `bootRun`)
+3. `python3` — system fallback
+
 ### Parallel Fetching
 
 `StockService.updateHoldingCurrentPrice()` fetches all symbol+currency pairs in parallel:
@@ -845,6 +855,29 @@ StockService.updateHoldingCurrentPrice()
     │
     └── stockRepository.saveAll(allHoldings)
 ```
+
+---
+
+## Email Notifications
+
+Transactional emails are sent via the [MailerSend](https://www.mailersend.com) API (free tier available). All emails are sent from the address configured in `NOTIFICATION_FROM_EMAIL` — this must be a domain verified in your MailerSend account.
+
+**Email types:**
+
+| Trigger | Recipients | Content |
+|---------|-----------|---------|
+| Price alert fires | The user who set the alert | Symbol, current price, threshold |
+| Budget threshold exceeded | The user whose budget it is | Category, spend vs budget |
+| Subscription renewal approaching | The subscription owner | Name, amount, renewal date |
+| Password reset (self-service) | The requesting user | Reset link (expires 24h) |
+| Password reset (admin-triggered) | The target user | Reset link (expires 24h) |
+| System alerts | All ADMIN-role users | Alert message |
+
+**Per-user toggle:**
+Each user has an `emailNotificationsEnabled` flag (default: true). Admins can toggle this per-user from the admin panel. When disabled, budget, price, and subscription emails are skipped for that user. System alerts always go to all admins regardless of this flag.
+
+**Logging:**
+Every send attempt logs `from`, `to`, and `subject` before calling the API. Success logs the MailerSend response status, message ID, and rate limit. Failures log the HTTP status code, the full response body, and the error message.
 
 ---
 
@@ -907,9 +940,10 @@ All endpoints require `Authorization: Bearer <token>` except `/api/auth/*`.
 ### Authentication
 
 ```
-POST /api/auth/login          { email, password } → { token }
-POST /api/auth/register       { name, email, password } → { token }
-POST /api/auth/reset-password { token, newPassword } → 200
+POST /api/auth/login              { email, password } → { token }
+POST /api/auth/register           { name, email, password } → { token }
+POST /api/auth/forgot-password    { email } → 200 | 400
+POST /api/auth/reset-password     { token, newPassword } → 200
 ```
 
 ### Stocks & Portfolio
@@ -957,6 +991,16 @@ GET    /api/fitness/analytics           → FitnessAnalyticsDTO
 GET    /api/fitness/templates           → List<WorkoutTemplate>
 ```
 
+### Admin
+
+```
+GET    /api/system/users                              → List<UserSummaryDTO>  (ADMIN)
+PATCH  /api/system/users/{id}/role                   { role } → 200  (ADMIN)
+PATCH  /api/system/users/{id}/email-notifications    { enabled } → 200  (ADMIN)
+POST   /api/system/users/{id}/reset-password         → 200  (ADMIN, sends email)
+DELETE /api/system/users/{id}                        → 204  (ADMIN)
+```
+
 ---
 
 ## Configuration
@@ -976,12 +1020,12 @@ spring.servlet.multipart.max-file-size=500MB
 spring.servlet.multipart.max-request-size=500MB
 
 # Alpha Vantage (news & technicals)
-alpha.vantage.api.key=${ALPHA_VANTAGE_API_KEY}
+alpha.vantage.api.key=${ALPHA_VANTAGE_API_KEY:}
 
-# Web Push (VAPID)
-vapid.public.key=<your-public-key>
-vapid.private.key=<your-private-key>
-vapid.subject=mailto:you@example.com
+# Email notifications (MailerSend)
+mailersend.api.key=${MAILERSEND_API_KEY:}
+app.notification.from.email=${NOTIFICATION_FROM_EMAIL:noreply@toolbox.local}
+app.notification.from.name=${NOTIFICATION_FROM_NAME:ToolBox}
 
 # Request timeouts
 server.tomcat.connection-timeout=120000
@@ -1013,11 +1057,21 @@ app.seed.kevin.password=${KEVIN_PASSWORD}
 Create a `.env` file in the project root (never commit this):
 
 ```bash
+# Required
 JWT_SECRET=your-very-long-random-secret-string
-ALPHA_VANTAGE_API_KEY=your-alpha-vantage-key
 KEVIN_NAME=Your Name
 KEVIN_EMAIL=you@example.com
 KEVIN_PASSWORD=your-password
+
+# Optional — stock news & technicals
+ALPHA_VANTAGE_API_KEY=your-alpha-vantage-key
+
+# Optional — email notifications
+# Get a free account at https://www.mailersend.com
+# Use the trial domain they provide (e.g. trial-xxx.mlsender.net)
+MAILERSEND_API_KEY=your-mailersend-api-key
+NOTIFICATION_FROM_EMAIL=noreply@your-trial-domain.mlsender.net
+NOTIFICATION_FROM_NAME=ToolBox
 ```
 
 ### Running deploy.sh
@@ -1031,19 +1085,21 @@ The `deploy.sh` script handles everything in one command:
 It performs these steps in order:
 
 1. Loads `.env` from the project root
-2. Stops any running backend (`java.*mongo-0.0.1-SNAPSHOT.jar`) and frontend (`bun.*dev`) processes
-3. Sets up (or reuses) a Python virtual environment at `./venv/`
-4. Installs Python dependencies from `requirements.txt`
-5. Checks that VAPID keys are configured (warns if not)
-6. Verifies `sw.js` (service worker) exists
-7. Builds the backend: `./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply`
-8. Copies Python scripts to `build/libs/` (alongside the JAR):
-   - `stock_fetcher.py`
-   - `stock_history_fetcher.py`
-   - `stock_daemon.py`
-   - `fundamentals_fetcher.py`
-9. Starts the backend JAR with secrets passed as JVM system properties: `nohup java -DJWT_SECRET=... -jar mongo-0.0.1-SNAPSHOT.jar`
-10. Starts the Bun frontend server: `nohup bun run dev`
+2. Stops any running backend (`java.*toolbox-0.0.1-SNAPSHOT.jar` or legacy `mongo-0.0.1-SNAPSHOT.jar`) and frontend (`bun.*dev`) processes
+3. Sets up (or reuses) a Python virtual environment at `scripts/venv/`
+4. Installs Python dependencies from `scripts/requirements.txt`
+5. Builds the backend JAR: `cd backend && ./gradlew bootJar -x spotlessCheck`
+6. Copies Python scripts from `scripts/` to `backend/build/libs/` (alongside the JAR)
+7. Starts the backend: `nohup java -DJWT_SECRET=... -DMAILERSEND_API_KEY=... -jar toolbox-0.0.1-SNAPSHOT.jar`
+8. Starts the Bun frontend: `nohup bun run dev`
+
+To update from git and redeploy in one step:
+
+```bash
+./update.sh
+```
+
+This runs `git reset --hard && git pull`, then hands off to `deploy.sh`. It's a separate script so that bash never runs a stale cached version of `deploy.sh` after the pull.
 
 Logs:
 ```bash
@@ -1055,16 +1111,10 @@ tail -f frontend.log   # Bun server logs
 
 ```bash
 # Quick compile check (no tests, no spotless)
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew compileJava -x test -x spotlessCheck
+cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew compileJava -x test -x spotlessCheck
 
-# Full build
-./gradlew build -x test -x spotlessJava -x spotlessCheck -x spotlessApply
-
-# Generate VAPID keys for push notifications
-./gradlew generateVapidKeys
-
-# Dev startup (without full rebuild)
-./start_all.sh
+# Build JAR only
+cd backend && ./gradlew bootJar -x spotlessCheck
 
 # Stop everything
 ./stop.sh
@@ -1089,6 +1139,9 @@ yfinance is the best free international stock data source. Its Python API is mai
 **Why a daemon pool instead of spawning a process per call?**
 Python interpreter startup costs ~0.5–1s regardless of what the script does. With 5-second update cycles and ~10 stocks, sequential spawning would consume the entire update window. The daemon pool reduces per-call overhead to essentially the yfinance network round-trip time (~0.3–0.5s).
 
+**Why MailerSend instead of SMTP?**
+MailerSend has a generous free tier (3,000 emails/month), a clean Java SDK, and handles deliverability (SPF, DKIM, DMARC) automatically through their trial domain. No SMTP server to manage. The SDK wraps all API calls and exposes response status, message ID, and rate limit info directly on the response object.
+
 **GBp pence handling**
 London Stock Exchange prices in yfinance are in pence (GBp), not pounds (GBP). A stock priced at 1500 GBp is £15.00. This trips up most integrations. All Python scripts explicitly check `fast_info.currency == 'GBp'` and divide by 100 before any conversion.
 
@@ -1098,8 +1151,8 @@ When a stock is added, the full price history is fetched asynchronously (non-blo
 **Multi-tenancy**
 All documents are tagged with `userId`. All service methods call `authUtils.getCurrentUserId()` from the JWT security context. There is no shared state between users. The admin role can manage accounts but cannot read other users' financial data.
 
-**Web Push (PWA)**
-Push notifications use the Web Push Protocol (VAPID). The browser subscribes via the Push API; the subscription endpoint is stored in MongoDB. When a price alert fires or a subscription is due for renewal, `WebPushService` sends a push via the stored endpoint. The service worker (`sw.js`) handles the push event and displays the OS-level notification even when the browser tab is closed.
+**Self-updating deploy script**
+`update.sh` is intentionally separate from `deploy.sh`. When bash starts executing a script, it reads ahead in 512-byte chunks. If `git pull` updates `deploy.sh` mid-execution, bash would run a mix of old and new commands. The solution: `update.sh` does the pull, then hands off with `exec bash deploy.sh` — starting a fresh bash process that reads the newly-pulled file from the beginning.
 
 **Privacy mode**
 A toggle in the nav hides all monetary values behind `***`. This is purely client-side — it applies a CSS class that blanks out values. Useful when working in a public place or sharing your screen.
