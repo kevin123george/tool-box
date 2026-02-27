@@ -101,8 +101,12 @@ public class SubscriptionService {
 
     for (Subscription sub : upcomingRenewals) {
       try {
-        emailService.sendSubscriptionReminder(null, sub.getName(), sub.getProvider(),
-            sub.getNextBillingDate().toString(), sub.getAmount());
+        emailService.sendSubscriptionReminder(
+            null,
+            sub.getName(),
+            sub.getProvider(),
+            sub.getNextBillingDate().toString(),
+            sub.getAmount());
         log.info("Sent subscription reminder for {}", sub.getName());
       } catch (Exception e) {
         log.error("Failed to send subscription reminder: {}", e.getMessage());

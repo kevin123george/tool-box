@@ -109,10 +109,10 @@ public class PriceAlertService {
         // Send email notification
         String direction = alert.getDirection() == AlertDirection.ABOVE ? "above" : "below";
         try {
-          String userEmail = userRepo.findById(alert.getUserId())
-              .map(UsersEntity::getEmail).orElse(null);
-          emailService.sendPriceAlert(userEmail, alert.getSymbol(), direction,
-              alert.getTargetPrice(), currentPrice);
+          String userEmail =
+              userRepo.findById(alert.getUserId()).map(UsersEntity::getEmail).orElse(null);
+          emailService.sendPriceAlert(
+              userEmail, alert.getSymbol(), direction, alert.getTargetPrice(), currentPrice);
           log.info("Sent price alert email for {}", alert.getSymbol());
         } catch (Exception e) {
           log.error("Failed to send price alert email: {}", e.getMessage());

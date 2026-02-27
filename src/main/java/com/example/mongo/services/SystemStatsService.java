@@ -276,15 +276,16 @@ public class SystemStatsService {
 
     // CPU Alert
     if (stats.getSystemCpuLoad() > 90 && (now - lastCpuAlert) > ALERT_COOLDOWN) {
-      emailService.sendSystemAlert("⚠️ High CPU Usage",
-          String.format("CPU usage is at %.1f%%", stats.getSystemCpuLoad()));
+      emailService.sendSystemAlert(
+          "⚠️ High CPU Usage", String.format("CPU usage is at %.1f%%", stats.getSystemCpuLoad()));
       lastCpuAlert = now;
       log.warn("CPU alert sent: {}%", stats.getSystemCpuLoad());
     }
 
     // Memory Alert
     if (stats.getSystemMemoryUsagePercent() > 90 && (now - lastMemoryAlert) > ALERT_COOLDOWN) {
-      emailService.sendSystemAlert("⚠️ High Memory Usage",
+      emailService.sendSystemAlert(
+          "⚠️ High Memory Usage",
           String.format("Memory usage is at %.1f%%", stats.getSystemMemoryUsagePercent()));
       lastMemoryAlert = now;
       log.warn("Memory alert sent: {}%", stats.getSystemMemoryUsagePercent());
@@ -292,7 +293,8 @@ public class SystemStatsService {
 
     // Disk Alert
     if (stats.getDiskUsagePercent() > 90 && (now - lastDiskAlert) > ALERT_COOLDOWN) {
-      emailService.sendSystemAlert("⚠️ High Disk Usage",
+      emailService.sendSystemAlert(
+          "⚠️ High Disk Usage",
           String.format("Disk usage is at %.1f%%", stats.getDiskUsagePercent()));
       lastDiskAlert = now;
       log.warn("Disk alert sent: {}%", stats.getDiskUsagePercent());
