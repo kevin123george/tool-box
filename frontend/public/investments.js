@@ -690,6 +690,24 @@ async function loadPriceAlerts() {
     }
 }
 
+const ALERT_CONDITION_META = {
+    PRICE_ABOVE:       { icon: '↑',  label: c => `above €${c.targetPrice.toFixed(2)}`,       hint: 'Email when price rises above your target.' },
+    PRICE_BELOW:       { icon: '↓',  label: c => `below €${c.targetPrice.toFixed(2)}`,       hint: 'Email when price drops below your target.' },
+    DAILY_CHANGE_UP:   { icon: '📈', label: c => `day +${c.targetPercent}%`,                  hint: 'Email when the stock gains this % in a single day (portfolio only).' },
+    DAILY_CHANGE_DOWN: { icon: '📉', label: c => `day -${c.targetPercent}%`,                  hint: 'Email when the stock loses this % in a single day (portfolio only).' },
+    PNL_UP:            { icon: '💰', label: c => `P&L +${c.targetPercent}% from buy`,         hint: 'Email when unrealized gain from buy price hits this % (portfolio only).' },
+    PNL_DOWN:          { icon: '🔻', label: c => `P&L -${c.targetPercent}% from buy`,         hint: 'Email when unrealized loss from buy price hits this % (portfolio only).' },
+    WEEK_52_HIGH:      { icon: '🏆', label: () => '52-week high',                             hint: 'Email when the stock hits a new 52-week high (portfolio only).' },
+    WEEK_52_LOW:       { icon: '🕳️', label: () => '52-week low',                             hint: 'Email when the stock hits a new 52-week low (portfolio only).' },
+};
+
+function alertConditionLabel(alert) {
+    const cond = alert.alertCondition || (alert.direction === 'ABOVE' ? 'PRICE_ABOVE' : 'PRICE_BELOW');
+    const meta = ALERT_CONDITION_META[cond];
+    if (!meta) return cond;
+    return `${meta.icon} ${meta.label(alert)}`;
+}
+
 function renderPriceAlerts() {
     const container = document.getElementById('priceAlertsList');
     if (!container) return;
@@ -702,49 +720,73 @@ function renderPriceAlerts() {
     container.innerHTML = priceAlerts.map(alert => {
         const statusClass = alert.triggered ? 'negative' : (alert.active ? 'positive' : '');
         const statusText = alert.triggered ? 'TRIGGERED' : (alert.active ? 'ACTIVE' : 'INACTIVE');
-
         return `
             <div class="card" style="margin-bottom:8px;">
                 <div class="card-main">
                     <strong>${alert.symbol}</strong>
-                    <span style="margin-left:10px;">
-                        ${alert.direction === 'ABOVE' ? '↑' : '↓'} €${(alert.targetPrice || 0).toFixed(2)}
-                    </span>
+                    <span style="margin-left:10px; opacity:0.8;">${alertConditionLabel(alert)}</span>
                     <span class="${statusClass}" style="margin-left:10px; font-size:11px;">${statusText}</span>
                 </div>
                 <div class="card-actions">
-                    <button class="btn" onclick="deletePriceAlert('${alert.id}')">DEL</button>
+                    <button class="btn btn-sm" onclick="deletePriceAlert('${alert.id}')">DEL</button>
                 </div>
             </div>
         `;
     }).join('');
 }
 
+function onAlertConditionChange() {
+    const cond = document.getElementById('alertCondition').value;
+    const priceInput = document.getElementById('alertTargetPrice');
+    const pctInput = document.getElementById('alertTargetPercent');
+    const hint = document.getElementById('alertConditionHint');
+    const needsPrice = cond === 'PRICE_ABOVE' || cond === 'PRICE_BELOW';
+    const needsPct   = cond.includes('CHANGE') || cond.includes('PNL');
+    priceInput.classList.toggle('hidden', !needsPrice);
+    pctInput.classList.toggle('hidden', !needsPct);
+    hint.textContent = ALERT_CONDITION_META[cond]?.hint || '';
+}
+
 function showAddPriceAlertModal() {
     document.getElementById('alertSymbol').value = '';
     document.getElementById('alertTargetPrice').value = '';
-    document.getElementById('alertDirection').value = 'ABOVE';
+    document.getElementById('alertTargetPercent').value = '';
+    document.getElementById('alertCondition').value = 'PRICE_ABOVE';
+    onAlertConditionChange();
     openModal('priceAlertModal');
 }
 
 async function savePriceAlert() {
-    const alert = {
-        symbol: document.getElementById('alertSymbol').value.toUpperCase(),
-        targetPrice: parseFloat(document.getElementById('alertTargetPrice').value) || 0,
-        direction: document.getElementById('alertDirection').value
-    };
+    const symbol = document.getElementById('alertSymbol').value.trim().toUpperCase();
+    const condition = document.getElementById('alertCondition').value;
+    if (!symbol) { showToast('Enter a symbol', 'error'); return; }
+
+    const payload = { symbol, alertCondition: condition };
+    const needsPrice = condition === 'PRICE_ABOVE' || condition === 'PRICE_BELOW';
+    const needsPct   = condition.includes('CHANGE') || condition.includes('PNL');
+    if (needsPrice) {
+        const v = parseFloat(document.getElementById('alertTargetPrice').value);
+        if (!v) { showToast('Enter a target price', 'error'); return; }
+        payload.targetPrice = v;
+    }
+    if (needsPct) {
+        const v = parseFloat(document.getElementById('alertTargetPercent').value);
+        if (!v) { showToast('Enter a target %', 'error'); return; }
+        payload.targetPercent = v;
+    }
 
     try {
         const res = await authFetch(`${API}/api/alerts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(alert)
+            body: JSON.stringify(payload)
         });
-
         if (res.ok) {
-            showToast('Price alert created!', 'success');
+            showToast('Alert created!', 'success');
             closeModal('priceAlertModal');
             loadPriceAlerts();
+        } else {
+            showToast('Failed to create alert', 'error');
         }
     } catch (e) {
         showToast('Failed to create alert: ' + e.message, 'error');

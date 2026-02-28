@@ -732,11 +732,19 @@
             <input id="alertSymbol" placeholder="Search by name or symbol (e.g. Apple)" autocomplete="off" data-ticker-search class="input input-bordered w-full">
             <div class="ticker-search-dropdown" style="display:none;"></div>
         </div>
-        <input id="alertTargetPrice" type="number" step="0.01" placeholder="Target Price (€)" class="input input-bordered w-full mb-2">
-        <select id="alertDirection" class="select select-bordered w-full mb-2">
-            <option value="ABOVE">Above (notify when price rises above)</option>
-            <option value="BELOW">Below (notify when price drops below)</option>
+        <select id="alertCondition" class="select select-bordered w-full mb-1" onchange="onAlertConditionChange()">
+            <option value="PRICE_ABOVE">Price rises above a value</option>
+            <option value="PRICE_BELOW">Price drops below a value</option>
+            <option value="DAILY_CHANGE_UP">Daily gain % reaches target</option>
+            <option value="DAILY_CHANGE_DOWN">Daily loss % reaches target</option>
+            <option value="PNL_UP">P&amp;L gain % from buy reaches target</option>
+            <option value="PNL_DOWN">P&amp;L loss % from buy reaches target</option>
+            <option value="WEEK_52_HIGH">Hits 52-week high</option>
+            <option value="WEEK_52_LOW">Hits 52-week low</option>
         </select>
+        <p id="alertConditionHint" class="text-xs opacity-50 mb-2"></p>
+        <input id="alertTargetPrice" type="number" step="0.01" placeholder="Target Price (€)" class="input input-bordered w-full mb-2">
+        <input id="alertTargetPercent" type="number" step="0.1" min="0" placeholder="Target % (e.g. 5 for 5%)" class="input input-bordered w-full mb-2 hidden">
         <div class="modal-action">
             <button class="btn btn-primary" onclick="savePriceAlert()">CREATE ALERT</button>
             <button class="btn" onclick="closeModal('priceAlertModal')">CANCEL</button>

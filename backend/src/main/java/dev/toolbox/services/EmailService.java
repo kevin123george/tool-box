@@ -70,14 +70,15 @@ public class EmailService {
   }
 
   public void sendPriceAlert(
-      String to, String symbol, String direction, double targetPrice, double currentPrice) {
-    String subject = String.format("Price Alert: %s %s €%.2f", symbol, direction, targetPrice);
+      String to, String symbol, String detail, double targetPrice, double currentPrice) {
+    String subject = String.format("Price Alert: %s", symbol);
     String html =
         String.format(
             "<h2>Price Alert Triggered</h2>"
-                + "<p><strong>%s</strong> is now <strong>€%.2f</strong>.</p>"
-                + "<p>Your alert was set for %s €%.2f.</p>",
-            symbol, currentPrice, direction, targetPrice);
+                + "<p><strong>%s</strong> %s.</p>"
+                + "<p>Current price: <strong>€%.2f</strong></p>"
+                + "<p><a href='/investments.html'>View Portfolio</a></p>",
+            symbol, detail, currentPrice);
     send(to, subject, html);
   }
 

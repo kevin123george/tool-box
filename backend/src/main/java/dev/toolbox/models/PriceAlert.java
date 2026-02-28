@@ -19,8 +19,22 @@ public class PriceAlert {
   @Indexed private String userId;
 
   private String symbol;
+
+  /** New condition type — replaces direction for new alerts. */
+  private AlertCondition alertCondition;
+
+  /** Used by PRICE_ABOVE / PRICE_BELOW. */
   private double targetPrice;
-  private AlertDirection direction;
+
+  /** Used by DAILY_CHANGE_* and PNL_* (e.g. 5.0 means 5%). */
+  private double targetPercent;
+
+  /**
+   * Legacy field — kept for backward compatibility with existing DB documents. New alerts set
+   * alertCondition instead.
+   */
+  @Deprecated private AlertDirection direction;
+
   private boolean triggered = false;
   private boolean active = true;
   private Instant triggeredAt;
@@ -28,9 +42,11 @@ public class PriceAlert {
   @CreatedDate private Instant createdAt;
   @LastModifiedDate private Instant lastModified;
 
-  public PriceAlert(String symbol, double targetPrice, AlertDirection direction) {
-    this.symbol = symbol;
-    this.targetPrice = targetPrice;
-    this.direction = direction;
+  /** Resolve effective condition, falling back to legacy direction field. */
+  public AlertCondition effectiveCondition() {
+    if (alertCondition != null) return alertCondition;
+    if (direction == AlertDirection.ABOVE) return AlertCondition.PRICE_ABOVE;
+    if (direction == AlertDirection.BELOW) return AlertCondition.PRICE_BELOW;
+    return null;
   }
 }
