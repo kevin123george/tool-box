@@ -105,7 +105,9 @@ public class PriceAlertService {
 
       // Resolve current price: portfolio takes precedence over watchlist
       double currentPrice =
-          holding != null ? holding.getCurrentPrice() : (watch != null ? watch.getCurrentPrice() : 0);
+          holding != null
+              ? holding.getCurrentPrice()
+              : (watch != null ? watch.getCurrentPrice() : 0);
       if (currentPrice == 0) continue;
 
       boolean triggered = false;
@@ -115,33 +117,42 @@ public class PriceAlertService {
         case PRICE_ABOVE:
           if (currentPrice >= alert.getTargetPrice()) {
             triggered = true;
-            detail = String.format("rose above €%.2f → now €%.2f", alert.getTargetPrice(), currentPrice);
+            detail =
+                String.format("rose above €%.2f → now €%.2f", alert.getTargetPrice(), currentPrice);
           }
           break;
 
         case PRICE_BELOW:
           if (currentPrice <= alert.getTargetPrice()) {
             triggered = true;
-            detail = String.format("dropped below €%.2f → now €%.2f", alert.getTargetPrice(), currentPrice);
+            detail =
+                String.format(
+                    "dropped below €%.2f → now €%.2f", alert.getTargetPrice(), currentPrice);
           }
           break;
 
         case DAILY_CHANGE_UP:
           if (holding != null && holding.getPreviousClose() > 0) {
-            double pct = (currentPrice - holding.getPreviousClose()) / holding.getPreviousClose() * 100;
+            double pct =
+                (currentPrice - holding.getPreviousClose()) / holding.getPreviousClose() * 100;
             if (pct >= alert.getTargetPercent()) {
               triggered = true;
-              detail = String.format("up +%.2f%% today (target: +%.1f%%)", pct, alert.getTargetPercent());
+              detail =
+                  String.format(
+                      "up +%.2f%% today (target: +%.1f%%)", pct, alert.getTargetPercent());
             }
           }
           break;
 
         case DAILY_CHANGE_DOWN:
           if (holding != null && holding.getPreviousClose() > 0) {
-            double pct = (holding.getPreviousClose() - currentPrice) / holding.getPreviousClose() * 100;
+            double pct =
+                (holding.getPreviousClose() - currentPrice) / holding.getPreviousClose() * 100;
             if (pct >= alert.getTargetPercent()) {
               triggered = true;
-              detail = String.format("down -%.2f%% today (target: -%.1f%%)", pct, alert.getTargetPercent());
+              detail =
+                  String.format(
+                      "down -%.2f%% today (target: -%.1f%%)", pct, alert.getTargetPercent());
             }
           }
           break;
@@ -151,7 +162,9 @@ public class PriceAlertService {
             double pct = (currentPrice - holding.getBuyPrice()) / holding.getBuyPrice() * 100;
             if (pct >= alert.getTargetPercent()) {
               triggered = true;
-              detail = String.format("P&L +%.2f%% from buy (target: +%.1f%%)", pct, alert.getTargetPercent());
+              detail =
+                  String.format(
+                      "P&L +%.2f%% from buy (target: +%.1f%%)", pct, alert.getTargetPercent());
             }
           }
           break;
@@ -161,7 +174,9 @@ public class PriceAlertService {
             double pct = (holding.getBuyPrice() - currentPrice) / holding.getBuyPrice() * 100;
             if (pct >= alert.getTargetPercent()) {
               triggered = true;
-              detail = String.format("P&L -%.2f%% from buy (target: -%.1f%%)", pct, alert.getTargetPercent());
+              detail =
+                  String.format(
+                      "P&L -%.2f%% from buy (target: -%.1f%%)", pct, alert.getTargetPercent());
             }
           }
           break;
@@ -170,8 +185,10 @@ public class PriceAlertService {
           if (holding != null) {
             LocalDateTime since = LocalDateTime.now().minusDays(365);
             List<StockHoldingHistory> history =
-                historyRepository.findBySymbolAndUpdatedAtBetween(symbol, since, LocalDateTime.now());
-            double high52 = history.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).max().orElse(0);
+                historyRepository.findBySymbolAndUpdatedAtBetween(
+                    symbol, since, LocalDateTime.now());
+            double high52 =
+                history.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).max().orElse(0);
             if (high52 > 0 && currentPrice >= high52) {
               triggered = true;
               detail = String.format("hit 52-week high €%.2f", currentPrice);
@@ -183,8 +200,10 @@ public class PriceAlertService {
           if (holding != null) {
             LocalDateTime since = LocalDateTime.now().minusDays(365);
             List<StockHoldingHistory> history =
-                historyRepository.findBySymbolAndUpdatedAtBetween(symbol, since, LocalDateTime.now());
-            double low52 = history.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).min().orElse(0);
+                historyRepository.findBySymbolAndUpdatedAtBetween(
+                    symbol, since, LocalDateTime.now());
+            double low52 =
+                history.stream().mapToDouble(StockHoldingHistory::getCurrentPrice).min().orElse(0);
             if (low52 > 0 && currentPrice <= low52) {
               triggered = true;
               detail = String.format("hit 52-week low €%.2f", currentPrice);
@@ -207,7 +226,8 @@ public class PriceAlertService {
               .ifPresent(
                   user -> {
                     if (user.isEmailNotificationsEnabled()) {
-                      emailService.sendPriceAlert(user.getEmail(), symbol, alertDetail, 0, currentPrice);
+                      emailService.sendPriceAlert(
+                          user.getEmail(), symbol, alertDetail, 0, currentPrice);
                       log.info("Sent alert email to {} for {}", user.getEmail(), symbol);
                     }
                   });

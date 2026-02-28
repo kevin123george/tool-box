@@ -32,9 +32,7 @@ public class StockPriceService {
 
   private String findPythonExecutable() {
     String[] candidates = {
-      "../../../scripts/venv/bin/python3",
-      "scripts/venv/bin/python3",
-      "../venv/bin/python3",
+      "../../../scripts/venv/bin/python3", "scripts/venv/bin/python3", "../venv/bin/python3",
     };
     for (String path : candidates) {
       if (new java.io.File(path).exists()) return path;

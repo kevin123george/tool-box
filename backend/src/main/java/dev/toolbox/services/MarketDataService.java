@@ -40,7 +40,7 @@ public class MarketDataService {
   private String findPythonExecutable(File projectRoot) {
     // projectRoot may be jar dir (backend/build/libs/) or actual project root
     String[] candidates = {
-      "../../../scripts/venv/bin/python3",         // relative to CWD (jar dir)
+      "../../../scripts/venv/bin/python3", // relative to CWD (jar dir)
       projectRoot.getPath() + "/scripts/venv/bin/python3", // dev bootRun
       projectRoot.getPath() + "/venv/bin/python3", // legacy
     };

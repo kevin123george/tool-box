@@ -160,8 +160,8 @@ public class PythonPricePool {
     // CWD is backend/build/libs/ when jar is started; venv is at ../../../scripts/venv
     String[] candidates = {
       "../../../scripts/venv/bin/python3", // deployed: backend/build/libs/ → project/scripts/venv
-      "scripts/venv/bin/python3",          // dev bootRun from project root
-      "../venv/bin/python3",               // legacy layout
+      "scripts/venv/bin/python3", // dev bootRun from project root
+      "../venv/bin/python3", // legacy layout
     };
     for (String path : candidates) {
       if (new java.io.File(path).exists()) return path;
