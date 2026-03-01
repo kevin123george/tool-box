@@ -361,7 +361,20 @@ Separate from holdings — a list of symbols to track without owning. Prices upd
 Log dividend payments per holding. The calendar automatically marks upcoming dividend dates. Annual dividend yield is calculated and shown per position.
 
 **Price Alerts**
-Set a price threshold (above or below) for any symbol. A 1-minute cron checks all active alerts and sends an email notification when the price crosses the threshold. Alerts auto-deactivate after triggering.
+Set alert conditions on portfolio holdings or watchlist symbols. A 1-minute cron evaluates all active alerts and emails you when a condition is met. Alerts auto-deactivate after triggering.
+
+Eight condition types are supported:
+
+| Condition | Triggers when | Works on |
+|-----------|--------------|----------|
+| Price above | Price rises above a target value | Portfolio + Watchlist |
+| Price below | Price drops below a target value | Portfolio + Watchlist |
+| Daily gain % | Stock gains ≥ X% in a single day | Portfolio |
+| Daily loss % | Stock loses ≥ X% in a single day | Portfolio |
+| P&L gain % | Unrealized gain from buy price ≥ X% | Portfolio |
+| P&L loss % | Unrealized loss from buy price ≥ X% | Portfolio |
+| 52-week high | Price hits new high over the last 365 days | Portfolio |
+| 52-week low | Price hits new low over the last 365 days | Portfolio |
 
 **Advanced Charting**
 TradingView's LightweightCharts library powers a full candlestick chart with volume bars and optional overlays: 20-day SMA, 50-day EMA, Bollinger Bands. OHLC data comes from `market_data_fetcher.py`.
@@ -589,7 +602,7 @@ public interface ModelRepository extends MongoRepository<ModelName, String> {
 | `stock_watch` | `StockWatch` | Watchlist entries |
 | `stock_watch_price_history` | `StockWatchPriceHistory` | Watchlist price records |
 | `dividends` | `DividendRecord` | Dividend payments |
-| `price_alerts` | `PriceAlert` | Alert definitions |
+| `price_alerts` | `PriceAlert` | Alert definitions (condition type, target price/%, symbol) |
 | `portfolio_targets` | `PortfolioTarget` | Target allocation map |
 | `company_overviews` | `CompanyOverview` | Cached fundamentals |
 | `expense_records` | `ExpenseRecord` | Transactions |
@@ -866,7 +879,7 @@ Transactional emails are sent via the [MailerSend](https://www.mailersend.com) A
 
 | Trigger | Recipients | Content |
 |---------|-----------|---------|
-| Price alert fires | The user who set the alert | Symbol, current price, threshold |
+| Price alert fires | The user who set the alert | Symbol, condition triggered, current price |
 | Budget threshold exceeded | The user whose budget it is | Category, spend vs budget |
 | Subscription renewal approaching | The subscription owner | Name, amount, renewal date |
 | Password reset (self-service) | The requesting user | Reset link (expires 24h) |
