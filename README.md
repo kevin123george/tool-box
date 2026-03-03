@@ -468,7 +468,7 @@ Upload PDF documents (up to 500MB per file, configurable). Documents are stored 
 
 ### System & Admin
 
-**System Stats** (accessible to all users)
+**System Stats** (ADMIN role only)
 - Server uptime, JVM memory usage, MongoDB connection status
 
 **Admin Panel** (ADMIN role only)

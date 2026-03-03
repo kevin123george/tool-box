@@ -38,6 +38,8 @@ public class SecurityConfig {
                     .requestMatchers(
                         "/", "/*.html", "/**.js", "/**.css", "/**.png", "/**.ico", "/sw.js")
                     .permitAll()
+                    .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                    .permitAll()
                     .requestMatchers("/api/system/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/**")
