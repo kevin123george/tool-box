@@ -948,6 +948,20 @@ public class CalendarEventDTO {
 
 ## API Reference
 
+### Swagger UI
+
+Interactive API docs are available at:
+
+```
+http://localhost:9099/swagger-ui/index.html
+```
+
+- OpenAPI spec (JSON): `http://localhost:9099/v3/api-docs`
+- No login required to browse the docs
+- Click **Authorize** → paste your JWT token → all protected endpoints become testable in-browser
+
+---
+
 All endpoints require `Authorization: Bearer <token>` except `/api/auth/*`.
 
 ### Authentication
