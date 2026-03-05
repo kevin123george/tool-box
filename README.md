@@ -249,6 +249,8 @@ The Bun server is a thin static file server with a one-liner `/api/*` proxy. All
 
 ## Tech Stack
 
+> No framework was harmed in the making of this dashboard — Java for the API, Python for the data crunching, raw JS for the UI, Bun to run it all. Each tool doing exactly what it's best at, nothing more.
+
 | Layer | Technology | Version |
 |-------|-----------|---------|
 | Backend framework | Spring Boot | 3.5.6 |
