@@ -1,0 +1,9 @@
+{
+  "appId": "com.toolbox.app",
+  "appName": "ToolBox",
+  "webDir": "public",
+  "server": {
+    "url": "http://TAILSCALE_HOST:9099",
+    "cleartext": true
+  }
+}

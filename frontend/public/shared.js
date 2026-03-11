@@ -1,4 +1,4 @@
-const API = "";
+const API = window.__API_BASE || "";
 
 /* ===========================================================
    TOAST NOTIFICATION SYSTEM (DaisyUI alerts)

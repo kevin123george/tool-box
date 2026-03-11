@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolBox — Downloads</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+<body>
+<div id="toastContainer" class="toast toast-end z-[10000]" role="alert" aria-live="polite"></div>
+<div id="nav-placeholder" data-active="downloads"></div>
+
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight">Downloads</h1>
+        <p class="text-sm opacity-40 mt-0.5">Mobile app — latest builds</p>
+    </div>
+</div>
+
+<div class="max-w-2xl space-y-4" id="downloadsContent">
+    <!-- skeleton -->
+    <div class="card bg-base-200 shadow-sm">
+        <div class="card-body p-5 gap-3">
+            <div class="skeleton h-4 w-32"></div>
+            <div class="skeleton h-3 w-48"></div>
+            <div class="skeleton h-9 w-36 rounded-lg"></div>
+        </div>
+    </div>
+</div>
+
+<script src="shared.js"></script>
+<script src="nav.js"></script>
+<script src="router.js"></script>
+<script src="downloads.js"></script>
+</body>
+</html>
