@@ -392,6 +392,7 @@ async function loadDCFDefaults() {
     showLoading('Loading defaults for ' + symbol + '...');
     try {
         const res = await authFetch(`${API}/api/dcf/defaults/${symbol}`);
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
         const defaults = await res.json();
 
         document.getElementById('dcfCompanyName').textContent = defaults.name || '';
