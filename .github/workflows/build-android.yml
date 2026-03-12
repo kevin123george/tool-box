@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build & Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,14 +26,32 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # ── Deploy to homelab via Tailscale ──────────────────────
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy to homelab
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH || '~/tool-box' }}
+            bash update.sh
+
+      # ── Build Android APK ────────────────────────────────────
       - name: Install frontend deps
         working-directory: frontend
         run: npm install
 
-      - name: Inject Tailscale API URL
+      - name: Inject API URL
         working-directory: frontend/public
-        run: |
-          sed -i "s|http://TAILSCALE_HOST:9099|${{ secrets.API_BASE_URL }}|g" config.js
+        run: sed -i "s|http://TAILSCALE_HOST:9099|${{ secrets.API_BASE_URL }}|g" config.js
 
       - name: Sync Capacitor
         working-directory: frontend
