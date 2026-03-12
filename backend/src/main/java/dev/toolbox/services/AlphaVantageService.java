@@ -67,10 +67,24 @@ public class AlphaVantageService {
           new java.io.File(projectRoot, "fundamentals_fetcher.py").getAbsolutePath();
       ProcessBuilder pb = new ProcessBuilder(pythonExecutable, scriptPath, symbol, command);
       pb.directory(projectRoot);
-      pb.redirectErrorStream(true);
 
       Process process = pb.start();
+
+      // Read stdout and stderr concurrently to avoid blocking
       StringBuilder output = new StringBuilder();
+      StringBuilder errOutput = new StringBuilder();
+      Thread stderrThread =
+          new Thread(
+              () -> {
+                try (BufferedReader r =
+                    new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                  String l;
+                  while ((l = r.readLine()) != null) errOutput.append(l).append('\n');
+                } catch (Exception ignored) {
+                }
+              });
+      stderrThread.start();
+
       try (BufferedReader reader =
           new BufferedReader(new InputStreamReader(process.getInputStream()))) {
         String line;
@@ -78,8 +92,12 @@ public class AlphaVantageService {
           output.append(line);
         }
       }
+      stderrThread.join(3000);
 
       int exitCode = process.waitFor();
+      if (errOutput.length() > 0) {
+        log.debug("[yfinance] stderr for {} {}: {}", symbol, command, errOutput.toString().trim());
+      }
       if (exitCode != 0) {
         log.error("[yfinance] Python script failed for {} {}: {}", symbol, command, output);
         return Collections.emptyMap();

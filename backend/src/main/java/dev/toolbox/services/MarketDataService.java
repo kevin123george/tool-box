@@ -174,18 +174,25 @@ public class MarketDataService {
       String scriptPath = new File(projectRoot, "market_data_fetcher.py").getAbsolutePath();
       ProcessBuilder pb = new ProcessBuilder(pythonExecutable, scriptPath, query, "search");
       pb.directory(projectRoot);
-      pb.redirectErrorStream(true);
 
       Process process = pb.start();
       StringBuilder output = new StringBuilder();
+      Thread st =
+          new Thread(
+              () -> {
+                try (BufferedReader r =
+                    new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                  while (r.readLine() != null) {}
+                } catch (Exception ignored) {
+                }
+              });
+      st.start();
       try (BufferedReader reader =
           new BufferedReader(new InputStreamReader(process.getInputStream()))) {
         String line;
-        while ((line = reader.readLine()) != null) {
-          output.append(line);
-        }
+        while ((line = reader.readLine()) != null) output.append(line);
       }
-
+      st.join(3000);
       int exitCode = process.waitFor();
       if (exitCode != 0) {
         log.error("[MarketData] Ticker search failed for '{}': {}", query, output);
@@ -215,18 +222,25 @@ public class MarketDataService {
       ProcessBuilder pb =
           new ProcessBuilder(pythonExecutable, scriptPath, symbol, "ohlc", period, interval);
       pb.directory(projectRoot);
-      pb.redirectErrorStream(true);
 
       Process process = pb.start();
       StringBuilder output = new StringBuilder();
+      Thread st =
+          new Thread(
+              () -> {
+                try (BufferedReader r =
+                    new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                  while (r.readLine() != null) {}
+                } catch (Exception ignored) {
+                }
+              });
+      st.start();
       try (BufferedReader reader =
           new BufferedReader(new InputStreamReader(process.getInputStream()))) {
         String line;
-        while ((line = reader.readLine()) != null) {
-          output.append(line);
-        }
+        while ((line = reader.readLine()) != null) output.append(line);
       }
-
+      st.join(3000);
       int exitCode = process.waitFor();
       if (exitCode != 0) {
         log.error("[MarketData] Python script failed for {}: {}", symbol, output);
