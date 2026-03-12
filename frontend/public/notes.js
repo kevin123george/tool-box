@@ -35,7 +35,7 @@ async function initNotes() {
 // ─── Load folders ─────────────────────────────────────────
 async function loadFolders() {
     try {
-        const res = await authFetch(API + '/api/notes/folders');
+        const res = await authFetch(`${API}/api/notes/folders`);
         if (!res || !res.ok) return;
         folders = await res.json();
         renderFolderTree();
@@ -55,7 +55,7 @@ async function loadNotes(folderId, tag, search) {
     if (search) params.set('search', search);
 
     try {
-        const res = await authFetch(API + '/api/notes?' + params.toString());
+        const res = await authFetch(`${API}/api/notes?${params.toString()}`);
         if (!res || !res.ok) return;
         const data = await res.json();
         notes = data.content || [];
@@ -256,7 +256,7 @@ async function newNote() {
         tags: []
     };
     try {
-        const res = await authFetch(API + '/api/notes', {
+        const res = await authFetch(`${API}/api/notes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(note)
@@ -294,7 +294,7 @@ async function saveNote() {
     };
 
     try {
-        const res = await authFetch(API + '/api/notes/' + activeNote.id, {
+        const res = await authFetch(`${API}/api/notes/${activeNote.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -334,7 +334,7 @@ function confirmDeleteNote() {
 
 async function deleteNote(id) {
     try {
-        const res = await authFetch(API + '/api/notes/' + id, { method: 'DELETE' });
+        const res = await authFetch(`${API}/api/notes/${id}`, { method: 'DELETE' });
         if (!res) return;
         notes = notes.filter(n => n.id !== id);
         if (activeNote && activeNote.id === id) {
@@ -377,7 +377,7 @@ async function submitNewFolder() {
 
 async function createFolder(name) {
     try {
-        const res = await authFetch(API + '/api/notes/folders', {
+        const res = await authFetch(`${API}/api/notes/folders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name })
@@ -400,7 +400,7 @@ function confirmDeleteFolder(id, name) {
 
 async function deleteFolder(id) {
     try {
-        const res = await authFetch(API + '/api/notes/folders/' + id, { method: 'DELETE' });
+        const res = await authFetch(`${API}/api/notes/folders/${id}`, { method: 'DELETE' });
         if (!res) return;
         folders = folders.filter(f => f.id !== id);
         if (activeFolderId === id) {

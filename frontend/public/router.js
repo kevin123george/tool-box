@@ -11,7 +11,8 @@
     const SPA_PATHS = new Set([
         '/finance.html', '/investments.html', '/calendar.html',
         '/memos.html',   '/pdfs.html',        '/fitness.html',
-        '/system.html',  '/admin.html',        '/readme.html'
+        '/system.html',  '/admin.html',        '/readme.html',
+        '/notes.html',   '/downloads.html'
     ]);
 
     // Scripts shared on every page — never unload or reload
