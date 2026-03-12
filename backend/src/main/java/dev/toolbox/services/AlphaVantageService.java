@@ -92,7 +92,7 @@ public class AlphaVantageService {
       }
       return result;
     } catch (Exception e) {
-      log.error(
+      log.warn(
           "[yfinance] Exception calling Python for {} {}: {}", symbol, command, e.getMessage());
       return Collections.emptyMap();
     }

@@ -64,6 +64,13 @@ let searchQuery    = '';
 /* ── Init ──────────────────────────────────────────────── */
 let _pdfGlobalListenersAdded = false;
 
+window.__pageCleanup = function () {
+    const panel = document.getElementById('uploadQueue');
+    if (panel) panel.style.display = 'none';
+    uploadQueue = [];
+    uploadRunning = false;
+};
+
 (window.__pageInits = window.__pageInits || {}).pdfs = function () {
     requireAuth();
     loadLibrary().then(() => {
