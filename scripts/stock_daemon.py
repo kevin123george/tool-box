@@ -71,7 +71,7 @@ def main():
             continue
         try:
             req = json.loads(line)
-            ticker = req.get('ticker', '').upper()
+            ticker = req.get('ticker', '').lstrip('$').upper()
             currency = req.get('currency', 'USD').upper()
             result = fetch_price(ticker, currency)
             print(json.dumps(result), flush=True)

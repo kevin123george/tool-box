@@ -49,7 +49,7 @@ def main():
         print(json.dumps(error_response))
         sys.exit(1)
 
-    ticker = sys.argv[1].upper()
+    ticker = sys.argv[1].lstrip('$').upper()
     target_currency = sys.argv[2].upper() if len(sys.argv) > 2 else "USD"
 
     try:
