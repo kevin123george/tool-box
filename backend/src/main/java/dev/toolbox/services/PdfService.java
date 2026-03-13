@@ -40,6 +40,22 @@ public class PdfService {
         .orElseThrow(() -> new ResourceNotFoundException("PdfDocument", "id", id));
   }
 
+  public PdfDocumentDTO uploadRaw(byte[] bytes, String filename, String group) throws IOException {
+    java.io.ByteArrayInputStream in = new java.io.ByteArrayInputStream(bytes);
+    ObjectId gridFsId = gridFsTemplate.store(in, filename, "application/pdf");
+
+    PdfDocument doc = new PdfDocument();
+    doc.setUserId(authUtils.getCurrentUserId());
+    doc.setFilename(filename);
+    doc.setFileSize(bytes.length);
+    doc.setGridFsFileId(gridFsId.toString());
+    doc.setGroup(group != null && !group.isBlank() ? group.trim() : null);
+    doc.setTotalPages(0);
+    doc.setLastPage(1);
+
+    return new PdfDocumentDTO(pdfDocumentRepository.save(doc));
+  }
+
   public PdfDocumentDTO upload(MultipartFile file, String group) throws IOException {
     if (file.isEmpty()) throw new IllegalArgumentException("File is empty");
     String ct = file.getContentType();

@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class N26ImportService {
 
   @Autowired private MonthlyBudgetService budgetService;
+  @Autowired private PdfService pdfService;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,10 +59,16 @@ public class N26ImportService {
 
   @SuppressWarnings("unchecked")
   public N26ImportPreviewDTO previewPdf(MultipartFile pdfFile) throws Exception {
+    // Read bytes once — used for both parsing and GridFS storage
+    byte[] pdfBytes = pdfFile.getBytes();
+    String originalFilename =
+        pdfFile.getOriginalFilename() != null ? pdfFile.getOriginalFilename() : "n26-statement.pdf";
+
     // Save PDF to temp file
     File tempFile = Files.createTempFile("n26_", ".pdf").toFile();
     try {
-      pdfFile.transferTo(tempFile);
+      tempFile.getParentFile().mkdirs();
+      java.nio.file.Files.write(tempFile.toPath(), pdfBytes);
 
       File projectRoot = findProjectRoot();
       String pythonExecutable = findPythonExecutable(projectRoot);
@@ -157,13 +164,26 @@ public class N26ImportService {
         transactions.add(dto);
       }
 
-      return new N26ImportPreviewDTO(
-          transactions,
-          transactions.size(),
-          expenseCount,
-          incomeCount,
-          totalExpenses,
-          totalIncome);
+      N26ImportPreviewDTO dto =
+          new N26ImportPreviewDTO(
+              transactions,
+              transactions.size(),
+              expenseCount,
+              incomeCount,
+              totalExpenses,
+              totalIncome);
+
+      // Save PDF to MongoDB (GridFS) so it appears in the PDF reader
+      try {
+        dev.toolbox.models.dto.PdfDocumentDTO saved =
+            pdfService.uploadRaw(pdfBytes, originalFilename, "N26");
+        dto.setPdfDocumentId(saved.getId());
+        log.info("[N26Import] PDF saved to MongoDB: {}", saved.getId());
+      } catch (Exception e) {
+        log.warn("[N26Import] Could not save PDF to MongoDB: {}", e.getMessage());
+      }
+
+      return dto;
 
     } finally {
       tempFile.delete();

@@ -1895,7 +1895,7 @@ function renderCategoryBreakdownChart(monthly) {
 
 let n26Transactions = [];
 
-function showN26ImportModal() {
+function showN26ImportModal() {\n    n26PdfDocumentId = null;
     n26Transactions = [];
     const step1 = document.getElementById('n26Step1');
     const step2 = document.getElementById('n26Step2');
@@ -1933,7 +1933,7 @@ async function n26PreviewPdf() {
         }
 
         const data = await res.json();
-        n26Transactions = (data.transactions || []).map(tx => ({ ...tx, selected: true }));
+        n26Transactions = (data.transactions || []).map(tx => ({ ...tx, selected: true }));\n        n26PdfDocumentId = data.pdfDocumentId || null;
 
         // Update summary stats
         document.getElementById('n26StatTotal').textContent = data.totalTransactions || 0;
@@ -2027,6 +2027,19 @@ async function n26ConfirmImport() {
         n26Transactions = [];
         // Reload budget if we're on the budget tab
         if (currentBudgetMonth) loadBudgetForSelectedMonth();
+        // Show link to PDF reader if the statement was saved
+        if (n26PdfDocumentId) {
+            const banner = document.createElement('div');
+            banner.className = 'alert alert-info mt-4 flex items-center gap-3';
+            banner.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>N26 statement saved to your PDF library.</span>
+                <a href="/pdfs.html" class="btn btn-sm btn-primary ml-auto">View in PDF Reader</a>`;
+            const budgetSection = document.getElementById('budgetSection') || document.querySelector('.tab-content');
+            if (budgetSection) budgetSection.prepend(banner);
+            setTimeout(() => banner.remove(), 8000);
+            n26PdfDocumentId = null;
+        }
     } catch (e) {
         hideLoading();
         showToast('Import failed: ' + e.message, 'error');
