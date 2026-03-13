@@ -2,142 +2,187 @@
 """
 N26 PDF statement parser.
 Usage: n26_parser.py <path_to_pdf>
-Output: JSON array of transactions
+Output: JSON { transactions: [...] }
+
+N26 transaction block structure (one block per transaction):
+  {Payee} {DD.MM.YYYY} {±amount}€        ← transaction line (payee may wrap to next line)
+  Mastercard • {category}                 ← OR: Lastschriften / Gutschriften / Belastungen / Round-up
+  [optional IBAN, reference, other lines]
+  Wertstellung {DD.MM.YYYY}
 """
-import sys, json, re
+import sys
+import json
+import re
 import pdfplumber
 
-# N26 category → our ExpenseCategory/IncomeCategory mapping
-EXPENSE_CATEGORY_MAP = {
-    'bars': 'DINING_OUT',
-    'restaurant': 'DINING_OUT',
-    'lebensmittel': 'GROCERIES',
-    'drogerie': 'GROCERIES',
-    'supermarkt': 'GROCERIES',
-    'transport': 'TRANSPORT',
-    'verkehr': 'TRANSPORT',
-    'shopping': 'OTHER',
-    'bekleidung': 'CLOTHING',
-    'freizeit': 'ENTERTAINMENT',
-    'unterhaltung': 'ENTERTAINMENT',
-    'gesundheit': 'PERSONAL_CARE',
-    'medizin': 'PERSONAL_CARE',
-    'reise': 'TRAVEL',
-    'hotel': 'TRAVEL',
-    'flug': 'TRAVEL',
-    'miete': 'RENT',
-    'wohnen': 'RENT',
-    'strom': 'UTILITIES',
-    'gas': 'UTILITIES',
-    'internet': 'INTERNET',
-    'telefon': 'INTERNET',
-    'gym': 'GYM',
-    'fitness': 'GYM',
-    'sport': 'GYM',
-    'kraftstoff': 'FUEL',
-    'tanken': 'FUEL',
-    'bildung': 'EDUCATION',
-    'schule': 'EDUCATION',
-    'spende': 'GIFTS',
-    'geschenk': 'GIFTS',
-    'abonnement': 'SUBSCRIPTIONS',
-    'streaming': 'SUBSCRIPTIONS',
-    'spotify': 'SUBSCRIPTIONS',
-    'netflix': 'SUBSCRIPTIONS',
+# Matches a transaction line: anything + date + signed amount€
+TX_RE = re.compile(r'^(.+?)\s+(\d{2}\.\d{2}\.\d{4})\s+([+\-]\d[\d.]*,\d{2})€\s*$')
+
+# Page lines to skip unconditionally
+SKIP_PREFIXES = (
+    'Vorläufiger Kontoauszug', 'Kontoauszug',
+    'Zusammenfassung', 'Beschreibung Verbuchungsdatum',
+    'Dein alter Kontostand', 'Ausgehende Transaktionen',
+    'Einkommende Transaktionen', 'Dein neuer Kontostand',
+    'KEVIN GEORGE', 'Erstellt am', 'Anmerkung',
+    'Es kann zu', 'Dein Guthaben', 'Dein N26',
+    'entschädigungsfähig', 'Wertstellung',
+    'IBAN:', 'BIC:',
+)
+PAGE_NUM_RE = re.compile(r'^\d+ / \d+$')
+DATE_RANGE_RE = re.compile(r'^\d{2}\.\d{2}\.\d{4} bis \d{2}\.\d{2}\.\d{4}$')
+
+# N26 Mastercard categories → our enum
+MASTERCARD_CAT_MAP = {
+    'Wohnen & Energie':       'UTILITIES',
+    'Lebensmittel':           'GROCERIES',
+    'Bars & Restaurants':     'DINING_OUT',
+    'Shopping':               'CLOTHING',
+    'Gesundheit & Drogerien': 'PERSONAL_CARE',
+    'Transport & Auto':       'TRANSPORT',
+    'Freizeit':               'ENTERTAINMENT',
+    'Reisen':                 'TRAVEL',
+    'Bildung':                'EDUCATION',
+    'Tanken':                 'FUEL',
+    'Abonnements':            'SUBSCRIPTIONS',
 }
 
-INCOME_KEYWORDS = ['gutschrift', 'eingang', 'gehalt', 'lohn', 'rückerstattung', 'erstattung', 'zinsen']
+# Payee keyword → override category (case-insensitive)
+PAYEE_OVERRIDES = {
+    'miete':   'RENT',
+    'miet':    'RENT',
+    'rent':    'RENT',
+    'gym':     'GYM',
+    'fitness': 'GYM',
+    'spotify': 'SUBSCRIPTIONS',
+    'netflix': 'SUBSCRIPTIONS',
+    'db ':     'TRANSPORT',
+    'bahn':    'TRANSPORT',
+    'mvv':     'TRANSPORT',
+    'mvg':     'TRANSPORT',
+}
 
-def parse_amount(amount_str):
-    """Parse German format amount like '-55,00€' or '+1.234,56€'"""
-    s = amount_str.replace('€', '').replace(' ', '').strip()
-    negative = s.startswith('-')
-    s = s.lstrip('+-')
-    # Remove thousands separator (dot), replace decimal comma with dot
-    s = s.replace('.', '').replace(',', '.')
-    try:
-        val = float(s)
-        return -val if negative else val
-    except:
-        return None
 
-def guess_category(category_line, payee, amount):
-    """Map N26 category line to our enum."""
-    text = (category_line + ' ' + payee).lower()
+def is_skip(line):
+    if not line:
+        return True
+    if PAGE_NUM_RE.match(line) or DATE_RANGE_RE.match(line):
+        return True
+    for p in SKIP_PREFIXES:
+        if line.startswith(p):
+            return True
+    return False
 
-    if amount > 0:
-        # Income
-        for kw in INCOME_KEYWORDS:
-            if kw in text:
-                return 'INCOME', 'SALARY'
-        return 'INCOME', 'OTHER'
 
-    # Expense — check category keywords
-    for kw, cat in EXPENSE_CATEGORY_MAP.items():
-        if kw in text:
-            return 'EXPENSE', cat
-
-    # Default
-    return 'EXPENSE', 'OTHER'
-
-def parse_pdf(path):
-    TRANSACTION_RE = re.compile(
-        r'^(.+?)\s+(\d{2}\.\d{2}\.\d{4})\s+([+\-][\d.,]+€)$'
+def is_category_line(line):
+    return (
+        line.startswith('Mastercard •') or
+        line in ('Lastschriften', 'Gutschriften', 'Belastungen', 'Round-up')
     )
 
-    transactions = []
 
-    with pdfplumber.open(path) as pdf:
+def parse_amount(s):
+    """'+1.234,56' or '-3,50' → float"""
+    return float(s.replace('.', '').replace(',', '.'))
+
+
+def parse_date(s):
+    """'DD.MM.YYYY' → 'YYYY-MM-DD'"""
+    d, m, y = s.split('.')
+    return f'{y}-{m}-{d}'
+
+
+def map_category(raw_cat, payee, tx_type):
+    if tx_type == 'INCOME':
+        lp = payee.lower()
+        if any(k in lp for k in ('gehalt', 'lohn', 'salary')):
+            return 'SALARY'
+        if any(k in lp for k in ('divid', 'zinsen', 'interest')):
+            return 'DIVIDEND'
+        return 'OTHER'
+
+    # Mastercard category
+    if raw_cat.startswith('Mastercard •'):
+        n26_cat = raw_cat[len('Mastercard • '):]
+        if n26_cat in MASTERCARD_CAT_MAP:
+            return MASTERCARD_CAT_MAP[n26_cat]
+
+    # Lastschriften / Belastungen — check payee for hints
+    lp = payee.lower()
+    for kw, cat in PAYEE_OVERRIDES.items():
+        if kw in lp:
+            return cat
+
+    return 'OTHER'
+
+
+def extract_lines(pdf_path):
+    """Extract all lines from pages that contain transactions (skip summary pages)."""
+    lines = []
+    with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
                 continue
-
-            # Skip summary/disclaimer pages
+            # Pages 5+ are summary/disclaimer — no transactions
             if 'Dein alter Kontostand' in text or 'Anmerkung' in text:
                 continue
+            lines.extend(text.split('\n'))
+    return lines
 
-            lines = text.split('\n')
-            i = 0
-            while i < len(lines):
-                line = lines[i].strip()
-                m = TRANSACTION_RE.match(line)
-                if m:
-                    payee = m.group(1).strip()
-                    date_str = m.group(2)  # DD.MM.YYYY
-                    amount_str = m.group(3)
 
-                    amount = parse_amount(amount_str)
-                    if amount is None:
-                        i += 1
-                        continue
+def parse_pdf(pdf_path):
+    lines = extract_lines(pdf_path)
+    transactions = []
+    i = 0
 
-                    # Look at next line for category
-                    category_line = ''
-                    if i + 1 < len(lines):
-                        next_line = lines[i + 1].strip()
-                        # Category lines don't look like transaction lines
-                        if not TRANSACTION_RE.match(next_line) and not next_line.startswith('IBAN') and not next_line.startswith('Wertstellung'):
-                            category_line = next_line
+    while i < len(lines):
+        line = lines[i].strip()
+        m = TX_RE.match(line)
+        if not m:
+            i += 1
+            continue
 
-                    tx_type, category = guess_category(category_line, payee, amount)
+        payee = m.group(1).strip()
+        date_str = m.group(2)
+        amount_str = m.group(3)
+        i += 1
 
-                    # Convert DD.MM.YYYY to ISO
-                    parts = date_str.split('.')
-                    iso_date = f"{parts[2]}-{parts[1]}-{parts[0]}"
-
-                    transactions.append({
-                        'payee': payee,
-                        'date': iso_date,
-                        'amount': abs(amount),
-                        'type': tx_type,
-                        'category': category,
-                        'rawCategory': category_line,
-                        'originalAmount': amount,
-                    })
+        # Check for wrapped payee continuation (e.g. "AMERICAN EXPRESS... (Germany" + "branch)")
+        if i < len(lines):
+            nxt = lines[i].strip()
+            if nxt and not TX_RE.match(nxt) and not is_skip(nxt) and not is_category_line(nxt):
+                payee = payee + ' ' + nxt
                 i += 1
 
+        # Read category line
+        raw_cat = ''
+        if i < len(lines) and is_category_line(lines[i].strip()):
+            raw_cat = lines[i].strip()
+            i += 1
+
+        amount = parse_amount(amount_str)
+
+        # Determine type from sign
+        if amount_str.startswith('+') or raw_cat == 'Gutschriften':
+            tx_type = 'INCOME'
+        else:
+            tx_type = 'EXPENSE'
+
+        category = map_category(raw_cat, payee, tx_type)
+
+        transactions.append({
+            'payee': payee,
+            'date': parse_date(date_str),
+            'amount': abs(amount),
+            'originalAmount': amount,
+            'type': tx_type,
+            'category': category,
+            'rawCategory': raw_cat,
+        })
+
     return transactions
+
 
 def main():
     if len(sys.argv) < 2:
@@ -145,11 +190,12 @@ def main():
         sys.exit(1)
 
     try:
-        transactions = parse_pdf(sys.argv[1])
-        print(json.dumps({'transactions': transactions}))
+        txs = parse_pdf(sys.argv[1])
+        print(json.dumps({'transactions': txs}))
     except Exception as e:
         print(json.dumps({'error': str(e)}))
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
