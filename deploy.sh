@@ -59,7 +59,7 @@ cd ..
 
 ### Copy Python scripts next to jar
 echo "📄 Copying Python scripts..."
-for script in stock_fetcher.py stock_history_fetcher.py stock_daemon.py fundamentals_fetcher.py market_data_fetcher.py stock_api.py; do
+for script in stock_fetcher.py stock_history_fetcher.py stock_daemon.py fundamentals_fetcher.py market_data_fetcher.py stock_api.py fx_fetcher.py; do
     if [ -f "scripts/$script" ]; then
         cp "scripts/$script" "backend/build/libs/"
         echo "✓ $script"

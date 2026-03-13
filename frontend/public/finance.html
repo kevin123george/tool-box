@@ -272,9 +272,12 @@
 
         <!-- Bank Statement Import -->
         <div class="card bg-base-200 shadow p-4 mt-5">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center flex-wrap gap-2">
                 <h3 class="font-bold">Import Bank Statement</h3>
-                <button class="btn btn-sm" onclick="showImportModal()">IMPORT CSV</button>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm" onclick="showImportModal()">IMPORT CSV</button>
+                    <button class="btn btn-sm btn-primary" onclick="showN26ImportModal()">IMPORT N26 PDF</button>
+                </div>
             </div>
         </div>
 
@@ -524,6 +527,71 @@
             <div class="modal-action">
                 <button class="btn btn-primary" onclick="saveSubscription()">SAVE</button>
                 <button class="btn" onclick="closeModal('subscriptionModal')">CANCEL</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- N26 PDF Import Modal -->
+    <dialog id="n26ImportModal" class="modal">
+        <div class="modal-box max-w-4xl">
+            <h3 class="font-bold text-lg mb-1">Import N26 Statement (PDF)</h3>
+            <p class="text-xs opacity-50 mb-4">Select your N26 PDF bank statement. Transactions will be parsed and you can review before importing.</p>
+
+            <!-- Step 1: File picker -->
+            <div id="n26Step1">
+                <label class="text-xs font-semibold opacity-70 uppercase tracking-wide mb-1 block">Select PDF File</label>
+                <input type="file" id="n26PdfInput" accept=".pdf" class="file-input file-input-bordered w-full mb-4">
+                <button class="btn btn-primary btn-sm" onclick="n26PreviewPdf()">PARSE PDF</button>
+            </div>
+
+            <!-- Step 2: Preview table (hidden until parsed) -->
+            <div id="n26Step2" class="hidden mt-4">
+                <div class="flex flex-wrap gap-4 mb-3">
+                    <div class="stat bg-base-300 rounded-box p-3 flex-1 min-w-[120px]">
+                        <div class="stat-title text-xs">Total Transactions</div>
+                        <div class="stat-value text-lg" id="n26StatTotal">0</div>
+                    </div>
+                    <div class="stat bg-base-300 rounded-box p-3 flex-1 min-w-[120px]">
+                        <div class="stat-title text-xs">Expenses</div>
+                        <div class="stat-value text-lg text-error" id="n26StatExpenses">€0.00</div>
+                        <div class="stat-desc" id="n26StatExpenseCount">0 items</div>
+                    </div>
+                    <div class="stat bg-base-300 rounded-box p-3 flex-1 min-w-[120px]">
+                        <div class="stat-title text-xs">Income</div>
+                        <div class="stat-value text-lg text-success" id="n26StatIncome">€0.00</div>
+                        <div class="stat-desc" id="n26StatIncomeCount">0 items</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
+                    <span class="text-xs opacity-60">Review transactions — uncheck to exclude from import</span>
+                    <div class="flex gap-2">
+                        <button class="btn btn-xs btn-ghost" onclick="n26SelectAll(true)">Select All</button>
+                        <button class="btn btn-xs btn-ghost" onclick="n26SelectAll(false)">Deselect All</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-96 overflow-y-auto rounded-box border border-base-300">
+                    <table class="table table-xs w-full">
+                        <thead class="sticky top-0 bg-base-200 z-10">
+                            <tr>
+                                <th class="w-8"></th>
+                                <th>Date</th>
+                                <th>Payee</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th class="text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="n26PreviewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-action">
+                <button class="btn btn-primary" id="n26ConfirmBtn" onclick="n26ConfirmImport()" style="display:none;">CONFIRM IMPORT</button>
+                <button class="btn" onclick="closeModal('n26ImportModal')">CANCEL</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop"><button>close</button></form>

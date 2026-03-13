@@ -1890,6 +1890,150 @@ function renderCategoryBreakdownChart(monthly) {
 }
 
 /* ===========================================================
+   N26 PDF IMPORT
+   ============================================================ */
+
+let n26Transactions = [];
+
+function showN26ImportModal() {
+    n26Transactions = [];
+    const step1 = document.getElementById('n26Step1');
+    const step2 = document.getElementById('n26Step2');
+    const confirmBtn = document.getElementById('n26ConfirmBtn');
+    const pdfInput = document.getElementById('n26PdfInput');
+    if (step1) step1.classList.remove('hidden');
+    if (step2) step2.classList.add('hidden');
+    if (confirmBtn) confirmBtn.style.display = 'none';
+    if (pdfInput) pdfInput.value = '';
+    openModal('n26ImportModal');
+}
+
+async function n26PreviewPdf() {
+    const pdfInput = document.getElementById('n26PdfInput');
+    if (!pdfInput || !pdfInput.files.length) {
+        showToast('Please select a PDF file', 'warning');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('pdf', pdfInput.files[0]);
+
+    try {
+        showLoading('Parsing N26 PDF...');
+        const res = await authFetch(`${API}/api/finance/import/n26/preview`, {
+            method: 'POST',
+            body: formData
+        });
+        hideLoading();
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast('Failed to parse PDF: ' + (err.error || res.statusText), 'error');
+            return;
+        }
+
+        const data = await res.json();
+        n26Transactions = (data.transactions || []).map(tx => ({ ...tx, selected: true }));
+
+        // Update summary stats
+        document.getElementById('n26StatTotal').textContent = data.totalTransactions || 0;
+        document.getElementById('n26StatExpenses').textContent = '€' + (data.totalExpenses || 0).toFixed(2);
+        document.getElementById('n26StatExpenseCount').textContent = (data.expenseCount || 0) + ' items';
+        document.getElementById('n26StatIncome').textContent = '€' + (data.totalIncome || 0).toFixed(2);
+        document.getElementById('n26StatIncomeCount').textContent = (data.incomeCount || 0) + ' items';
+
+        n26RenderPreviewTable();
+
+        document.getElementById('n26Step1').classList.add('hidden');
+        document.getElementById('n26Step2').classList.remove('hidden');
+        document.getElementById('n26ConfirmBtn').style.display = '';
+    } catch (e) {
+        hideLoading();
+        showToast('Error parsing PDF: ' + e.message, 'error');
+    }
+}
+
+const N26_EXPENSE_CATS = ['RENT','UTILITIES','INTERNET','TRANSPORT','FUEL','GROCERIES','DINING_OUT','ENTERTAINMENT','SUBSCRIPTIONS','GYM','TRAVEL','CLOTHING','PERSONAL_CARE','EDUCATION','GIFTS','OTHER'];
+const N26_INCOME_CATS  = ['SALARY','BONUS','FREELANCE','INVESTMENT','DIVIDEND','INTEREST','GIFT','OTHER'];
+
+function n26CategoryOptions(type, selected) {
+    const cats = type === 'INCOME' ? N26_INCOME_CATS : N26_EXPENSE_CATS;
+    return cats.map(c => `<option value="${c}" ${c === selected ? 'selected' : ''}>${c.replace(/_/g,' ')}</option>`).join('');
+}
+
+function n26RenderPreviewTable() {
+    const tbody = document.getElementById('n26PreviewBody');
+    if (!tbody) return;
+
+    if (n26Transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center opacity-40 py-4">No transactions found in PDF.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = n26Transactions.map((tx, idx) => {
+        const amountColor = tx.type === 'INCOME' ? 'text-success' : 'text-error';
+        const amountSign  = tx.type === 'INCOME' ? '+' : '-';
+        return `<tr class="${tx.selected ? '' : 'opacity-40'}">
+            <td>
+                <input type="checkbox" class="checkbox checkbox-xs" ${tx.selected ? 'checked' : ''}
+                    onchange="n26Transactions[${idx}].selected = this.checked; this.closest('tr').classList.toggle('opacity-40', !this.checked)">
+            </td>
+            <td class="tabular-nums text-xs whitespace-nowrap">${tx.date}</td>
+            <td class="max-w-[180px] truncate text-xs" title="${tx.payee}">${tx.payee}</td>
+            <td>
+                <select class="select select-xs select-bordered w-full max-w-[160px]"
+                    onchange="n26Transactions[${idx}].category = this.value">
+                    ${n26CategoryOptions(tx.type, tx.category)}
+                </select>
+            </td>
+            <td>
+                <span class="badge badge-xs ${tx.type === 'INCOME' ? 'badge-success' : 'badge-error'}">${tx.type}</span>
+            </td>
+            <td class="text-right tabular-nums font-semibold ${amountColor}">${amountSign}€${tx.amount.toFixed(2)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function n26SelectAll(value) {
+    n26Transactions.forEach((tx, idx) => { tx.selected = value; });
+    n26RenderPreviewTable();
+}
+
+async function n26ConfirmImport() {
+    const selected = n26Transactions.filter(tx => tx.selected);
+    if (selected.length === 0) {
+        showToast('No transactions selected', 'warning');
+        return;
+    }
+
+    try {
+        showLoading(`Importing ${selected.length} transactions...`);
+        const res = await authFetch(`${API}/api/finance/import/n26/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(selected)
+        });
+        hideLoading();
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast('Import failed: ' + (err.error || res.statusText), 'error');
+            return;
+        }
+
+        const result = await res.json();
+        showToast(`Successfully imported ${result.imported} transaction${result.imported !== 1 ? 's' : ''}!`, 'success');
+        closeModal('n26ImportModal');
+        n26Transactions = [];
+        // Reload budget if we're on the budget tab
+        if (currentBudgetMonth) loadBudgetForSelectedMonth();
+    } catch (e) {
+        hideLoading();
+        showToast('Import failed: ' + e.message, 'error');
+    }
+}
+
+/* ===========================================================
    INITIALIZATION
    ============================================================ */
 

@@ -133,6 +133,17 @@
             </div>
         </div>
 
+        <!-- INR/EUR Rate -->
+        <div class="card bg-base-200 shadow-sm">
+            <div class="card-body p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-semibold text-sm uppercase tracking-widest opacity-50">INR → EUR</h2>
+                    <span id="fxCurrentRate" class="text-xs font-mono opacity-60">—</span>
+                </div>
+                <canvas id="fxChart" height="80"></canvas>
+            </div>
+        </div>
+
         <!-- Currently Reading -->
         <div class="card bg-base-200 shadow-sm" id="pdfCard" style="display:none">
             <div class="card-body p-5">
@@ -171,6 +182,7 @@
 
 <!-- ===== END DASHBOARD ===== -->
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="shared.js"></script>
 <script src="nav.js"></script>
 <script src="router.js"></script>
@@ -222,6 +234,68 @@ function progressBar(label, value, max, color = 'bg-primary') {
             <div class="h-full ${color} rounded-full transition-all duration-700" style="width:${pct.toFixed(1)}%"></div>
         </div>
     </div>`;
+}
+
+/* ---- FX chart ---- */
+async function loadFxChart() {
+    try {
+        const res = await authFetch(`${API}/api/fx/history?from=INR&to=EUR&days=30`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || data.length === 0) return;
+
+        const labels = data.map(d => {
+            const dt = new Date(d.fetchedAt);
+            return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        });
+        const rates = data.map(d => d.rate);
+
+        const latest = rates[rates.length - 1];
+        document.getElementById('fxCurrentRate').textContent =
+            latest != null ? latest.toFixed(6) + ' EUR' : '—';
+
+        if (typeof Chart === 'undefined') return;
+        if (window._fxChart) { window._fxChart.destroy(); window._fxChart = null; }
+
+        const primaryColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-primary').trim() || '#6366f1';
+
+        window._fxChart = new Chart(document.getElementById('fxChart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    data: rates,
+                    borderColor: primaryColor,
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    tension: 0.4,
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.parsed.y.toFixed(6) + ' EUR'
+                        }
+                    }
+                },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        display: false,
+                        grace: '5%',
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        // silently ignore — chart is non-critical
+    }
 }
 
 /* ---- Main loader ---- */
@@ -423,6 +497,9 @@ async function loadDashboard() {
             </div>
         `;
     }
+
+    /* ---- FX Rate chart ---- */
+    loadFxChart();
 
     /* ---- Savings Goals ---- */
     if (dash?.savingsGoalsCount > 0) {

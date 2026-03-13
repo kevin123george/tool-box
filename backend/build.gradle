@@ -46,6 +46,9 @@ dependencies {
     // Jackson (usually already included with Spring Boot, but add if missing)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    // Apache PDFBox (PDF parsing for N26 statement import)
+    implementation 'org.apache.pdfbox:pdfbox:3.0.3'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.testcontainers:junit-jupiter:1.19.0'
     testImplementation 'org.testcontainers:mongodb:1.19.0'
