@@ -1895,7 +1895,8 @@ function renderCategoryBreakdownChart(monthly) {
 
 let n26Transactions = [];
 
-function showN26ImportModal() {\n    n26PdfDocumentId = null;
+function showN26ImportModal() {
+    n26PdfDocumentId = null;
     n26Transactions = [];
     const step1 = document.getElementById('n26Step1');
     const step2 = document.getElementById('n26Step2');
@@ -1933,7 +1934,8 @@ async function n26PreviewPdf() {
         }
 
         const data = await res.json();
-        n26Transactions = (data.transactions || []).map(tx => ({ ...tx, selected: true }));\n        n26PdfDocumentId = data.pdfDocumentId || null;
+        n26Transactions = (data.transactions || []).map(tx => ({ ...tx, selected: true }));
+        n26PdfDocumentId = data.pdfDocumentId || null;
 
         // Update summary stats
         document.getElementById('n26StatTotal').textContent = data.totalTransactions || 0;
