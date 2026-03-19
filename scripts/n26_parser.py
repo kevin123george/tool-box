@@ -92,13 +92,17 @@ def parse_date(s):
     return f'{y}-{m}-{d}'
 
 
-def map_category(raw_cat, payee, tx_type):
+def map_category(raw_cat, payee, tx_type, reference=''):
     if tx_type == 'INCOME':
-        lp = payee.lower()
-        if any(k in lp for k in ('gehalt', 'lohn', 'salary')):
+        text = (payee + ' ' + reference).lower()
+        if any(k in text for k in ('gehalt', 'lohn', 'salary', 'gehaltseingang', 'entgelt')):
             return 'SALARY'
-        if any(k in lp for k in ('divid', 'zinsen', 'interest')):
+        if any(k in text for k in ('bonus', 'praemie', 'prämie')):
+            return 'BONUS'
+        if any(k in text for k in ('divid', 'zinsen', 'interest')):
             return 'DIVIDEND'
+        if any(k in text for k in ('freelance', 'rechnung', 'honorar', 'invoice')):
+            return 'FREELANCE'
         return 'OTHER'
 
     # Mastercard category
@@ -107,8 +111,8 @@ def map_category(raw_cat, payee, tx_type):
         if n26_cat in MASTERCARD_CAT_MAP:
             return MASTERCARD_CAT_MAP[n26_cat]
 
-    # Lastschriften / Belastungen — check payee for hints
-    lp = payee.lower()
+    # Lastschriften / Belastungen — check payee + reference for hints
+    lp = (payee + ' ' + reference).lower()
     for kw, cat in PAYEE_OVERRIDES.items():
         if kw in lp:
             return cat
@@ -161,6 +165,17 @@ def parse_pdf(pdf_path):
             raw_cat = lines[i].strip()
             i += 1
 
+        # Collect reference lines (IBAN, description text) until next TX or Wertstellung
+        ref_parts = []
+        while i < len(lines):
+            rl = lines[i].strip()
+            if not rl or TX_RE.match(rl) or rl.startswith('Wertstellung') or rl.startswith('KEVIN GEORGE'):
+                break
+            if not rl.startswith('IBAN:') and not rl.startswith('BIC:') and not PAGE_NUM_RE.match(rl):
+                ref_parts.append(rl)
+            i += 1
+        reference = ' '.join(ref_parts)
+
         amount = parse_amount(amount_str)
 
         # Determine type from sign
@@ -169,7 +184,7 @@ def parse_pdf(pdf_path):
         else:
             tx_type = 'EXPENSE'
 
-        category = map_category(raw_cat, payee, tx_type)
+        category = map_category(raw_cat, payee, tx_type, reference)
 
         transactions.append({
             'payee': payee,
