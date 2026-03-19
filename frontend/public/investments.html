@@ -103,6 +103,7 @@
                 <button class="btn btn-primary btn-sm" onclick="showAddHolding()" aria-label="Add new stock holding">ADD HOLDING</button>
                 <button class="btn btn-sm" onclick="refreshStocks()" aria-label="Refresh stock data">REFRESH</button>
                 <button class="btn btn-sm" onclick="exportPortfolioCsv()" aria-label="Export portfolio to CSV">EXPORT CSV</button>
+                <button class="btn btn-sm btn-outline" onclick="showTRImportModal()" aria-label="Import Trade Republic PDF statement">IMPORT TR PDF</button>
             </div>
         </div>
     </div>
@@ -762,6 +763,143 @@
         <div class="modal-action">
             <button class="btn btn-primary" onclick="saveTargetAllocation()">SAVE</button>
             <button class="btn" onclick="closeModal('targetAllocationModal')">CANCEL</button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Trade Republic Import Modal -->
+<dialog id="trImportModal" class="modal">
+    <div class="modal-box w-11/12 max-w-4xl">
+        <h3 class="font-bold text-lg mb-1">Import Trade Republic Statement</h3>
+        <p class="text-xs opacity-50 mb-4">Upload your Trade Republic account PDF to import trades, interest, dividends and card expenses.</p>
+
+        <!-- Step 1: File picker -->
+        <div id="trStep1">
+            <label class="label text-xs opacity-70">Select PDF Statement</label>
+            <input type="file" id="trPdfInput" accept=".pdf" class="file-input file-input-bordered w-full mb-4">
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="trPreviewPdf()">PARSE PDF</button>
+                <button class="btn" onclick="closeModal('trImportModal')">CANCEL</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Preview -->
+        <div id="trStep2" class="hidden">
+            <!-- Summary stats -->
+            <div class="stats shadow w-full mb-4 flex-wrap">
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Period</div>
+                    <div class="stat-value text-sm" id="trStatPeriod">--</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Cash Balance</div>
+                    <div class="stat-value text-sm" id="trStatCash">--</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Trades</div>
+                    <div class="stat-value text-sm" id="trStatTrades">0</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Income</div>
+                    <div class="stat-value text-sm text-success" id="trStatIncome">€0.00</div>
+                </div>
+                <div class="stat px-3 py-2">
+                    <div class="stat-title text-xs">Card Expenses</div>
+                    <div class="stat-value text-sm text-error" id="trStatExpenses">€0.00</div>
+                </div>
+            </div>
+
+            <!-- Trades section -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-sm uppercase tracking-wide opacity-70">Trades</h4>
+                    <div class="flex gap-1">
+                        <button class="btn btn-xs btn-ghost" onclick="trSelectAll('trades', true)">All</button>
+                        <button class="btn btn-xs btn-ghost" onclick="trSelectAll('trades', false)">None</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table table-xs table-zebra w-full">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Date</th>
+                                <th>Action</th>
+                                <th>ISIN</th>
+                                <th>Name</th>
+                                <th class="text-right">Qty</th>
+                                <th class="text-right">Total €</th>
+                                <th class="text-right">Price/Share</th>
+                                <th>Ticker Symbol</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trTradesBody">
+                            <tr><td colspan="9" class="text-center opacity-40 py-3">No trades found</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Income section -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-sm uppercase tracking-wide opacity-70">Interest &amp; Dividends</h4>
+                    <div class="flex gap-1">
+                        <button class="btn btn-xs btn-ghost" onclick="trSelectAll('income', true)">All</button>
+                        <button class="btn btn-xs btn-ghost" onclick="trSelectAll('income', false)">None</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table table-xs table-zebra w-full">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>ISIN</th>
+                                <th class="text-right">Amount €</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trIncomeBody">
+                            <tr><td colspan="6" class="text-center opacity-40 py-3">No income found</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card expenses section -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-sm uppercase tracking-wide opacity-70">Card Expenses</h4>
+                    <div class="flex gap-1">
+                        <button class="btn btn-xs btn-ghost" onclick="trSelectAll('expenses', true)">All</button>
+                        <button class="btn btn-xs btn-ghost" onclick="trSelectAll('expenses', false)">None</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table table-xs table-zebra w-full">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th class="text-right">Amount €</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trExpensesBody">
+                            <tr><td colspan="4" class="text-center opacity-40 py-3">No card expenses found</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-action">
+                <button class="btn btn-primary" id="trConfirmBtn" onclick="trConfirmImport()">IMPORT SELECTED</button>
+                <button class="btn btn-ghost" onclick="trResetModal()">BACK</button>
+                <button class="btn" onclick="closeModal('trImportModal')">CANCEL</button>
+            </div>
         </div>
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>

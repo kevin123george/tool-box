@@ -24,4 +24,5 @@ public class StockHolding {
   private Boolean sold = false; // Indicates if the stock has been sold
   private boolean backfilled = false; // True once full price history has been backfilled
   private double previousClose; // Previous trading day's closing price (in holding currency)
+  private String isin; // ISIN identifier (e.g. from Trade Republic import)
 }

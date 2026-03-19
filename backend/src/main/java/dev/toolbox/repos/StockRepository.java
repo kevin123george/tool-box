@@ -2,6 +2,7 @@ package dev.toolbox.repos;
 
 import dev.toolbox.models.StockHolding;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface StockRepository extends MongoRepository<StockHolding, String> {
@@ -9,4 +10,6 @@ public interface StockRepository extends MongoRepository<StockHolding, String> {
   List<StockHolding> findAllByUserId(String userId);
 
   List<StockHolding> findByUserIdAndSoldFalse(String userId);
+
+  Optional<StockHolding> findFirstByUserIdAndIsinAndSoldFalse(String userId, String isin);
 }

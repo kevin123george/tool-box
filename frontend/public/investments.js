@@ -2020,3 +2020,229 @@ window.addEventListener('beforeunload', () => {
         clearInterval(historyRefreshInterval);
     }
 });
+
+/* ===========================================================
+   TRADE REPUBLIC PDF IMPORT
+   ============================================================ */
+
+let trPreviewData = null;
+
+function showTRImportModal() {
+    trPreviewData = null;
+    const step1 = document.getElementById('trStep1');
+    const step2 = document.getElementById('trStep2');
+    const pdfInput = document.getElementById('trPdfInput');
+    if (step1) step1.classList.remove('hidden');
+    if (step2) step2.classList.add('hidden');
+    if (pdfInput) pdfInput.value = '';
+    openModal('trImportModal');
+}
+
+function trResetModal() {
+    trPreviewData = null;
+    const step1 = document.getElementById('trStep1');
+    const step2 = document.getElementById('trStep2');
+    const pdfInput = document.getElementById('trPdfInput');
+    if (step1) step1.classList.remove('hidden');
+    if (step2) step2.classList.add('hidden');
+    if (pdfInput) pdfInput.value = '';
+}
+
+async function trPreviewPdf() {
+    const pdfInput = document.getElementById('trPdfInput');
+    if (!pdfInput || !pdfInput.files.length) {
+        showToast('Please select a PDF file', 'warning');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('pdf', pdfInput.files[0]);
+
+    try {
+        showLoading('Parsing Trade Republic PDF...');
+        const res = await authFetch(`${API}/api/invest/import/tr/preview`, {
+            method: 'POST',
+            body: formData
+        });
+        hideLoading();
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast('Failed to parse PDF: ' + (err.error || res.statusText), 'error');
+            return;
+        }
+
+        const data = await res.json();
+        // Mark all as selected
+        trPreviewData = {
+            ...data,
+            trades: (data.trades || []).map(t => ({ ...t, selected: true })),
+            income: (data.income || []).map(i => ({ ...i, selected: true })),
+            expenses: (data.expenses || []).map(e => ({ ...e, selected: true })),
+        };
+
+        // Update summary stats
+        const periodText = (data.periodFrom || '?') + ' → ' + (data.periodTo || '?');
+        document.getElementById('trStatPeriod').textContent = periodText;
+        document.getElementById('trStatCash').textContent = '€' + (data.cashBalance || 0).toFixed(2);
+        document.getElementById('trStatTrades').textContent = (data.tradeCount || 0);
+        document.getElementById('trStatIncome').textContent = '€' + (data.totalIncome || 0).toFixed(2);
+        document.getElementById('trStatExpenses').textContent = '€' + (data.totalExpenses || 0).toFixed(2);
+
+        trRenderTables();
+
+        document.getElementById('trStep1').classList.add('hidden');
+        document.getElementById('trStep2').classList.remove('hidden');
+    } catch (e) {
+        hideLoading();
+        showToast('Error parsing PDF: ' + e.message, 'error');
+    }
+}
+
+function trRenderTables() {
+    if (!trPreviewData) return;
+    trRenderTrades();
+    trRenderIncome();
+    trRenderExpenses();
+}
+
+function trRenderTrades() {
+    const tbody = document.getElementById('trTradesBody');
+    if (!tbody) return;
+    const trades = trPreviewData.trades || [];
+    if (trades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center opacity-40 py-3">No trades found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = trades.map((t, idx) => {
+        const actionBadge = t.action === 'BUY'
+            ? '<span class="badge badge-xs badge-success">BUY</span>'
+            : '<span class="badge badge-xs badge-error">SELL</span>';
+        return `<tr class="${t.selected ? '' : 'opacity-40'}">
+            <td><input type="checkbox" class="checkbox checkbox-xs" ${t.selected ? 'checked' : ''}
+                onchange="trPreviewData.trades[${idx}].selected=this.checked;this.closest('tr').classList.toggle('opacity-40',!this.checked)"></td>
+            <td class="tabular-nums text-xs whitespace-nowrap">${t.date}</td>
+            <td>${actionBadge}</td>
+            <td class="font-mono text-xs">${t.isin || ''}</td>
+            <td class="text-xs max-w-[120px] truncate" title="${t.name || ''}">${t.name || ''}</td>
+            <td class="text-right tabular-nums text-xs">${(t.quantity || 0).toFixed(4)}</td>
+            <td class="text-right tabular-nums text-xs font-semibold">€${(t.totalEur || 0).toFixed(2)}</td>
+            <td class="text-right tabular-nums text-xs">€${(t.pricePerShare || 0).toFixed(4)}</td>
+            <td><input type="text" class="input input-xs input-bordered w-24 uppercase font-mono"
+                value="${t.symbol || t.isin || ''}" placeholder="TICKER"
+                oninput="trPreviewData.trades[${idx}].symbol=this.value.toUpperCase()"></td>
+        </tr>`;
+    }).join('');
+}
+
+function trRenderIncome() {
+    const tbody = document.getElementById('trIncomeBody');
+    if (!tbody) return;
+    const income = trPreviewData.income || [];
+    if (income.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center opacity-40 py-3">No income found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = income.map((i, idx) => {
+        const typeBadge = i.type === 'DIVIDEND'
+            ? '<span class="badge badge-xs badge-info">DIVIDEND</span>'
+            : '<span class="badge badge-xs badge-success">INTEREST</span>';
+        return `<tr class="${i.selected ? '' : 'opacity-40'}">
+            <td><input type="checkbox" class="checkbox checkbox-xs" ${i.selected ? 'checked' : ''}
+                onchange="trPreviewData.income[${idx}].selected=this.checked;this.closest('tr').classList.toggle('opacity-40',!this.checked)"></td>
+            <td class="tabular-nums text-xs whitespace-nowrap">${i.date}</td>
+            <td>${typeBadge}</td>
+            <td class="text-xs max-w-[200px] truncate" title="${i.description || ''}">${i.description || ''}</td>
+            <td class="font-mono text-xs">${i.isin || '--'}</td>
+            <td class="text-right tabular-nums text-xs font-semibold text-success">+€${(i.amountEur || 0).toFixed(2)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function trRenderExpenses() {
+    const tbody = document.getElementById('trExpensesBody');
+    if (!tbody) return;
+    const expenses = trPreviewData.expenses || [];
+    if (expenses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center opacity-40 py-3">No card expenses found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = expenses.map((e, idx) => {
+        return `<tr class="${e.selected ? '' : 'opacity-40'}">
+            <td><input type="checkbox" class="checkbox checkbox-xs" ${e.selected ? 'checked' : ''}
+                onchange="trPreviewData.expenses[${idx}].selected=this.checked;this.closest('tr').classList.toggle('opacity-40',!this.checked)"></td>
+            <td class="tabular-nums text-xs whitespace-nowrap">${e.date}</td>
+            <td class="text-xs max-w-[240px] truncate" title="${e.description || ''}">${e.description || ''}</td>
+            <td class="text-right tabular-nums text-xs font-semibold text-error">-€${(e.amountEur || 0).toFixed(2)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function trSelectAll(section, value) {
+    if (!trPreviewData) return;
+    if (section === 'trades') {
+        trPreviewData.trades.forEach(t => { t.selected = value; });
+        trRenderTrades();
+    } else if (section === 'income') {
+        trPreviewData.income.forEach(i => { i.selected = value; });
+        trRenderIncome();
+    } else if (section === 'expenses') {
+        trPreviewData.expenses.forEach(e => { e.selected = value; });
+        trRenderExpenses();
+    }
+}
+
+async function trConfirmImport() {
+    if (!trPreviewData) return;
+
+    const selectedTrades = trPreviewData.trades.filter(t => t.selected).length;
+    const selectedIncome = trPreviewData.income.filter(i => i.selected).length;
+    const selectedExpenses = trPreviewData.expenses.filter(e => e.selected).length;
+    const total = selectedTrades + selectedIncome + selectedExpenses;
+
+    if (total === 0) {
+        showToast('No items selected for import', 'warning');
+        return;
+    }
+
+    try {
+        showLoading(`Importing ${total} items...`);
+        const res = await authFetch(`${API}/api/invest/import/tr/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(trPreviewData)
+        });
+        hideLoading();
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast('Import failed: ' + (err.error || res.statusText), 'error');
+            return;
+        }
+
+        const result = await res.json();
+        const msg = `Imported: ${result.trades || 0} trade(s), ${result.income || 0} income record(s), ${result.expenses || 0} expense(s)`;
+        showToast(msg, 'success');
+        closeModal('trImportModal');
+        trPreviewData = null;
+
+        // Reload stocks view
+        loadStocks();
+
+        // Show link to PDF reader if statement was saved
+        if (trPreviewData && trPreviewData.pdfDocumentId) {
+            const banner = document.createElement('div');
+            banner.className = 'alert alert-info mt-4 flex items-center gap-3';
+            banner.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Trade Republic statement saved to your PDF library.</span>
+                <a href="/pdfs.html" class="btn btn-sm btn-primary ml-auto">View in PDF Reader</a>`;
+            const container = document.getElementById('stocksTabContent');
+            if (container) container.prepend(banner);
+            setTimeout(() => banner.remove(), 8000);
+        }
+    } catch (e) {
+        hideLoading();
+        showToast('Import failed: ' + e.message, 'error');
+    }
+}
