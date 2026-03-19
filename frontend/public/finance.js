@@ -893,6 +893,49 @@ function goToCurrentMonth() {
     loadBudgetComparison();
 }
 
+async function clearCurrentMonth() {
+    if (!currentBudgetMonth) return;
+    if (!confirm(`Clear ALL transactions for ${currentBudgetMonth.year}-${String(currentBudgetMonth.month).padStart(2,'0')}? This cannot be undone.`)) return;
+    const res = await authFetch(`${API}/api/budget/${currentBudgetMonth.year}/${currentBudgetMonth.month}`, { method: 'DELETE' });
+    if (res.ok || res.status === 404) {
+        showToast('Month cleared.', 'success');
+        loadBudgetForSelectedMonth();
+    } else {
+        showToast('Failed to clear month.', 'error');
+    }
+}
+
+async function clearAllTransactions() {
+    if (!confirm('Delete ALL budget history for every month? This CANNOT be undone.')) return;
+    if (!confirm('Are you sure? All income and expense records across all months will be deleted.')) return;
+    const res = await authFetch(`${API}/api/budget/all`, { method: 'DELETE' });
+    if (res.ok) {
+        const data = await res.json();
+        showToast(`Deleted ${data.deleted} month(s) of budget history.`, 'success');
+        loadBudgetForSelectedMonth();
+    } else {
+        showToast('Failed to clear all budgets.', 'error');
+    }
+}
+
+function checkN26Reminder(budget) {
+    const banner = document.getElementById('n26ReminderBanner');
+    if (!banner) return;
+    const dismissed = sessionStorage.getItem('n26ReminderDismissed');
+    const now = new Date();
+    const isCurrentMonth = currentBudgetMonth &&
+        currentBudgetMonth.year === now.getFullYear() &&
+        currentBudgetMonth.month === (now.getMonth() + 1);
+    const isEndOfMonth = now.getDate() >= 25;
+    const hasNoTransactions = (!budget.incomeRecords || budget.incomeRecords.length === 0) &&
+        (!budget.expenseRecords || budget.expenseRecords.length === 0);
+    if (isCurrentMonth && isEndOfMonth && hasNoTransactions && !dismissed) {
+        banner.classList.remove('hidden');
+    } else {
+        banner.classList.add('hidden');
+    }
+}
+
 async function loadBudgetForSelectedMonth() {
     const picker = document.getElementById('budgetMonthPicker');
     if (!picker.value) {
@@ -909,6 +952,7 @@ async function loadBudgetForSelectedMonth() {
         if (res.ok) {
             currentBudgetData = await res.json();
             displayBudgetData();
+            checkN26Reminder(currentBudgetData);
         } else if (res.status === 404) {
             // Budget doesn't exist yet - create empty one
             currentBudgetData = {
@@ -919,6 +963,7 @@ async function loadBudgetForSelectedMonth() {
                 expenseRecords: []
             };
             displayBudgetData();
+            checkN26Reminder(currentBudgetData);
         }
     } catch (e) {
         console.error("Error loading budget:", e);

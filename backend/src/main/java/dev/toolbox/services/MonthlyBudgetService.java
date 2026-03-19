@@ -68,6 +68,13 @@ public class MonthlyBudgetService {
     monthlyBudgetRepository.delete(budget);
   }
 
+  public int deleteAllBudgets() {
+    List<MonthlyBudget> all =
+        monthlyBudgetRepository.findAllByUserIdOrderByMonthDesc(authUtils.getCurrentUserId());
+    monthlyBudgetRepository.deleteAll(all);
+    return all.size();
+  }
+
   public MonthlyBudget setPlannedBudget(
       YearMonth month,
       Map<IncomeCategory, Double> plannedIncome,

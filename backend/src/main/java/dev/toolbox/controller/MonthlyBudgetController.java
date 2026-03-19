@@ -40,6 +40,13 @@ public class MonthlyBudgetController {
     return ResponseEntity.ok(budgetService.getAllBudgets());
   }
 
+  // Delete ALL budgets for the current user
+  @DeleteMapping("/all")
+  public ResponseEntity<Map<String, Integer>> deleteAllBudgets() {
+    int deleted = budgetService.deleteAllBudgets();
+    return ResponseEntity.ok(Map.of("deleted", deleted));
+  }
+
   // Delete entire budget
   @DeleteMapping("/{year}/{month}")
   public ResponseEntity<Void> deleteBudget(@PathVariable int year, @PathVariable int month) {

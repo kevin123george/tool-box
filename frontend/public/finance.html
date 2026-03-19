@@ -171,9 +171,17 @@
 
         <div class="card bg-base-200 shadow p-4 mb-4">
             <h3 class="font-bold mb-2">Select Month</h3>
-            <div class="flex gap-2 items-center">
+            <div class="flex gap-2 items-center flex-wrap">
                 <input type="month" id="budgetMonthPicker" class="input input-bordered" onchange="loadBudgetForSelectedMonth()">
                 <button class="btn btn-sm" onclick="goToCurrentMonth()">CURRENT MONTH</button>
+                <button class="btn btn-sm btn-error btn-outline ml-auto" onclick="clearCurrentMonth()">CLEAR MONTH</button>
+                <button class="btn btn-sm btn-error btn-outline" onclick="clearAllTransactions()">CLEAR ALL</button>
+            </div>
+            <div id="n26ReminderBanner" class="hidden alert alert-warning mt-3 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <span>End of month — don't forget to upload your N26 statement!</span>
+                <button class="btn btn-sm ml-auto" onclick="showN26ImportModal()">UPLOAD NOW</button>
+                <button class="btn btn-sm btn-ghost" onclick="document.getElementById('n26ReminderBanner').classList.add('hidden'); sessionStorage.setItem('n26ReminderDismissed','1')">DISMISS</button>
             </div>
         </div>
 
