@@ -172,6 +172,43 @@ public class SystemStatsController {
         .orElse(ResponseEntity.notFound().build());
   }
 
+  @GetMapping("/docker")
+  public ResponseEntity<?> getDockerContainers() {
+    try {
+      ProcessBuilder pb =
+          new ProcessBuilder(
+              "docker", "ps", "-a",
+              "--format",
+              "{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}\t{{.CreatedAt}}");
+      pb.redirectErrorStream(true);
+      Process process = pb.start();
+      String output;
+      try (java.io.BufferedReader reader =
+          new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+        output = reader.lines().collect(java.util.stream.Collectors.joining("\n"));
+      }
+      process.waitFor();
+
+      java.util.List<Map<String, String>> containers = new java.util.ArrayList<>();
+      for (String line : output.split("\n")) {
+        if (line.isBlank()) continue;
+        String[] parts = line.split("\t", 6);
+        if (parts.length < 5) continue;
+        Map<String, String> c = new java.util.LinkedHashMap<>();
+        c.put("id", parts[0].trim());
+        c.put("name", parts[1].trim());
+        c.put("image", parts[2].trim());
+        c.put("status", parts[3].trim());
+        c.put("ports", parts.length > 4 ? parts[4].trim() : "");
+        c.put("created", parts.length > 5 ? parts[5].trim() : "");
+        containers.add(c);
+      }
+      return ResponseEntity.ok(containers);
+    } catch (Exception e) {
+      return ResponseEntity.ok(java.util.List.of(Map.of("error", e.getMessage())));
+    }
+  }
+
   @DeleteMapping("/users/{id}")
   public ResponseEntity<?> deleteUser(@PathVariable String id) {
     String currentUserId = authUtils.getCurrentUserId();

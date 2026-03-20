@@ -12,7 +12,7 @@
         '/finance.html', '/investments.html', '/calendar.html',
         '/memos.html',   '/pdfs.html',        '/fitness.html',
         '/system.html',  '/admin.html',        '/readme.html',
-        '/notes.html',   '/downloads.html'
+        '/notes.html',   '/downloads.html', '/docker.html'
     ]);
 
     // Scripts shared on every page — never unload or reload
