@@ -1,41 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Docker Services</title>
-</head>
+<head><meta charset="UTF-8"><title>Docker</title></head>
 <body>
-<div class="p-4 max-w-6xl mx-auto">
+<div class="p-4 max-w-7xl mx-auto">
 
-    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 class="text-2xl font-bold">Docker Services</h1>
-        <div class="flex gap-2 items-center">
-            <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" id="showAllContainers" class="checkbox checkbox-sm" onchange="loadDockerContainers()">
-                Show stopped
-            </label>
-            <button class="btn btn-sm btn-primary" onclick="loadDockerContainers()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Refresh
-            </button>
+  <!-- Header -->
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <h1 class="text-xl font-bold flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 2h2v2h-2V2zm0 3h2v2h-2V5zM10 2h2v2h-2V2zm0 3h2v2h-2V5zM7 5h2v2H7V5zm3 3h2v2h-2V8zm3 0h2v2h-2V8zm3 0h2v2h-2V8zM7 8h2v2H7V8zm-3 0h2v2H4V8zm17.94 2.5c-.23-1.57-1.36-2.93-2.94-3.43V7h-2V5h-2V2h-2v3h-2V2H9v3H7V2H5v3H3C1.34 5 0 6.34 0 8v3c0 3.87 3.13 7 7 7h10c3.87 0 7-3.13 7-7v-.5h-.06zM17 16H7c-2.76 0-5-2.24-5-5V9h20v2c0 2.76-2.24 5-5 5z"/>
+      </svg>
+      Docker
+    </h1>
+    <span id="dkStatRunning" class="badge badge-success badge-lg gap-1">● 0 running</span>
+    <span id="dkStatStopped" class="badge badge-error badge-lg gap-1">● 0 stopped</span>
+    <div class="ml-auto flex gap-2 items-center">
+      <input type="text" id="dkSearch" placeholder="Filter containers…" class="input input-bordered input-sm w-48" oninput="filterContainers()">
+      <label class="label gap-1 text-sm cursor-pointer">
+        <input type="checkbox" id="dkShowAll" class="checkbox checkbox-sm" onchange="loadDocker()"> All
+      </label>
+      <button class="btn btn-sm btn-primary" onclick="loadDocker()" id="dkRefreshBtn">↺ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Host notice -->
+  <div class="alert alert-info py-2 text-sm mb-4">
+    Service links use host <code id="dkHostDisplay" class="font-mono font-bold"></code>
+    <button class="btn btn-xs ml-2" onclick="openServerSettings()">Change</button>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto rounded-box border border-base-300">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th class="w-4"></th>
+          <th>Name</th>
+          <th>Image</th>
+          <th>Status</th>
+          <th>Ports</th>
+          <th>CPU</th>
+          <th>Mem</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="dkTableBody">
+        <tr><td colspan="8" class="text-center py-10"><span class="loading loading-spinner"></span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Logs modal -->
+  <dialog id="dkLogsModal" class="modal">
+    <div class="modal-box w-11/12 max-w-5xl max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-lg" id="dkLogsTitle">Logs</h3>
+        <div class="flex gap-2">
+          <select id="dkLogsTail" class="select select-sm" onchange="refreshLogs()">
+            <option value="50">50 lines</option>
+            <option value="200" selected>200 lines</option>
+            <option value="500">500 lines</option>
+            <option value="1000">1000 lines</option>
+          </select>
+          <button class="btn btn-sm" onclick="refreshLogs()">↺</button>
+          <button class="btn btn-sm" onclick="copyLogs()">Copy</button>
+          <form method="dialog"><button class="btn btn-sm btn-ghost">✕</button></form>
         </div>
+      </div>
+      <pre id="dkLogsContent" class="bg-base-300 rounded p-3 text-xs font-mono overflow-auto flex-1 whitespace-pre-wrap"></pre>
     </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
 
-    <!-- Server host notice -->
-    <div class="alert alert-info mb-4 py-2 text-sm" id="hostNotice">
-        Links use host: <code id="hostDisplay" class="font-mono font-bold">detecting…</code>
-        <button class="btn btn-xs ml-2" onclick="openServerSettings()">Change</button>
+  <!-- Inspect modal -->
+  <dialog id="dkInspectModal" class="modal">
+    <div class="modal-box w-11/12 max-w-3xl max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-lg" id="dkInspectTitle">Inspect</h3>
+        <form method="dialog"><button class="btn btn-sm btn-ghost">✕</button></form>
+      </div>
+      <div id="dkInspectContent" class="overflow-auto flex-1 space-y-3 text-sm"></div>
     </div>
-
-    <!-- Stats bar -->
-    <div class="flex gap-4 mb-5 flex-wrap" id="dockerStats"></div>
-
-    <!-- Container cards -->
-    <div id="dockerContainers" class="space-y-3">
-        <div class="flex justify-center py-10">
-            <span class="loading loading-spinner loading-lg"></span>
-        </div>
-    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
 
 </div>
 <script src="docker.js"></script>

@@ -7,10 +7,15 @@ import dev.toolbox.repos.UserRepo;
 import dev.toolbox.services.EmailService;
 import dev.toolbox.services.SystemStatsService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -221,5 +226,111 @@ public class SystemStatsController {
     }
     userRepo.deleteById(id);
     return ResponseEntity.ok(Map.of("deleted", id));
+  }
+
+  // ── Docker management helpers ──────────────────────────────────────────────
+
+  private String runDockerCommand(String... args) throws Exception {
+    List<String> cmd = new java.util.ArrayList<>();
+    cmd.add("docker");
+    cmd.addAll(Arrays.asList(args));
+    ProcessBuilder pb = new ProcessBuilder(cmd);
+    pb.redirectErrorStream(true);
+    Process p = pb.start();
+    String out;
+    try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+      out = r.lines().collect(Collectors.joining("\n"));
+    }
+    p.waitFor();
+    return out;
+  }
+
+  @PostMapping("/docker/{name}/start")
+  public ResponseEntity<?> dockerStart(@PathVariable String name) {
+    try {
+      return ResponseEntity.ok(Map.of("output", runDockerCommand("start", name)));
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @PostMapping("/docker/{name}/stop")
+  public ResponseEntity<?> dockerStop(@PathVariable String name) {
+    try {
+      return ResponseEntity.ok(Map.of("output", runDockerCommand("stop", name)));
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @PostMapping("/docker/{name}/restart")
+  public ResponseEntity<?> dockerRestart(@PathVariable String name) {
+    try {
+      return ResponseEntity.ok(Map.of("output", runDockerCommand("restart", name)));
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @GetMapping("/docker/{name}/logs")
+  public ResponseEntity<?> dockerLogs(
+      @PathVariable String name, @RequestParam(defaultValue = "200") int tail) {
+    try {
+      return ResponseEntity.ok(
+          Map.of("logs", runDockerCommand("logs", "--tail=" + tail, "--timestamps", name)));
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @GetMapping("/docker/{name}/stats")
+  public ResponseEntity<?> dockerStats(@PathVariable String name) {
+    try {
+      String raw =
+          runDockerCommand(
+              "stats",
+              "--no-stream",
+              "--format",
+              "{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.NetIO}}\t{{.BlockIO}}\t{{.PIDs}}",
+              name);
+      if (raw.isBlank()) return ResponseEntity.ok(Map.of("error", "No stats"));
+      String[] parts = raw.trim().split("\t");
+      Map<String, String> stats = new LinkedHashMap<>();
+      stats.put("cpu", parts.length > 0 ? parts[0] : "");
+      stats.put("memUsage", parts.length > 1 ? parts[1] : "");
+      stats.put("memPerc", parts.length > 2 ? parts[2] : "");
+      stats.put("netIO", parts.length > 3 ? parts[3] : "");
+      stats.put("blockIO", parts.length > 4 ? parts[4] : "");
+      stats.put("pids", parts.length > 5 ? parts[5] : "");
+      return ResponseEntity.ok(stats);
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @GetMapping("/docker/{name}/inspect")
+  public ResponseEntity<?> dockerInspect(@PathVariable String name) {
+    try {
+      String raw =
+          runDockerCommand(
+              "inspect",
+              "--format",
+              "{{.Config.Image}}\t{{.State.Status}}\t{{.RestartCount}}\t{{json .Config.Env}}\t{{json .Mounts}}\t{{.HostConfig.RestartPolicy.Name}}\t{{.Config.WorkingDir}}\t{{.Created}}",
+              name);
+      if (raw.isBlank()) return ResponseEntity.ok(Map.of("error", "Not found"));
+      String[] parts = raw.trim().split("\t", 8);
+      Map<String, Object> result = new LinkedHashMap<>();
+      result.put("image", parts.length > 0 ? parts[0] : "");
+      result.put("state", parts.length > 1 ? parts[1] : "");
+      result.put("restartCount", parts.length > 2 ? parts[2] : "");
+      result.put("env", parts.length > 3 ? parts[3] : "[]");
+      result.put("mounts", parts.length > 4 ? parts[4] : "[]");
+      result.put("restartPolicy", parts.length > 5 ? parts[5] : "");
+      result.put("workdir", parts.length > 6 ? parts[6] : "");
+      result.put("created", parts.length > 7 ? parts[7] : "");
+      return ResponseEntity.ok(result);
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
   }
 }
