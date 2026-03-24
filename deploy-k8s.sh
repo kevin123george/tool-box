@@ -4,6 +4,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# ── Pull latest code ──────────────────────────────────────────────────────────
+echo ""
+echo "==> Pulling latest code..."
+git pull
+
 # ── Load .env ────────────────────────────────────────────────────────────────
 if [ ! -f .env ]; then
   echo "ERROR: .env file not found. Copy .env.example and fill in your values."

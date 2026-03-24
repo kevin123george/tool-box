@@ -30,15 +30,18 @@ ok "k3s node ready"
 # ── 2. kubectl config ─────────────────────────────────────────────────────────
 echo ""
 echo "==> [2/5] Configuring kubectl..."
-mkdir -p ~/.kube
-sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-sudo chown "$USER:$USER" ~/.kube/config
+# k3s's kubectl always reads /etc/rancher/k3s/k3s.yaml directly — make it world-readable
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
 ok "kubectl configured — $(kubectl get nodes --no-headers 2>/dev/null | awk '{print $1, $2}')"
 
 # ── 3. Host LAN IP ───────────────────────────────────────────────────────────
 echo ""
 echo "==> [3/5] Detecting host LAN IP..."
-HOST_IP=$(hostname -I | awk '{print $1}')
+HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')
+if [ -z "$HOST_IP" ]; then
+  HOST_IP=$(hostname -I | awk '{print $1}')
+fi
+[ -z "$HOST_IP" ] && die "Could not detect host IP. Set MONGODB_URI manually in .env"
 ok "Host IP: $HOST_IP"
 
 # ── 4. MongoDB bind address ──────────────────────────────────────────────────
@@ -75,16 +78,24 @@ if [ ! -f .env ]; then
   die ".env file not found. Create it from .env.example first."
 fi
 
-if grep -q "^MONGODB_URI=" .env; then
-  ok "MONGODB_URI already set in .env"
+EXISTING=$(grep "^MONGODB_URI=" .env | cut -d= -f2- | tr -d '[:space:]')
+if [ -n "$EXISTING" ] && [ "$EXISTING" != "mongodb://:27017/tool-box" ]; then
+  ok "MONGODB_URI already set in .env ($EXISTING)"
 else
   MONGO_URI="mongodb://${HOST_IP}:27017/tool-box"
+  # Remove any broken existing entry and write the correct one
+  sed -i '/^MONGODB_URI=/d' .env
   echo "MONGODB_URI=${MONGO_URI}" >> .env
-  ok "Added MONGODB_URI=${MONGO_URI} to .env"
+  ok "Set MONGODB_URI=${MONGO_URI} in .env"
 fi
 
-# ── Done — hand off to deploy ────────────────────────────────────────────────
+# ── Deploy ────────────────────────────────────────────────────────────────────
 echo ""
 ok "Setup complete. Starting deployment..."
 echo ""
-exec "$SCRIPT_DIR/deploy-k8s.sh"
+bash "$SCRIPT_DIR/deploy-k8s.sh"
+
+# ── Kubernetes Dashboard (one-time) ───────────────────────────────────────────
+echo ""
+echo "==> Setting up Kubernetes Dashboard..."
+bash "$SCRIPT_DIR/setup-k8s-dashboard.sh"
