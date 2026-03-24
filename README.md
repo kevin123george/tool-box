@@ -47,6 +47,7 @@ A self-hosted, full-stack personal management platform built for one purpose: ke
     - [Prerequisites](#prerequisites)
     - [Environment Variables](#environment-variables)
     - [Running deploy.sh](#running-deploysh)
+    - [Kubernetes Deployment](#kubernetes-deployment)
     - [Build Commands](#build-commands)
 16. [Design Decisions & Engineering Notes](#design-decisions--engineering-notes)
 
@@ -1038,7 +1039,7 @@ DELETE /api/system/users/{id}                        → 204  (ADMIN)
 
 ```properties
 server.port=9099
-spring.data.mongodb.uri=mongodb://localhost:27017/tool-box
+spring.data.mongodb.uri=${MONGODB_URI:mongodb://localhost:27017/tool-box}
 
 # JWT
 jwt.secret=${JWT_SECRET}
@@ -1101,6 +1102,9 @@ ALPHA_VANTAGE_API_KEY=your-alpha-vantage-key
 MAILERSEND_API_KEY=your-mailersend-api-key
 NOTIFICATION_FROM_EMAIL=noreply@your-trial-domain.mlsender.net
 NOTIFICATION_FROM_NAME=ToolBox
+
+# Kubernetes only — MongoDB on the host (LAN or Tailscale IP, not localhost)
+# MONGODB_URI=mongodb://192.168.1.50:27017/tool-box
 ```
 
 ### Running deploy.sh
@@ -1135,6 +1139,85 @@ Logs:
 tail -f backend.log    # Spring Boot logs
 tail -f frontend.log   # Bun server logs
 ```
+
+### Kubernetes Deployment
+
+For running ToolBox on a local Kubernetes cluster (k3s or minikube) accessed via Tailscale.
+
+#### How it works
+
+- **Frontend** and **Backend** each run as a single-replica Deployment
+- MongoDB stays on the **host machine** — pods connect to it via the host's LAN or Tailscale IP
+- No container registry needed — images are built and loaded directly into the cluster
+- Frontend is exposed on **NodePort 30080**; backend stays ClusterIP (internal only)
+
+#### Prerequisites
+
+| Tool | Purpose |
+|------|---------|
+| Docker | Build images locally |
+| k3s or minikube | Local Kubernetes cluster |
+| kubectl | Manage the cluster |
+
+#### Additional `.env` variable
+
+Add this to your `.env` file — pods cannot reach `localhost`, so you must use the host's actual IP:
+
+```bash
+MONGODB_URI=mongodb://192.168.1.50:27017/tool-box   # your LAN or Tailscale IP
+```
+
+#### Deploy
+
+```bash
+./deploy-k8s.sh
+```
+
+This script:
+1. Reads `.env` and validates `MONGODB_URI` is set
+2. Builds `toolbox-backend:latest` and `toolbox-frontend:latest` Docker images
+3. Loads images directly into the cluster (`k3s ctr images import` or `minikube image load`)
+4. Creates/updates the `toolbox` namespace and `toolbox-secrets` Kubernetes Secret from `.env`
+5. Applies all manifests in `k8s/`
+6. Runs `kubectl rollout restart` on both deployments
+7. Prints the access URL
+
+#### Access
+
+```
+http://<tailscale-ip>:30080
+```
+
+#### File structure
+
+```
+Dockerfile.backend       — Java 21 + Python 3 venv (yfinance, pandas, pdfplumber)
+Dockerfile.frontend      — Bun static server
+k8s/
+  namespace.yaml         — namespace: toolbox
+  backend.yaml           — Deployment (ClusterIP) + Service
+  frontend.yaml          — Deployment + NodePort :30080
+  secret.example.yaml    — Secret structure template (never commit real values)
+deploy-k8s.sh            — Build, load, apply, rollout
+```
+
+#### Useful commands
+
+```bash
+# Check pod status
+kubectl get pods -n toolbox
+
+# Stream backend logs
+kubectl logs -n toolbox -l app=toolbox-backend -f
+
+# Stream frontend logs
+kubectl logs -n toolbox -l app=toolbox-frontend -f
+
+# Force redeploy without rebuilding images
+kubectl rollout restart deployment/toolbox-backend deployment/toolbox-frontend -n toolbox
+```
+
+---
 
 ### Build Commands
 

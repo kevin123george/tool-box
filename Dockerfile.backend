@@ -1,0 +1,24 @@
+# ---- Build stage ----
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /build
+COPY gradlew settings.gradle build.gradle ./
+COPY gradle/ gradle/
+COPY backend/ backend/
+RUN ./gradlew :backend:bootJar -x test -x spotlessCheck --no-daemon
+
+# ---- Runtime stage ----
+FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache python3 py3-pip
+
+WORKDIR /app
+
+# Copy JAR
+COPY --from=builder /build/backend/build/libs/toolbox-0.0.1-SNAPSHOT.jar app.jar
+
+# Copy Python scripts and create venv at the exact path Java looks for
+COPY scripts/ scripts/
+RUN python3 -m venv scripts/venv && \
+    scripts/venv/bin/pip install --no-cache-dir yfinance pandas pdfplumber
+
+EXPOSE 9099
+ENTRYPOINT ["java", "-jar", "app.jar"]

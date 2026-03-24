@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toolbox-backend
+  namespace: toolbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toolbox-backend
+  template:
+    metadata:
+      labels:
+        app: toolbox-backend
+    spec:
+      containers:
+        - name: backend
+          image: toolbox-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9099
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: MONGODB_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: JWT_SECRET
+            - name: KEVIN_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: KEVIN_NAME
+            - name: KEVIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: KEVIN_EMAIL
+            - name: KEVIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: KEVIN_PASSWORD
+            - name: ALPHA_VANTAGE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: ALPHA_VANTAGE_API_KEY
+            - name: MAILERSEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: MAILERSEND_API_KEY
+            - name: NOTIFICATION_FROM_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: NOTIFICATION_FROM_EMAIL
+            - name: NOTIFICATION_FROM_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: toolbox-secrets
+                  key: NOTIFICATION_FROM_NAME
+          livenessProbe:
+            tcpSocket:
+              port: 9099
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 9099
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toolbox-backend
+  namespace: toolbox
+spec:
+  selector:
+    app: toolbox-backend
+  ports:
+    - port: 9099
+      targetPort: 9099
+  type: ClusterIP

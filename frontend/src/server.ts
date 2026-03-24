@@ -1,6 +1,6 @@
 import { serve } from "bun";
 
-const BACKEND = "http://localhost:9099";
+const BACKEND = process.env.BACKEND_URL || "http://localhost:9099";
 
 serve({
   port: 3000,
