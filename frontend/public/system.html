@@ -38,6 +38,27 @@
 
 <div class="card bg-base-200 shadow-sm mt-5">
     <div class="card-body">
+        <h3 class="card-title text-sm uppercase tracking-wide mb-3">🔗 Quick Links</h3>
+        <div class="flex flex-wrap gap-2">
+            <a id="k8sDashboardLink" href="#" target="_blank" rel="noopener noreferrer"
+               class="btn btn-sm btn-outline gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Kubernetes Dashboard
+            </a>
+        </div>
+        <p class="text-xs opacity-40 mt-2">Opens on port 30443 — accept the self-signed cert warning.</p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('k8sDashboardLink').href =
+        'https://' + window.location.hostname + ':30443';
+</script>
+
+<div class="card bg-base-200 shadow-sm mt-5">
+    <div class="card-body">
         <h3 class="card-title text-sm uppercase tracking-wide">📧 Email Notifications</h3>
         <p class="text-xs opacity-70">
             Alerts are sent via email (SendGrid) for: price targets, budget thresholds (80 / 90 / 100%), subscription renewals, and high resource usage (&gt;90%).<br>
