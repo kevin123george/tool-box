@@ -1,24 +1,46 @@
 # ---- Build stage ----
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk-jammy AS builder
+
 WORKDIR /build
+
+# Copy only what's needed first (better caching)
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle/ gradle/
+
+# Pre-download dependencies (faster rebuilds)
+RUN ./gradlew dependencies --no-daemon || true
+
+# Copy source
 COPY backend/ backend/
+
+# Build jar
 RUN ./gradlew :backend:bootJar -x test -x spotlessCheck --no-daemon
 
+
 # ---- Runtime stage ----
-FROM eclipse-temurin:21-jre-alpine
-RUN apk add --no-cache python3 py3-pip
+FROM eclipse-temurin:21-jre-jammy
+
+# Install Python (glibc-based, better than Alpine)
+RUN apt-get update && \
+    apt-get install -y python3 python3-venv python3-pip && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy JAR
 COPY --from=builder /build/backend/build/libs/toolbox-0.0.1-SNAPSHOT.jar app.jar
 
-# Copy Python scripts and create venv at the exact path Java looks for
+# Copy Python scripts
 COPY scripts/ scripts/
+
+# Create virtualenv and install deps
 RUN python3 -m venv scripts/venv && \
     scripts/venv/bin/pip install --no-cache-dir yfinance pandas pdfplumber
 
+# Environment
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+
 EXPOSE 9099
+
+# Run app
 ENTRYPOINT ["java", "-jar", "app.jar"]
