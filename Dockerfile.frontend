@@ -1,16 +1,12 @@
 FROM oven/bun:1
 WORKDIR /app
 
-# Copy only package.json first (for caching)
 COPY frontend/package.json ./
-
 RUN bun install --production
 
-# Copy rest of the app
 COPY frontend/ .
 
-# Build TS → JS
-RUN bun build src/server.ts --outdir dist
+RUN bun build src/server.ts --outdir dist --target=bun
 
 ENV NODE_ENV=production
 
