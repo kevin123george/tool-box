@@ -170,15 +170,20 @@ public class PythonPricePool {
   }
 
   private String resolveScript(String scriptName) {
-    java.io.File cwd = new java.io.File(scriptName);
-    if (cwd.exists()) return scriptName;
-    try {
-      java.net.URL loc = PythonPricePool.class.getProtectionDomain().getCodeSource().getLocation();
-      java.io.File jarDir = new java.io.File(loc.toURI()).getParentFile();
-      java.io.File next = new java.io.File(jarDir, scriptName);
-      if (next.exists()) return next.getAbsolutePath();
-    } catch (Exception ignored) {
+    String[] candidates = {
+            "scripts/" + scriptName,
+            "./scripts/" + scriptName,
+            scriptName
+    };
+
+    for (String path : candidates) {
+      java.io.File f = new java.io.File(path);
+      if (f.exists()) {
+        log.info("[PricePool] Using script path: {}", f.getAbsolutePath());
+        return f.getPath();
+      }
     }
+    log.warn("[PricePool] Script not found, falling back to {}", scriptName);
     return scriptName;
   }
 
